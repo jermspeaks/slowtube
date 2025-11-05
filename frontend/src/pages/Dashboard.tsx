@@ -64,9 +64,20 @@ function Dashboard() {
   const handleImport = async () => {
     try {
       setRefreshing(true)
-      await videosAPI.import()
+      const result = await videosAPI.import()
+      console.log('Import result:', result)
+      
+      // Ensure we're showing all videos or at least 'feed' videos to see newly imported ones
+      if (stateFilter !== 'all' && stateFilter !== 'feed') {
+        setStateFilter('feed')
+      }
+      
       await loadVideos()
-      alert('Videos imported successfully!')
+      
+      const message = result.imported > 0 || result.updated > 0
+        ? `Videos imported successfully! ${result.imported} new, ${result.updated} updated.`
+        : 'No new videos to import.'
+      alert(message)
     } catch (error: any) {
       console.error('Error importing videos:', error)
       if (error.response?.status === 401) {

@@ -23,18 +23,86 @@ export interface YouTubeVideo {
 async function getWatchLaterPlaylistId(auth: any): Promise<string> {
   const youtube = google.youtube({ version: 'v3', auth })
   
-  // First, get the user's channel ID
-  const channelResponse = await youtube.channels.list({
-    part: ['contentDetails'],
-    mine: true,
-  })
+  try {
+    // First, try to get it from channel's relatedPlaylists
+    const channelResponse = await youtube.channels.list({
+      part: ['contentDetails'],
+      mine: true,
+    })
+    
+    const channel = channelResponse.data.items?.[0]
+    
+    if (channel?.contentDetails?.relatedPlaylists?.watchLater) {
+      return channel.contentDetails.relatedPlaylists.watchLater
+    }
 
-  const channel = channelResponse.data.items?.[0]
-  if (!channel?.contentDetails?.relatedPlaylists?.watchLater) {
-    throw new Error('Watch later playlist not found')
+    // If not found in relatedPlaylists, try using the special "WL" playlist ID
+    // This is a special playlist ID that YouTube uses for watch later
+    console.log('Watch later not found in relatedPlaylists, trying special WL playlist ID...')
+    
+    // Try to access the WL playlist to verify it exists
+    try {
+      const testResponse = await youtube.playlistItems.list({
+        part: ['id'],
+        playlistId: 'WL',
+        maxResults: 1,
+      })
+      console.log(testResponse.data);
+      
+      if (testResponse.data !== undefined) {
+        console.log('Successfully accessed WL playlist')
+        return 'WL'
+      }
+    } catch (wlError: any) {
+      console.error('WL playlist test failed:', wlError.message)
+      // If WL doesn't work, try searching through playlists
+      console.log('Searching through user playlists for watch later playlist...')
+      
+      let nextPageToken: string | undefined = undefined
+      const maxPages = 5 // Limit to prevent infinite loops
+      
+      for (let page = 0; page < maxPages; page++) {
+        const playlistsResponse = await youtube.playlists.list({
+          part: ['id', 'snippet'],
+          mine: true,
+          maxResults: 50,
+          pageToken: nextPageToken,
+        })
+
+        const playlists = playlistsResponse.data.items || []
+        
+        // Look for watch later playlist by title (it's usually called "Watch later" in English)
+        // Also check for common variations
+        const watchLaterPlaylist = playlists.find((playlist: any) => {
+          const title = playlist.snippet?.title?.toLowerCase() || ''
+          return title.includes('watch later') || 
+                 title === 'watch later' ||
+                 title === 'watchlater'
+        })
+
+        if (watchLaterPlaylist?.id) {
+          console.log('Found watch later playlist:', watchLaterPlaylist.id, watchLaterPlaylist.snippet?.title)
+          return watchLaterPlaylist.id
+        }
+
+        nextPageToken = playlistsResponse.data.nextPageToken || undefined
+        if (!nextPageToken) {
+          break
+        }
+      }
+    }
+
+    throw new Error('Watch later playlist not found. Please ensure your YouTube account has a watch later playlist.')
+  } catch (error: any) {
+    console.error('Error getting watch later playlist ID:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data,
+    })
+    
+    throw new Error(`Watch later playlist not found: ${error.message}`)
   }
-
-  return channel.contentDetails.relatedPlaylists.watchLater
 }
 
 // Fetch all videos from watch later playlist
@@ -74,11 +142,22 @@ export async function fetchWatchLaterVideos(): Promise<YouTubeVideo[]> {
 
         const videos = videosResponse.data.items || []
         allVideos.push(...(videos as YouTubeVideo[]))
+        
+        // Log first video entry if this is the first batch
+        if (allVideos.length > 0 && allVideos.length === videos.length) {
+          const firstVideo = allVideos[0]
+          console.log('First video entry:', {
+            id: firstVideo.id,
+            title: firstVideo.snippet.title,
+            publishedAt: firstVideo.snippet.publishedAt,
+          })
+        }
       }
 
       nextPageToken = playlistResponse.data.nextPageToken || undefined
     } while (nextPageToken)
 
+    console.log(`Fetched ${allVideos.length} videos from watch later playlist`)
     return allVideos
   } catch (error) {
     console.error('Error fetching watch later videos:', error)
@@ -109,6 +188,7 @@ export async function importVideos(): Promise<{ imported: number; updated: numbe
     const youtubeVideos = await fetchWatchLaterVideos()
     let imported = 0
     let updated = 0
+    let firstImported = false
 
     for (const youtubeVideo of youtubeVideos) {
       const existingVideo = videoQueries.getByYoutubeId(youtubeVideo.id)
@@ -131,6 +211,14 @@ export async function importVideos(): Promise<{ imported: number; updated: numbe
         // Update existing video
         videoQueries.update(existingVideo.id, videoData)
         updated++
+        if (!firstImported) {
+          console.log('First video updated:', {
+            id: existingVideo.id,
+            youtube_id: youtubeVideo.id,
+            title: videoData.title,
+          })
+          firstImported = true
+        }
       } else {
         // Create new video
         const videoId = videoQueries.create(videoData)
@@ -138,9 +226,19 @@ export async function importVideos(): Promise<{ imported: number; updated: numbe
         // Set initial state to 'feed'
         videoStateQueries.setState(videoId, 'feed')
         imported++
+        if (!firstImported) {
+          console.log('First video imported:', {
+            id: videoId,
+            youtube_id: youtubeVideo.id,
+            title: videoData.title,
+            state: 'feed',
+          })
+          firstImported = true
+        }
       }
     }
 
+    console.log(`Import complete: ${imported} imported, ${updated} updated`)
     return { imported, updated }
   } catch (error) {
     console.error('Error importing videos:', error)
