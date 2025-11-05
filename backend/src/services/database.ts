@@ -49,22 +49,50 @@ export interface OAuthSession {
 
 // Video operations
 export const videoQueries = {
-  getAll: (state?: string) => {
+  getAll: (
+    state?: string,
+    search?: string,
+    sortBy?: 'published_at' | 'added_to_playlist_at',
+    sortOrder?: 'asc' | 'desc'
+  ) => {
+    // Build WHERE clause conditions
+    const conditions: string[] = []
+    const params: any[] = []
+
+    // State filter
     if (state) {
-      return db.prepare(`
-        SELECT v.*, vs.state 
-        FROM videos v
-        LEFT JOIN video_states vs ON v.id = vs.video_id
-        WHERE vs.state = ?
-        ORDER BY v.created_at DESC
-      `).all(state) as (Video & { state: string | null })[]
+      conditions.push('vs.state = ?')
+      params.push(state)
     }
-    return db.prepare(`
+
+    // Search filter (case-insensitive search on title and description)
+    if (search && search.trim()) {
+      conditions.push('(LOWER(v.title) LIKE ? OR LOWER(v.description) LIKE ?)')
+      const searchTerm = `%${search.trim().toLowerCase()}%`
+      params.push(searchTerm, searchTerm)
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    // Build ORDER BY clause
+    let orderBy = 'ORDER BY v.added_to_playlist_at ASC' // Default sort
+    if (sortBy && (sortBy === 'published_at' || sortBy === 'added_to_playlist_at')) {
+      const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
+      // Handle NULL values - put them at the end
+      orderBy = `ORDER BY 
+        CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,
+        v.${sortBy} ${order}`
+    }
+
+    const query = `
       SELECT v.*, vs.state 
       FROM videos v
       LEFT JOIN video_states vs ON v.id = vs.video_id
-      ORDER BY v.created_at DESC
-    `).all() as (Video & { state: string | null })[]
+      ${whereClause}
+      ${orderBy}
+    `
+
+    return db.prepare(query).all(...params) as (Video & { state: string | null })[]
   },
 
   getById: (id: number) => {

@@ -14,6 +14,9 @@ function Dashboard() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [stateFilter, setStateFilter] = useState<VideoState | 'all'>('all')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [uploading, setUploading] = useState(false)
   const [fetchingDetails, setFetchingDetails] = useState(false)
   const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
@@ -35,7 +38,12 @@ function Dashboard() {
   const loadVideos = async () => {
     try {
       setLoading(true)
-      const fetchedVideos = await videosAPI.getAll(stateFilter === 'all' ? undefined : stateFilter)
+      const fetchedVideos = await videosAPI.getAll(
+        stateFilter === 'all' ? undefined : stateFilter,
+        searchQuery || undefined,
+        sortBy || undefined,
+        sortBy ? sortOrder : undefined
+      )
       setVideos(fetchedVideos)
     } catch (error) {
       console.error('Error loading videos:', error)
@@ -185,7 +193,7 @@ function Dashboard() {
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFilter])
+  }, [stateFilter, searchQuery, sortBy, sortOrder])
 
   if (loading) {
     return (
@@ -232,18 +240,54 @@ function Dashboard() {
 
       <main className="max-w-[1400px] mx-auto px-6 pb-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="flex gap-2 items-center">
-            <label className="font-bold mr-2">Filter:</label>
-            <select
-              value={stateFilter}
-              onChange={(e) => setStateFilter(e.target.value as VideoState | 'all')}
-              className="px-3 py-2 border border-gray-300 rounded text-sm"
-            >
-              <option value="all">All</option>
-              <option value="feed">Feed</option>
-              <option value="inbox">Inbox</option>
-              <option value="archive">Archive</option>
-            </select>
+          <div className="flex gap-2 items-center flex-wrap">
+            <div className="flex gap-2 items-center">
+              <label className="font-bold mr-2">Filter:</label>
+              <select
+                value={stateFilter}
+                onChange={(e) => setStateFilter(e.target.value as VideoState | 'all')}
+                className="px-3 py-2 border border-gray-300 rounded text-sm"
+              >
+                <option value="all">All</option>
+                <option value="feed">Feed</option>
+                <option value="inbox">Inbox</option>
+                <option value="archive">Archive</option>
+              </select>
+            </div>
+            <div className="flex gap-2 items-center">
+              <label className="font-bold mr-2">Search:</label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by title or description..."
+                className="px-3 py-2 border border-gray-300 rounded text-sm min-w-[200px]"
+              />
+            </div>
+            <div className="flex gap-2 items-center">
+              <label className="font-bold mr-2">Sort:</label>
+              <select
+                value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (value === 'none') {
+                    setSortBy(null)
+                    setSortOrder('asc')
+                  } else {
+                    const [by, order] = value.split('_') as ['published_at' | 'added_to_playlist_at', 'asc' | 'desc']
+                    setSortBy(by)
+                    setSortOrder(order)
+                  }
+                }}
+                className="px-3 py-2 border border-gray-300 rounded text-sm"
+              >
+                <option value="none">None</option>
+                <option value="published_at_desc">Date Published (Newest)</option>
+                <option value="published_at_asc">Date Published (Oldest)</option>
+                <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
+                <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
+              </select>
+            </div>
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>

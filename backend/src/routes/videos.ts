@@ -29,8 +29,25 @@ const upload = multer({
 // Get all videos with optional filters
 router.get('/', (req, res) => {
   try {
-    const { state } = req.query
-    const videos = videoQueries.getAll(state as string | undefined)
+    const { state, search, sortBy, sortOrder } = req.query
+    
+    // Validate sortBy and sortOrder
+    let validSortBy: 'published_at' | 'added_to_playlist_at' | undefined
+    if (sortBy === 'published_at' || sortBy === 'added_to_playlist_at') {
+      validSortBy = sortBy
+    }
+    
+    let validSortOrder: 'asc' | 'desc' | undefined
+    if (sortOrder === 'asc' || sortOrder === 'desc') {
+      validSortOrder = sortOrder
+    }
+    
+    const videos = videoQueries.getAll(
+      state as string | undefined,
+      search as string | undefined,
+      validSortBy,
+      validSortOrder
+    )
     
     // Get tags and comments for each video
     const videosWithDetails = videos.map(video => {

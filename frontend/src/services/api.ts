@@ -20,8 +20,17 @@ export const authAPI = {
 
 // Videos API
 export const videosAPI = {
-  getAll: async (state?: string) => {
-    const params = state ? { state } : {}
+  getAll: async (
+    state?: string,
+    search?: string,
+    sortBy?: 'published_at' | 'added_to_playlist_at',
+    sortOrder?: 'asc' | 'desc'
+  ) => {
+    const params: Record<string, string> = {}
+    if (state) params.state = state
+    if (search) params.search = search
+    if (sortBy) params.sortBy = sortBy
+    if (sortOrder) params.sortOrder = sortOrder
     const response = await api.get('/api/videos', { params })
     return response.data
   },
