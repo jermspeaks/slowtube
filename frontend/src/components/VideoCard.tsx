@@ -1,12 +1,14 @@
 import { Video } from '../types/video'
 import { format } from 'date-fns'
+import StateSwitchButton from './StateSwitchButton'
 
 interface VideoCardProps {
   video: Video
   onClick: () => void
+  onStateChange?: (updatedVideo: Video) => void
 }
 
-function VideoCard({ video, onClick }: VideoCardProps) {
+function VideoCard({ video, onClick, onStateChange }: VideoCardProps) {
   const getStateColorClasses = (state?: string | null) => {
     switch (state) {
       case 'feed': return 'bg-green-500'
@@ -16,13 +18,19 @@ function VideoCard({ video, onClick }: VideoCardProps) {
     }
   }
 
+  const handleStateChange = (updatedVideo: Video) => {
+    if (onStateChange) {
+      onStateChange(updatedVideo)
+    }
+  }
+
   return (
-    <div
-      onClick={onClick}
-      className="bg-white rounded-lg overflow-hidden cursor-pointer shadow-md transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg"
-    >
+    <div className="bg-white rounded-lg overflow-hidden shadow-md transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg">
       {video.thumbnail_url && (
-        <div className="relative w-full pt-[56.25%]">
+        <div
+          onClick={onClick}
+          className="relative w-full pt-[56.25%] cursor-pointer"
+        >
           <img
             src={video.thumbnail_url}
             alt={video.title}
@@ -36,7 +44,10 @@ function VideoCard({ video, onClick }: VideoCardProps) {
         </div>
       )}
       <div className="p-3">
-        <h3 className="m-0 mb-2 text-sm font-bold line-clamp-2">
+        <h3
+          onClick={!video.thumbnail_url ? onClick : undefined}
+          className={`m-0 mb-2 text-sm font-bold line-clamp-2 ${!video.thumbnail_url ? 'cursor-pointer hover:text-blue-600' : ''}`}
+        >
           {video.title}
           {video.fetch_status === 'pending' && (
             <span className="text-[10px] text-yellow-500 font-normal ml-1">(fetching...)</span>
@@ -50,11 +61,16 @@ function VideoCard({ video, onClick }: VideoCardProps) {
             {video.channel_title}
           </div>
         )}
-        {video.state && (
-          <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white uppercase mb-2 ${getStateColorClasses(video.state)}`}>
-            {video.state}
-          </span>
-        )}
+        <div className="flex items-center gap-2 mb-2">
+          {video.state && (
+            <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white uppercase ${getStateColorClasses(video.state)}`}>
+              {video.state}
+            </span>
+          )}
+          {onStateChange && (
+            <StateSwitchButton video={video} onStateChange={handleStateChange} />
+          )}
+        </div>
         {video.tags && video.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {video.tags.slice(0, 3).map(tag => (

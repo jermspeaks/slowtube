@@ -1,18 +1,26 @@
 import { Video } from '../types/video'
 import { format } from 'date-fns'
+import StateSwitchButton from './StateSwitchButton'
 
 interface VideoTableProps {
   videos: Video[]
   onVideoClick: (video: Video) => void
+  onStateChange?: (updatedVideo: Video) => void
 }
 
-function VideoTable({ videos, onVideoClick }: VideoTableProps) {
+function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
   const getStateColorClasses = (state?: string | null) => {
     switch (state) {
       case 'feed': return 'bg-green-500'
       case 'inbox': return 'bg-yellow-500'
       case 'archive': return 'bg-gray-500'
       default: return 'bg-gray-500'
+    }
+  }
+
+  const handleStateChange = (updatedVideo: Video) => {
+    if (onStateChange) {
+      onStateChange(updatedVideo)
     }
   }
 
@@ -35,10 +43,12 @@ function VideoTable({ videos, onVideoClick }: VideoTableProps) {
           {videos.map(video => (
             <tr
               key={video.id}
-              onClick={() => onVideoClick(video)}
-              className="cursor-pointer border-b border-gray-300 hover:bg-gray-100"
+              className="border-b border-gray-300 hover:bg-gray-100"
             >
-              <td className="p-2">
+              <td
+                className="p-2 cursor-pointer"
+                onClick={() => onVideoClick(video)}
+              >
                 {video.thumbnail_url && (
                   <img
                     src={video.thumbnail_url}
@@ -67,11 +77,16 @@ function VideoTable({ videos, onVideoClick }: VideoTableProps) {
                 {video.channel_title || '-'}
               </td>
               <td className="p-3">
-                {video.state && (
-                  <span className={`inline-block px-2 py-1 rounded-full text-[11px] font-bold text-white uppercase ${getStateColorClasses(video.state)}`}>
-                    {video.state}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {video.state && (
+                    <span className={`inline-block px-2 py-1 rounded-full text-[11px] font-bold text-white uppercase ${getStateColorClasses(video.state)}`}>
+                      {video.state}
+                    </span>
+                  )}
+                  {onStateChange && (
+                    <StateSwitchButton video={video} onStateChange={handleStateChange} />
+                  )}
+                </div>
               </td>
               <td className="p-3">
                 {video.tags && video.tags.length > 0 ? (
