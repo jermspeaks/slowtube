@@ -56,7 +56,10 @@ export const videoQueries = {
     sortOrder?: 'asc' | 'desc',
     channels?: string[],
     limit?: number,
-    offset?: number
+    offset?: number,
+    dateField?: 'published_at' | 'added_to_playlist_at',
+    startDate?: string,
+    endDate?: string
   ) => {
     // Build WHERE clause conditions
     const conditions: string[] = []
@@ -80,6 +83,24 @@ export const videoQueries = {
       const placeholders = channels.map(() => '?').join(',')
       conditions.push(`v.channel_title IN (${placeholders})`)
       params.push(...channels)
+    }
+
+    // Date range filter
+    if (dateField && (dateField === 'published_at' || dateField === 'added_to_playlist_at')) {
+      if (startDate || endDate) {
+        const dateConditions: string[] = []
+        if (startDate) {
+          dateConditions.push(`DATE(v.${dateField}) >= DATE(?)`)
+          params.push(startDate)
+        }
+        if (endDate) {
+          dateConditions.push(`DATE(v.${dateField}) <= DATE(?)`)
+          params.push(endDate)
+        }
+        if (dateConditions.length > 0) {
+          conditions.push(`(${dateConditions.join(' AND ')})`)
+        }
+      }
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -120,7 +141,10 @@ export const videoQueries = {
   getCount: (
     state?: string,
     search?: string,
-    channels?: string[]
+    channels?: string[],
+    dateField?: 'published_at' | 'added_to_playlist_at',
+    startDate?: string,
+    endDate?: string
   ) => {
     // Build WHERE clause conditions (same as getAll)
     const conditions: string[] = []
@@ -144,6 +168,24 @@ export const videoQueries = {
       const placeholders = channels.map(() => '?').join(',')
       conditions.push(`v.channel_title IN (${placeholders})`)
       params.push(...channels)
+    }
+
+    // Date range filter
+    if (dateField && (dateField === 'published_at' || dateField === 'added_to_playlist_at')) {
+      if (startDate || endDate) {
+        const dateConditions: string[] = []
+        if (startDate) {
+          dateConditions.push(`DATE(v.${dateField}) >= DATE(?)`)
+          params.push(startDate)
+        }
+        if (endDate) {
+          dateConditions.push(`DATE(v.${dateField}) <= DATE(?)`)
+          params.push(endDate)
+        }
+        if (dateConditions.length > 0) {
+          conditions.push(`(${dateConditions.join(' AND ')})`)
+        }
+      }
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -396,51 +438,103 @@ function parseDurationToSeconds(duration: string): number {
 
 // Stats operations
 export const statsQueries = {
-  getChannelRankings: () => {
+  getChannelRankings: (
+    dateField?: 'published_at' | 'added_to_playlist_at',
+    startDate?: string,
+    endDate?: string
+  ) => {
+    const conditions: string[] = ['channel_title IS NOT NULL AND channel_title != \'\'']
+    const params: any[] = []
+
+    // Date range filter
+    if (dateField && (dateField === 'published_at' || dateField === 'added_to_playlist_at')) {
+      if (startDate || endDate) {
+        const dateConditions: string[] = []
+        if (startDate) {
+          dateConditions.push(`DATE(${dateField}) >= DATE(?)`)
+          params.push(startDate)
+        }
+        if (endDate) {
+          dateConditions.push(`DATE(${dateField}) <= DATE(?)`)
+          params.push(endDate)
+        }
+        if (dateConditions.length > 0) {
+          conditions.push(`(${dateConditions.join(' AND ')})`)
+        }
+      }
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`
+
     return db.prepare(`
       SELECT 
         channel_title,
         COUNT(*) as count
       FROM videos
-      WHERE channel_title IS NOT NULL AND channel_title != ''
+      ${whereClause}
       GROUP BY channel_title
       ORDER BY count DESC, channel_title ASC
-    `).all() as Array<{ channel_title: string; count: number }>
+    `).all(...params) as Array<{ channel_title: string; count: number }>
   },
 
-  getTimeStats: () => {
+  getTimeStats: (
+    dateField?: 'published_at' | 'added_to_playlist_at',
+    startDate?: string,
+    endDate?: string
+  ) => {
+    // Use added_to_playlist_at as default if no dateField specified
+    const field = dateField || 'added_to_playlist_at'
+    
+    // Build date range conditions
+    const dateConditions: string[] = [`${field} IS NOT NULL`]
+    const params: any[] = []
+
+    // Apply date range filter if dates are provided
+    if (startDate || endDate) {
+      if (startDate) {
+        dateConditions.push(`DATE(${field}) >= DATE(?)`)
+        params.push(startDate)
+      }
+      if (endDate) {
+        dateConditions.push(`DATE(${field}) <= DATE(?)`)
+        params.push(endDate)
+      }
+    }
+
+    const whereClause = `WHERE ${dateConditions.join(' AND ')}`
+
     // Get hour breakdown (0-23)
     const hourStats = db.prepare(`
       SELECT 
-        CAST(strftime('%H', added_to_playlist_at) AS INTEGER) as hour,
+        CAST(strftime('%H', ${field}) AS INTEGER) as hour,
         COUNT(*) as count
       FROM videos
-      WHERE added_to_playlist_at IS NOT NULL
+      ${whereClause}
       GROUP BY hour
       ORDER BY hour ASC
-    `).all() as Array<{ hour: number; count: number }>
+    `).all(...params) as Array<{ hour: number; count: number }>
 
     // Get day of week breakdown (0=Sunday, 1=Monday, ..., 6=Saturday)
     const dayOfWeekStats = db.prepare(`
       SELECT 
-        CAST(strftime('%w', added_to_playlist_at) AS INTEGER) as day_of_week,
+        CAST(strftime('%w', ${field}) AS INTEGER) as day_of_week,
         COUNT(*) as count
       FROM videos
-      WHERE added_to_playlist_at IS NOT NULL
+      ${whereClause}
       GROUP BY day_of_week
       ORDER BY day_of_week ASC
-    `).all() as Array<{ day_of_week: number; count: number }>
+    `).all(...params) as Array<{ day_of_week: number; count: number }>
 
     // Get month breakdown (1-12)
     const monthStats = db.prepare(`
       SELECT 
-        CAST(strftime('%m', added_to_playlist_at) AS INTEGER) as month,
+        CAST(strftime('%m', ${field}) AS INTEGER) as month,
         COUNT(*) as count
       FROM videos
-      WHERE added_to_playlist_at IS NOT NULL
+      ${whereClause}
       GROUP BY month
       ORDER BY month ASC
-    `).all() as Array<{ month: number; count: number }>
+    `).all(...params) as Array<{ month: number; count: number }>
 
     return {
       byHour: hourStats,
@@ -449,22 +543,76 @@ export const statsQueries = {
     }
   },
 
-  getChannelList: () => {
+  getChannelList: (
+    dateField?: 'published_at' | 'added_to_playlist_at',
+    startDate?: string,
+    endDate?: string
+  ) => {
+    const conditions: string[] = ['channel_title IS NOT NULL AND channel_title != \'\'']
+    const params: any[] = []
+
+    // Date range filter
+    if (dateField && (dateField === 'published_at' || dateField === 'added_to_playlist_at')) {
+      if (startDate || endDate) {
+        const dateConditions: string[] = []
+        if (startDate) {
+          dateConditions.push(`DATE(${dateField}) >= DATE(?)`)
+          params.push(startDate)
+        }
+        if (endDate) {
+          dateConditions.push(`DATE(${dateField}) <= DATE(?)`)
+          params.push(endDate)
+        }
+        if (dateConditions.length > 0) {
+          conditions.push(`(${dateConditions.join(' AND ')})`)
+        }
+      }
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`
+
     return db.prepare(`
       SELECT DISTINCT channel_title
       FROM videos
-      WHERE channel_title IS NOT NULL AND channel_title != ''
+      ${whereClause}
       ORDER BY channel_title ASC
-    `).all() as Array<{ channel_title: string }>
+    `).all(...params) as Array<{ channel_title: string }>
   },
 
-  getTotalDuration: () => {
+  getTotalDuration: (
+    dateField?: 'published_at' | 'added_to_playlist_at',
+    startDate?: string,
+    endDate?: string
+  ) => {
+    const conditions: string[] = ['duration IS NOT NULL AND duration != \'\'']
+    const params: any[] = []
+
+    // Date range filter
+    if (dateField && (dateField === 'published_at' || dateField === 'added_to_playlist_at')) {
+      if (startDate || endDate) {
+        const dateConditions: string[] = []
+        if (startDate) {
+          dateConditions.push(`DATE(${dateField}) >= DATE(?)`)
+          params.push(startDate)
+        }
+        if (endDate) {
+          dateConditions.push(`DATE(${dateField}) <= DATE(?)`)
+          params.push(endDate)
+        }
+        if (dateConditions.length > 0) {
+          conditions.push(`(${dateConditions.join(' AND ')})`)
+        }
+      }
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`
+
     // Get all durations (excluding null)
     const videos = db.prepare(`
       SELECT duration
       FROM videos
-      WHERE duration IS NOT NULL AND duration != ''
-    `).all() as Array<{ duration: string }>
+      ${whereClause}
+    `).all(...params) as Array<{ duration: string }>
 
     let totalSeconds = 0
     for (const video of videos) {

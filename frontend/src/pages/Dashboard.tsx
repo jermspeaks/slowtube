@@ -23,6 +23,9 @@ function Dashboard() {
   const [availableChannels, setAvailableChannels] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
+  const [startDate, setStartDate] = useState<string | null>(null)
+  const [endDate, setEndDate] = useState<string | null>(null)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -58,7 +61,10 @@ function Dashboard() {
         sortBy ? sortOrder : undefined,
         selectedChannels.length > 0 ? selectedChannels : undefined,
         currentPage,
-        100
+        100,
+        dateField || undefined,
+        startDate || undefined,
+        endDate || undefined
       )
       setVideos(response.videos || [])
       if (response.pagination) {
@@ -122,12 +128,12 @@ function Dashboard() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels])
+  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
 
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage])
+  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -146,6 +152,12 @@ function Dashboard() {
               onSortByChange={setSortBy}
               sortOrder={sortOrder}
               onSortOrderChange={setSortOrder}
+              dateField={dateField}
+              onDateFieldChange={setDateField}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />

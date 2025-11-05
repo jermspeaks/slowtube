@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { authAPI, videosAPI } from '../services/api'
+import DateRangeFilter from '../components/DateRangeFilter'
 
 interface ChannelRanking {
   rank: number
@@ -42,6 +43,27 @@ function Stats() {
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
+  const [startDate, setStartDate] = useState<string | null>(null)
+  const [endDate, setEndDate] = useState<string | null>(null)
+
+  const loadStats = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const statsData = await videosAPI.getStats(
+        dateField || undefined,
+        startDate || undefined,
+        endDate || undefined
+      )
+      setStats(statsData)
+    } catch (err: any) {
+      console.error('Error loading stats:', err)
+      setError(err.response?.data?.error || 'Failed to load stats')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
     // Check authentication
@@ -56,19 +78,10 @@ function Stats() {
     })
   }, [navigate])
 
-  const loadStats = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const statsData = await videosAPI.getStats()
-      setStats(statsData)
-    } catch (err: any) {
-      console.error('Error loading stats:', err)
-      setError(err.response?.data?.error || 'Failed to load stats')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    loadStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateField, startDate, endDate])
 
   if (loading) {
     return (
@@ -109,6 +122,18 @@ function Stats() {
     <div className="min-h-screen bg-gray-100">
       <main className="max-w-[1400px] mx-auto px-6 pb-6">
         <h2 className="text-2xl font-bold mb-6">Statistics</h2>
+
+        {/* Date Range Filter */}
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm mb-6">
+          <DateRangeFilter
+            dateField={dateField}
+            onDateFieldChange={setDateField}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+          />
+        </div>
 
         {/* Total Duration */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">

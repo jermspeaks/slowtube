@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { VideoState } from '../types/video'
+import DateRangeFilter from './DateRangeFilter'
 
 interface FiltersAndSortProps {
   stateFilter: VideoState | 'all'
@@ -13,6 +14,12 @@ interface FiltersAndSortProps {
   onSortByChange: (value: 'published_at' | 'added_to_playlist_at' | null) => void
   sortOrder: 'asc' | 'desc'
   onSortOrderChange: (value: 'asc' | 'desc') => void
+  dateField: 'added_to_playlist_at' | 'published_at' | null
+  onDateFieldChange: (value: 'added_to_playlist_at' | 'published_at' | null) => void
+  startDate: string | null
+  onStartDateChange: (value: string | null) => void
+  endDate: string | null
+  onEndDateChange: (value: string | null) => void
 }
 
 function FiltersAndSort({
@@ -27,6 +34,12 @@ function FiltersAndSort({
   onSortByChange,
   sortOrder,
   onSortOrderChange,
+  dateField,
+  onDateFieldChange,
+  startDate,
+  onStartDateChange,
+  endDate,
+  onEndDateChange,
 }: FiltersAndSortProps) {
   const [showMore, setShowMore] = useState(false)
 
@@ -133,6 +146,16 @@ function FiltersAndSort({
                 </div>
               </div>
             </div>
+
+            {/* Date Range Filter section */}
+            <DateRangeFilter
+              dateField={dateField}
+              onDateFieldChange={onDateFieldChange}
+              startDate={startDate}
+              onStartDateChange={onStartDateChange}
+              endDate={endDate}
+              onEndDateChange={onEndDateChange}
+            />
 
             {/* Sort section */}
             <div className="flex gap-2 items-center">

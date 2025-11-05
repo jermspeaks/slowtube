@@ -27,7 +27,10 @@ export const videosAPI = {
     sortOrder?: 'asc' | 'desc',
     channels?: string[],
     page?: number,
-    limit?: number
+    limit?: number,
+    dateField?: 'added_to_playlist_at' | 'published_at',
+    startDate?: string,
+    endDate?: string
   ) => {
     const params: Record<string, string | string[] | number> = {}
     if (state) params.state = state
@@ -39,6 +42,9 @@ export const videosAPI = {
     }
     if (page !== undefined) params.page = page
     if (limit !== undefined) params.limit = limit
+    if (dateField) params.dateField = dateField
+    if (startDate) params.startDate = startDate
+    if (endDate) params.endDate = endDate
     const response = await api.get('/api/videos', { params })
     return response.data
   },
@@ -96,8 +102,16 @@ export const videosAPI = {
     const response = await api.delete('/api/videos/all')
     return response.data
   },
-  getStats: async () => {
-    const response = await api.get('/api/videos/stats')
+  getStats: async (
+    dateField?: 'added_to_playlist_at' | 'published_at',
+    startDate?: string,
+    endDate?: string
+  ) => {
+    const params: Record<string, string> = {}
+    if (dateField) params.dateField = dateField
+    if (startDate) params.startDate = startDate
+    if (endDate) params.endDate = endDate
+    const response = await api.get('/api/videos/stats', { params })
     return response.data
   },
 }

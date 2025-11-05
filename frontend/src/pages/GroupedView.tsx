@@ -22,6 +22,9 @@ function GroupedView() {
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [availableChannels, setAvailableChannels] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
+  const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
+  const [startDate, setStartDate] = useState<string | null>(null)
+  const [endDate, setEndDate] = useState<string | null>(null)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -55,7 +58,12 @@ function GroupedView() {
         debouncedSearchQuery || undefined,
         sortBy || undefined,
         sortBy ? sortOrder : undefined,
-        selectedChannels.length > 0 ? selectedChannels : undefined
+        selectedChannels.length > 0 ? selectedChannels : undefined,
+        undefined,
+        undefined,
+        dateField || undefined,
+        startDate || undefined,
+        endDate || undefined
       )
       // Extract videos array from response (response has { videos: [...], pagination: {... } })
       setVideos(response.videos || response || [])
@@ -129,12 +137,12 @@ function GroupedView() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels])
+  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
 
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels])
+  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
 
   const groupedVideos = groupVideosByChannel(videos)
   const allChannelNames = Object.keys(groupedVideos).sort()
@@ -158,6 +166,12 @@ function GroupedView() {
               onSortByChange={setSortBy}
               sortOrder={sortOrder}
               onSortOrderChange={setSortOrder}
+              dateField={dateField}
+              onDateFieldChange={setDateField}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />

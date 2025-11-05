@@ -29,10 +29,35 @@ const upload = multer({
 // Get stats
 router.get('/stats', (req, res) => {
   try {
-    const channelRankings = statsQueries.getChannelRankings()
-    const timeStats = statsQueries.getTimeStats()
-    const channelList = statsQueries.getChannelList()
-    const totalDurationSeconds = statsQueries.getTotalDuration()
+    const { dateField, startDate, endDate } = req.query
+    
+    // Validate dateField
+    let validDateField: 'published_at' | 'added_to_playlist_at' | undefined
+    if (dateField === 'published_at' || dateField === 'added_to_playlist_at') {
+      validDateField = dateField
+    }
+    
+    // Validate date strings (ISO format YYYY-MM-DD)
+    let validStartDate: string | undefined = undefined
+    if (startDate && typeof startDate === 'string') {
+      const date = new Date(startDate)
+      if (!isNaN(date.getTime())) {
+        validStartDate = startDate
+      }
+    }
+    
+    let validEndDate: string | undefined = undefined
+    if (endDate && typeof endDate === 'string') {
+      const date = new Date(endDate)
+      if (!isNaN(date.getTime())) {
+        validEndDate = endDate
+      }
+    }
+    
+    const channelRankings = statsQueries.getChannelRankings(validDateField, validStartDate, validEndDate)
+    const timeStats = statsQueries.getTimeStats(validDateField, validStartDate, validEndDate)
+    const channelList = statsQueries.getChannelList(validDateField, validStartDate, validEndDate)
+    const totalDurationSeconds = statsQueries.getTotalDuration(validDateField, validStartDate, validEndDate)
 
     // Format total duration with days and months
     const SECONDS_PER_MINUTE = 60
@@ -119,7 +144,7 @@ router.get('/channels', (req, res) => {
 // Get all videos with optional filters
 router.get('/', (req, res) => {
   try {
-    const { state, search, sortBy, sortOrder, channels, page, limit } = req.query
+    const { state, search, sortBy, sortOrder, channels, page, limit, dateField, startDate, endDate } = req.query
     
     // Validate sortBy and sortOrder
     let validSortBy: 'published_at' | 'added_to_playlist_at' | undefined
@@ -130,6 +155,29 @@ router.get('/', (req, res) => {
     let validSortOrder: 'asc' | 'desc' | undefined
     if (sortOrder === 'asc' || sortOrder === 'desc') {
       validSortOrder = sortOrder
+    }
+    
+    // Validate dateField
+    let validDateField: 'published_at' | 'added_to_playlist_at' | undefined
+    if (dateField === 'published_at' || dateField === 'added_to_playlist_at') {
+      validDateField = dateField
+    }
+    
+    // Validate date strings (ISO format YYYY-MM-DD)
+    let validStartDate: string | undefined = undefined
+    if (startDate && typeof startDate === 'string') {
+      const date = new Date(startDate)
+      if (!isNaN(date.getTime())) {
+        validStartDate = startDate
+      }
+    }
+    
+    let validEndDate: string | undefined = undefined
+    if (endDate && typeof endDate === 'string') {
+      const date = new Date(endDate)
+      if (!isNaN(date.getTime())) {
+        validEndDate = endDate
+      }
     }
     
     // Parse channels - can be comma-separated string or array
@@ -151,7 +199,10 @@ router.get('/', (req, res) => {
     const total = videoQueries.getCount(
       state as string | undefined,
       search as string | undefined,
-      channelArray
+      channelArray,
+      validDateField,
+      validStartDate,
+      validEndDate
     )
     
     const totalPages = Math.ceil(total / limitNum)
@@ -164,7 +215,10 @@ router.get('/', (req, res) => {
       validSortOrder,
       channelArray,
       limitNum,
-      offsetNum
+      offsetNum,
+      validDateField,
+      validStartDate,
+      validEndDate
     )
     
     // Get tags and comments for each video
