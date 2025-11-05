@@ -25,9 +25,11 @@ export const videosAPI = {
     search?: string,
     sortBy?: 'published_at' | 'added_to_playlist_at',
     sortOrder?: 'asc' | 'desc',
-    channels?: string[]
+    channels?: string[],
+    page?: number,
+    limit?: number
   ) => {
-    const params: Record<string, string | string[]> = {}
+    const params: Record<string, string | string[] | number> = {}
     if (state) params.state = state
     if (search) params.search = search
     if (sortBy) params.sortBy = sortBy
@@ -35,6 +37,8 @@ export const videosAPI = {
     if (channels && channels.length > 0) {
       params.channels = channels
     }
+    if (page !== undefined) params.page = page
+    if (limit !== undefined) params.limit = limit
     const response = await api.get('/api/videos', { params })
     return response.data
   },

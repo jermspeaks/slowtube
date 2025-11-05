@@ -21,6 +21,8 @@ function Dashboard() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [availableChannels, setAvailableChannels] = useState<string[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -49,14 +51,19 @@ function Dashboard() {
   const loadVideos = async () => {
     try {
       setLoading(true)
-      const fetchedVideos = await videosAPI.getAll(
+      const response = await videosAPI.getAll(
         stateFilter === 'all' ? undefined : stateFilter,
         debouncedSearchQuery || undefined,
         sortBy || undefined,
         sortBy ? sortOrder : undefined,
-        selectedChannels.length > 0 ? selectedChannels : undefined
+        selectedChannels.length > 0 ? selectedChannels : undefined,
+        currentPage,
+        100
       )
-      setVideos(fetchedVideos)
+      setVideos(response.videos || [])
+      if (response.pagination) {
+        setTotalPages(response.pagination.totalPages || 1)
+      }
     } catch (error) {
       console.error('Error loading videos:', error)
       alert('Failed to load videos')
@@ -113,9 +120,14 @@ function Dashboard() {
   }, [searchQuery])
 
   useEffect(() => {
+    // Reset to page 1 when filters change
+    setCurrentPage(1)
+  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels])
+
+  useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels])
+  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage])
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -171,6 +183,39 @@ function Dashboard() {
                 onVideoClick={handleVideoClick}
                 onStateChange={handleStateChange}
               />
+            )}
+            {totalPages > 1 && (
+              <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-700">Page</span>
+                  <select
+                    value={currentPage}
+                    onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
+                    className="px-3 py-2 border border-gray-300 rounded text-sm"
+                  >
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <option key={page} value={page}>
+                        {page}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
             )}
           </>
         )}
