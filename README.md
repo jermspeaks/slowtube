@@ -15,6 +15,11 @@ A web application for managing your YouTube watch later list with tags, comments
 - Automatic daily refresh when app is open
 - Manual refresh option
 - Local SQLite persistence with automatic database migrations
+- **Statistics page** with analytics:
+  - Channel rankings (top channels by video count)
+  - Time statistics showing when videos were added (by hour, day of week, and month)
+  - Total watch time calculation
+  - Complete channel list
 
 ## Tech Stack
 
@@ -104,6 +109,29 @@ The application will be available at:
 6. Manage your videos with tags, comments, and state changes
 7. Click on any video to view full details and edit tags/comments
 8. Use the "Clear All Videos" button to delete all videos at once (use with caution)
+
+## Views
+
+### Dashboard
+The main view for browsing and managing your videos:
+- Filter videos by state (feed, inbox, archive, or all)
+- Filter by channel
+- Search by title or description
+- Sort by published date or date added
+- Switch between card and table views
+- Click on any video to view/edit details
+
+### Stats
+The statistics page provides analytics about your watch later videos:
+- **Total Watch Time**: Sum of all video durations (formatted as months, days, hours, minutes, and seconds)
+- **Channel Rankings**: Table showing top channels ranked by number of videos
+- **Time Statistics**: Visual charts and tables showing when you mark videos as "Watch Later":
+  - By hour of day (0-23)
+  - By day of week (Monday-Sunday)
+  - By month (January-December)
+- **Channel List**: Complete list of all unique channels in your watch later list
+
+All time statistics include both interactive bar charts (using recharts) and detailed tables for easy analysis.
 
 ## Database Migrations
 

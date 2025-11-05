@@ -25,3 +25,4 @@
 - Channel filter not filtering by the channel names
 - The "Filter with all, feed, inbox, and archive" need to now just be feed, inbox, and archive. No need to have "All" unless we are in group view.
 - Settings should be moved to the rightmost side, not left at all.
+- Migrate over to shadcn buttons everywhere
