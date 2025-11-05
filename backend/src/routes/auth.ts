@@ -4,12 +4,29 @@ import { oauthQueries } from '../services/database.js'
 
 const router = express.Router()
 
-// Initialize OAuth2 client
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/auth/youtube/callback'
-)
+// Get redirect URI from environment or use default
+const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/auth/youtube/callback'
+
+// Lazy initialization of OAuth2 client - only create when needed (after env vars are loaded)
+let oauth2Client: ReturnType<typeof google.auth.OAuth2> | null = null
+
+function getOAuth2Client() {
+  if (!oauth2Client) {
+    const clientId = process.env.GOOGLE_CLIENT_ID
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in environment variables')
+    }
+    
+    oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      REDIRECT_URI
+    )
+  }
+  return oauth2Client
+}
 
 // Get OAuth URL scopes
 const SCOPES = [
@@ -19,10 +36,12 @@ const SCOPES = [
 
 // Initiate OAuth flow
 router.get('/youtube', (req, res) => {
-  const authUrl = oauth2Client.generateAuthUrl({
+  const client = getOAuth2Client()
+  const authUrl = client.generateAuthUrl({
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent', // Force consent to get refresh token
+    redirect_uri: REDIRECT_URI, // Explicitly include redirect_uri
   })
   
   res.redirect(authUrl)
@@ -37,16 +56,20 @@ router.get('/youtube/callback', async (req, res) => {
   }
 
   try {
-    // Exchange code for tokens
-    const { tokens } = await oauth2Client.getToken(code)
+    const client = getOAuth2Client()
+    // Exchange code for tokens - explicitly pass redirect_uri to ensure it matches
+    const { tokens } = await client.getToken({
+      code: code,
+      redirect_uri: REDIRECT_URI,
+    })
     
     if (!tokens.access_token) {
       return res.status(400).json({ error: 'Failed to get access token' })
     }
 
     // Get user info
-    oauth2Client.setCredentials(tokens)
-    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
+    client.setCredentials(tokens)
+    const oauth2 = google.oauth2({ version: 'v2', auth: client })
     const userInfo = await oauth2.userinfo.get()
     const userId = userInfo.data.id || 'default'
 
@@ -91,11 +114,12 @@ router.get('/session', async (req, res) => {
         // Token expired, try to refresh
         if (session.refresh_token) {
           try {
-            oauth2Client.setCredentials({
+            const client = getOAuth2Client()
+            client.setCredentials({
               refresh_token: session.refresh_token,
             })
             
-            const { credentials } = await oauth2Client.refreshAccessToken()
+            const { credentials } = await client.refreshAccessToken()
             
             // Update session
             const newExpiresAt = credentials.expiry_date
@@ -147,11 +171,12 @@ export async function getAuthenticatedClient() {
     
     if (now >= expiresAt && session.refresh_token) {
       // Refresh token
-      oauth2Client.setCredentials({
+      const client = getOAuth2Client()
+      client.setCredentials({
         refresh_token: session.refresh_token,
       })
       
-      const { credentials } = await oauth2Client.refreshAccessToken()
+      const { credentials } = await client.refreshAccessToken()
       
       // Update session
       const newExpiresAt = credentials.expiry_date
@@ -164,17 +189,18 @@ export async function getAuthenticatedClient() {
         expires_at: newExpiresAt,
       })
 
-      oauth2Client.setCredentials(credentials)
-      return oauth2Client
+      client.setCredentials(credentials)
+      return client
     }
   }
 
-  oauth2Client.setCredentials({
+  const client = getOAuth2Client()
+  client.setCredentials({
     access_token: session.access_token,
     refresh_token: session.refresh_token,
   })
 
-  return oauth2Client
+  return client
 }
 
 export default router
