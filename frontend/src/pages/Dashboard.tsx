@@ -15,12 +15,14 @@ function Dashboard() {
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [stateFilter, setStateFilter] = useState<VideoState | 'all'>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [uploading, setUploading] = useState(false)
   const [fetchingDetails, setFetchingDetails] = useState(false)
   const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     // Check authentication
@@ -40,7 +42,7 @@ function Dashboard() {
       setLoading(true)
       const fetchedVideos = await videosAPI.getAll(
         stateFilter === 'all' ? undefined : stateFilter,
-        searchQuery || undefined,
+        debouncedSearchQuery || undefined,
         sortBy || undefined,
         sortBy ? sortOrder : undefined
       )
@@ -190,18 +192,27 @@ function Dashboard() {
     }
   }
 
+  // Debounce search query
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 500) // 500ms debounce
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [searchQuery])
+
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFilter, searchQuery, sortBy, sortOrder])
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div>Loading...</div>
-      </div>
-    )
-  }
+  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder])
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -292,7 +303,11 @@ function Dashboard() {
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>
 
-        {videos.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
+            <div className="text-lg text-gray-500">Loading videos...</div>
+          </div>
+        ) : videos.length === 0 ? (
           <div className="text-center py-[60px] px-5 bg-white rounded-lg">
             <p className="text-lg text-gray-500 mb-4">
               No videos found
