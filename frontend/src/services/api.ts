@@ -24,14 +24,22 @@ export const videosAPI = {
     state?: string,
     search?: string,
     sortBy?: 'published_at' | 'added_to_playlist_at',
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
+    channels?: string[]
   ) => {
-    const params: Record<string, string> = {}
+    const params: Record<string, string | string[]> = {}
     if (state) params.state = state
     if (search) params.search = search
     if (sortBy) params.sortBy = sortBy
     if (sortOrder) params.sortOrder = sortOrder
+    if (channels && channels.length > 0) {
+      params.channels = channels
+    }
     const response = await api.get('/api/videos', { params })
+    return response.data
+  },
+  getAllChannels: async () => {
+    const response = await api.get('/api/videos/channels')
     return response.data
   },
   getById: async (id: number) => {

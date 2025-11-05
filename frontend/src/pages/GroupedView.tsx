@@ -7,7 +7,7 @@ import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
 import ViewToggle from '../components/ViewToggle'
 
-function Dashboard() {
+function GroupedView() {
   const navigate = useNavigate()
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +68,17 @@ function Dashboard() {
     }
   }
 
+  const groupVideosByChannel = (videos: Video[]): Record<string, Video[]> => {
+    const grouped: Record<string, Video[]> = {}
+    videos.forEach(video => {
+      const channelTitle = video.channel_title || 'Unknown Channel'
+      if (!grouped[channelTitle]) {
+        grouped[channelTitle] = []
+      }
+      grouped[channelTitle].push(video)
+    })
+    return grouped
+  }
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -229,17 +240,20 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels])
 
+  const groupedVideos = groupVideosByChannel(videos)
+  const channelNames = Object.keys(groupedVideos).sort()
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white px-6 py-4 shadow-md mb-6">
         <div className="max-w-[1400px] mx-auto flex justify-between items-center flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <h1 className="m-0">YouTube Watch Later</h1>
+            <h1 className="m-0">YouTube Watch Later - Grouped View</h1>
             <Link
-              to="/grouped"
+              to="/dashboard"
               className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 underline"
             >
-              Grouped View
+              Standard View
             </Link>
           </div>
           <div className="flex gap-3 items-center flex-wrap">
@@ -392,20 +406,48 @@ function Dashboard() {
         ) : (
           <>
             {viewMode === 'card' ? (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
-                {videos.map(video => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    onClick={() => handleVideoClick(video)}
-                  />
+              <div className="space-y-8">
+                {channelNames.map(channelName => (
+                  <div key={channelName}>
+                    <div className="mb-4 pb-2 border-b-2 border-gray-300">
+                      <h2 className="text-xl font-bold text-gray-800">
+                        {channelName}
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          ({groupedVideos[channelName].length} {groupedVideos[channelName].length === 1 ? 'video' : 'videos'})
+                        </span>
+                      </h2>
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+                      {groupedVideos[channelName].map(video => (
+                        <VideoCard
+                          key={video.id}
+                          video={video}
+                          onClick={() => handleVideoClick(video)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
-              <VideoTable
-                videos={videos}
-                onVideoClick={handleVideoClick}
-              />
+              <div className="space-y-8">
+                {channelNames.map(channelName => (
+                  <div key={channelName}>
+                    <div className="mb-4 pb-2 border-b-2 border-gray-300">
+                      <h2 className="text-xl font-bold text-gray-800">
+                        {channelName}
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          ({groupedVideos[channelName].length} {groupedVideos[channelName].length === 1 ? 'video' : 'videos'})
+                        </span>
+                      </h2>
+                    </div>
+                    <VideoTable
+                      videos={groupedVideos[channelName]}
+                      onVideoClick={handleVideoClick}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </>
         )}
@@ -422,5 +464,5 @@ function Dashboard() {
   )
 }
 
-export default Dashboard
+export default GroupedView
 

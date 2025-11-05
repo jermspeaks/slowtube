@@ -26,10 +26,22 @@ const upload = multer({
   },
 })
 
+// Get all unique channels
+router.get('/channels', (req, res) => {
+  try {
+    const channels = videoQueries.getAllUniqueChannels()
+    const channelTitles = channels.map(c => c.channel_title).filter(Boolean)
+    res.json(channelTitles)
+  } catch (error) {
+    console.error('Error fetching channels:', error)
+    res.status(500).json({ error: 'Failed to fetch channels' })
+  }
+})
+
 // Get all videos with optional filters
 router.get('/', (req, res) => {
   try {
-    const { state, search, sortBy, sortOrder } = req.query
+    const { state, search, sortBy, sortOrder, channels } = req.query
     
     // Validate sortBy and sortOrder
     let validSortBy: 'published_at' | 'added_to_playlist_at' | undefined
@@ -42,11 +54,22 @@ router.get('/', (req, res) => {
       validSortOrder = sortOrder
     }
     
+    // Parse channels - can be comma-separated string or array
+    let channelArray: string[] | undefined = undefined
+    if (channels) {
+      if (typeof channels === 'string') {
+        channelArray = channels.split(',').map(c => c.trim()).filter(Boolean)
+      } else if (Array.isArray(channels)) {
+        channelArray = channels.map(c => String(c).trim()).filter(Boolean)
+      }
+    }
+    
     const videos = videoQueries.getAll(
       state as string | undefined,
       search as string | undefined,
       validSortBy,
-      validSortOrder
+      validSortOrder,
+      channelArray
     )
     
     // Get tags and comments for each video

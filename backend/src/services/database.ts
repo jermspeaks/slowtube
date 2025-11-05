@@ -53,7 +53,8 @@ export const videoQueries = {
     state?: string,
     search?: string,
     sortBy?: 'published_at' | 'added_to_playlist_at',
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
+    channels?: string[]
   ) => {
     // Build WHERE clause conditions
     const conditions: string[] = []
@@ -70,6 +71,13 @@ export const videoQueries = {
       conditions.push('(LOWER(v.title) LIKE ? OR LOWER(v.description) LIKE ?)')
       const searchTerm = `%${search.trim().toLowerCase()}%`
       params.push(searchTerm, searchTerm)
+    }
+
+    // Channel filter
+    if (channels && channels.length > 0) {
+      const placeholders = channels.map(() => '?').join(',')
+      conditions.push(`v.channel_title IN (${placeholders})`)
+      params.push(...channels)
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -181,6 +189,15 @@ export const videoQueries = {
   deleteAll: () => {
     // Delete all videos - cascading deletes will handle tags, comments, and video_states
     return db.prepare('DELETE FROM videos').run().changes
+  },
+
+  getAllUniqueChannels: () => {
+    return db.prepare(`
+      SELECT DISTINCT channel_title 
+      FROM videos 
+      WHERE channel_title IS NOT NULL AND channel_title != ''
+      ORDER BY channel_title ASC
+    `).all() as { channel_title: string }[]
   },
 }
 
