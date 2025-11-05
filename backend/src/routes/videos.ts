@@ -1,6 +1,6 @@
 import express from 'express'
 import multer from 'multer'
-import { videoQueries, tagQueries, commentQueries, videoStateQueries } from '../services/database.js'
+import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries } from '../services/database.js'
 import { importVideosFromTakeout, processBatchVideoFetch } from '../services/youtube.js'
 
 const router = express.Router()
@@ -24,6 +24,84 @@ const upload = multer({
       cb(new Error('Only JSON and CSV files are allowed'))
     }
   },
+})
+
+// Get stats
+router.get('/stats', (req, res) => {
+  try {
+    const channelRankings = statsQueries.getChannelRankings()
+    const timeStats = statsQueries.getTimeStats()
+    const channelList = statsQueries.getChannelList()
+    const totalDurationSeconds = statsQueries.getTotalDuration()
+
+    // Format total duration with days and months
+    const SECONDS_PER_MINUTE = 60
+    const SECONDS_PER_HOUR = 3600
+    const SECONDS_PER_DAY = 86400
+    const SECONDS_PER_MONTH = 2592000 // 30 days
+
+    const months = Math.floor(totalDurationSeconds / SECONDS_PER_MONTH)
+    const days = Math.floor((totalDurationSeconds % SECONDS_PER_MONTH) / SECONDS_PER_DAY)
+    const hours = Math.floor((totalDurationSeconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR)
+    const minutes = Math.floor((totalDurationSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE)
+    const seconds = totalDurationSeconds % SECONDS_PER_MINUTE
+
+    // Format duration string
+    const parts: string[] = []
+    if (months > 0) parts.push(`${months}mo`)
+    if (days > 0) parts.push(`${days}d`)
+    if (hours > 0) parts.push(`${hours}h`)
+    if (minutes > 0) parts.push(`${minutes}m`)
+    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`)
+
+    // Format time stats for frontend
+    // Fill in missing hours (0-23)
+    const hourData = Array.from({ length: 24 }, (_, i) => {
+      const existing = timeStats.byHour.find(h => h.hour === i)
+      return { hour: i, count: existing?.count || 0 }
+    })
+
+    // Fill in missing days (0-6, Sunday to Saturday)
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const dayOfWeekData = Array.from({ length: 7 }, (_, i) => {
+      const existing = timeStats.byDayOfWeek.find(d => d.day_of_week === i)
+      return { day_of_week: i, day_name: dayNames[i], count: existing?.count || 0 }
+    })
+
+    // Fill in missing months (1-12)
+    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    const monthData = Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1
+      const existing = timeStats.byMonth.find(m => m.month === month)
+      return { month, month_name: monthNames[month], count: existing?.count || 0 }
+    })
+
+    res.json({
+      channelRankings: channelRankings.map((r, index) => ({
+        rank: index + 1,
+        channel_title: r.channel_title,
+        count: r.count,
+      })),
+      timeStats: {
+        byHour: hourData,
+        byDayOfWeek: dayOfWeekData,
+        byMonth: monthData,
+      },
+      channelList: channelList.map(c => c.channel_title),
+      totalDuration: {
+        seconds: totalDurationSeconds,
+        months,
+        days,
+        hours,
+        minutes,
+        seconds_remainder: seconds,
+        formatted: parts.join(' '),
+      },
+    })
+  } catch (error) {
+    console.error('Error fetching stats:', error)
+    res.status(500).json({ error: 'Failed to fetch stats' })
+  }
 })
 
 // Get all unique channels

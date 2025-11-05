@@ -4,6 +4,7 @@
 - Create lists of subscribers so I can group WHICH videos I want to see by my grouping
 - Adding tags to channels so I can easily organize and filter by that
 - Channels view - seeing what channels I've added to watch later
+- Channel details - fetch the latest channel information
 - Better filters and sort view, since it's starting to clutter terrible.
 - Card and table view should be organized as different pages altogether. They serve different purposes.
 - Video player - we should add video player capability.
@@ -11,6 +12,9 @@
 - Export video information as markdown
 - Export channel information as markdown
 - Add favicon
+- Date range filter for dashboard, stats, and group views
+- Pagination! Might be good to only show 100 items at a time?
+
 
 ## Questions
 
@@ -19,3 +23,5 @@
 ## Bugs
 
 - Channel filter not filtering by the channel names
+- The "Filter with all, feed, inbox, and archive" need to now just be feed, inbox, and archive. No need to have "All" unless we are in group view.
+- Settings should be moved to the rightmost side, not left at all.

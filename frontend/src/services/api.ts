@@ -92,6 +92,10 @@ export const videosAPI = {
     const response = await api.delete('/api/videos/all')
     return response.data
   },
+  getStats: async () => {
+    const response = await api.get('/api/videos/stats')
+    return response.data
+  },
 }
 
 export default api

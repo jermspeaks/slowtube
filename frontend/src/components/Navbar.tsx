@@ -39,6 +39,16 @@ export function Navbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Stats Link */}
+        <Link to="/stats">
+          <Button
+            variant="ghost"
+            className={`gap-2 ${location.pathname === '/stats' ? 'bg-accent' : ''}`}
+          >
+            Stats
+          </Button>
+        </Link>
+
         {/* Settings Link */}
         <Link to="/settings">
           <Button

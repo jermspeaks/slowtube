@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import Stats from './pages/Stats'
 import GroupedView from './pages/GroupedView'
 import Settings from './pages/Settings'
 import { Navbar } from './components/Navbar'
@@ -15,6 +16,7 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/stats" element={<Stats />} />
         <Route path="/grouped" element={<GroupedView />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

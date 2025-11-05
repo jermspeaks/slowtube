@@ -322,3 +322,100 @@ export const oauthQueries = {
   },
 }
 
+// Parse human-readable duration string (e.g., "1h 23m 45s") to seconds
+function parseDurationToSeconds(duration: string): number {
+  if (!duration || typeof duration !== 'string') return 0
+  
+  let totalSeconds = 0
+  const hourMatch = duration.match(/(\d+)h/)
+  const minuteMatch = duration.match(/(\d+)m/)
+  const secondMatch = duration.match(/(\d+)s/)
+  
+  if (hourMatch) totalSeconds += parseInt(hourMatch[1], 10) * 3600
+  if (minuteMatch) totalSeconds += parseInt(minuteMatch[1], 10) * 60
+  if (secondMatch) totalSeconds += parseInt(secondMatch[1], 10)
+  
+  return totalSeconds
+}
+
+// Stats operations
+export const statsQueries = {
+  getChannelRankings: () => {
+    return db.prepare(`
+      SELECT 
+        channel_title,
+        COUNT(*) as count
+      FROM videos
+      WHERE channel_title IS NOT NULL AND channel_title != ''
+      GROUP BY channel_title
+      ORDER BY count DESC, channel_title ASC
+    `).all() as Array<{ channel_title: string; count: number }>
+  },
+
+  getTimeStats: () => {
+    // Get hour breakdown (0-23)
+    const hourStats = db.prepare(`
+      SELECT 
+        CAST(strftime('%H', added_to_playlist_at) AS INTEGER) as hour,
+        COUNT(*) as count
+      FROM videos
+      WHERE added_to_playlist_at IS NOT NULL
+      GROUP BY hour
+      ORDER BY hour ASC
+    `).all() as Array<{ hour: number; count: number }>
+
+    // Get day of week breakdown (0=Sunday, 1=Monday, ..., 6=Saturday)
+    const dayOfWeekStats = db.prepare(`
+      SELECT 
+        CAST(strftime('%w', added_to_playlist_at) AS INTEGER) as day_of_week,
+        COUNT(*) as count
+      FROM videos
+      WHERE added_to_playlist_at IS NOT NULL
+      GROUP BY day_of_week
+      ORDER BY day_of_week ASC
+    `).all() as Array<{ day_of_week: number; count: number }>
+
+    // Get month breakdown (1-12)
+    const monthStats = db.prepare(`
+      SELECT 
+        CAST(strftime('%m', added_to_playlist_at) AS INTEGER) as month,
+        COUNT(*) as count
+      FROM videos
+      WHERE added_to_playlist_at IS NOT NULL
+      GROUP BY month
+      ORDER BY month ASC
+    `).all() as Array<{ month: number; count: number }>
+
+    return {
+      byHour: hourStats,
+      byDayOfWeek: dayOfWeekStats,
+      byMonth: monthStats,
+    }
+  },
+
+  getChannelList: () => {
+    return db.prepare(`
+      SELECT DISTINCT channel_title
+      FROM videos
+      WHERE channel_title IS NOT NULL AND channel_title != ''
+      ORDER BY channel_title ASC
+    `).all() as Array<{ channel_title: string }>
+  },
+
+  getTotalDuration: () => {
+    // Get all durations (excluding null)
+    const videos = db.prepare(`
+      SELECT duration
+      FROM videos
+      WHERE duration IS NOT NULL AND duration != ''
+    `).all() as Array<{ duration: string }>
+
+    let totalSeconds = 0
+    for (const video of videos) {
+      totalSeconds += parseDurationToSeconds(video.duration)
+    }
+
+    return totalSeconds
+  },
+}
+
