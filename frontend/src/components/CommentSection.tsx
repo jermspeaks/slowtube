@@ -70,55 +70,33 @@ function CommentSection({
 
   return (
     <div>
-      <h3 style={{ marginBottom: '16px', fontWeight: 'bold' }}>Comments</h3>
+      <h3 className="mb-4 font-bold">Comments</h3>
       
-      <div style={{ marginBottom: '16px' }}>
+      <div className="mb-4">
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
           rows={3}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            border: '1px solid #ced4da',
-            borderRadius: '4px',
-            fontSize: '14px',
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            marginBottom: '8px'
-          }}
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-sans resize-y mb-2"
         />
         <button
           onClick={handleAddComment}
           disabled={!newComment.trim()}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: newComment.trim() ? 'pointer' : 'not-allowed',
-            opacity: newComment.trim() ? 1 : 0.5
-          }}
+          className="px-4 py-2 bg-blue-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Add Comment
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="flex flex-col gap-3">
         {comments.length === 0 ? (
-          <p style={{ color: '#6c757d', fontStyle: 'italic' }}>No comments yet</p>
+          <p className="text-gray-500 italic">No comments yet</p>
         ) : (
           comments.map(comment => (
             <div
               key={comment.id}
-              style={{
-                padding: '12px',
-                backgroundColor: '#f8f9fa',
-                borderRadius: '4px',
-                border: '1px solid #e9ecef'
-              }}
+              className="p-3 bg-gray-100 rounded border border-gray-200"
             >
               {editingId === comment.id ? (
                 <div>
@@ -126,31 +104,13 @@ function CommentSection({
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={3}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '1px solid #ced4da',
-                      borderRadius: '4px',
-                      fontSize: '14px',
-                      fontFamily: 'inherit',
-                      resize: 'vertical',
-                      marginBottom: '8px'
-                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-sans resize-y mb-2"
                   />
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="flex gap-2">
                     <button
                       onClick={() => handleSaveEdit(comment.id)}
                       disabled={!editContent.trim()}
-                      style={{
-                        padding: '4px 12px',
-                        backgroundColor: '#28a745',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: editContent.trim() ? 'pointer' : 'not-allowed',
-                        opacity: editContent.trim() ? 1 : 0.5,
-                        fontSize: '12px'
-                      }}
+                      className="px-3 py-1 bg-green-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed text-xs"
                     >
                       Save
                     </button>
@@ -159,15 +119,7 @@ function CommentSection({
                         setEditingId(null)
                         setEditContent('')
                       }}
-                      style={{
-                        padding: '4px 12px',
-                        backgroundColor: '#6c757d',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px'
-                      }}
+                      className="px-3 py-1 bg-gray-500 text-white border-none rounded cursor-pointer text-xs"
                     >
                       Cancel
                     </button>
@@ -175,37 +127,21 @@ function CommentSection({
                 </div>
               ) : (
                 <div>
-                  <p style={{ marginBottom: '8px', whiteSpace: 'pre-wrap' }}>{comment.content}</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', color: '#6c757d' }}>
+                  <p className="mb-2 whitespace-pre-wrap">{comment.content}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
                       {format(new Date(comment.created_at), 'MMM d, yyyy HH:mm')}
                     </span>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleStartEdit(comment)}
-                        style={{
-                          padding: '4px 8px',
-                          backgroundColor: 'transparent',
-                          color: '#007bff',
-                          border: '1px solid #007bff',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
+                        className="px-2 py-1 bg-transparent text-blue-500 border border-blue-500 rounded cursor-pointer text-xs"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(comment.id)}
-                        style={{
-                          padding: '4px 8px',
-                          backgroundColor: 'transparent',
-                          color: '#dc3545',
-                          border: '1px solid #dc3545',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
+                        className="px-2 py-1 bg-transparent text-red-500 border border-red-500 rounded cursor-pointer text-xs"
                       >
                         Delete
                       </button>

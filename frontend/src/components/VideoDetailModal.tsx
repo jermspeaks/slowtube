@@ -58,95 +58,57 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
     })
   }
 
-  const getStateColor = (state?: string | null) => {
+  const getStateColorClasses = (state?: string | null) => {
     switch (state) {
-      case 'feed': return '#28a745'
-      case 'inbox': return '#ffc107'
-      case 'archive': return '#6c757d'
-      default: return '#6c757d'
+      case 'feed': return 'bg-green-500'
+      case 'inbox': return 'bg-yellow-500'
+      case 'archive': return 'bg-gray-500'
+      default: return 'bg-gray-500'
     }
   }
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        padding: '20px'
-      }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] p-5"
       onClick={onClose}
     >
       <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          maxWidth: '800px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-        }}
+        className="bg-white rounded-lg max-w-[800px] w-full max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '20px' }}>
-            <h2 style={{ margin: 0, flex: 1 }}>{video.title}</h2>
+        <div className="p-6">
+          <div className="flex justify-between items-start mb-5">
+            <h2 className="m-0 flex-1">{video.title}</h2>
             <button
               onClick={onClose}
-              style={{
-                border: 'none',
-                background: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                padding: '0',
-                marginLeft: '16px',
-                color: '#6c757d'
-              }}
+              className="border-none bg-transparent text-2xl cursor-pointer p-0 ml-4 text-gray-500"
             >
               ×
             </button>
           </div>
 
           {video.thumbnail_url && (
-            <div style={{ marginBottom: '20px' }}>
+            <div className="mb-5">
               <img
                 src={video.thumbnail_url}
                 alt={video.title}
-                style={{
-                  width: '100%',
-                  maxHeight: '400px',
-                  objectFit: 'contain',
-                  borderRadius: '4px'
-                }}
+                className="w-full max-h-[400px] object-contain rounded"
               />
             </div>
           )}
 
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>State</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="mb-5">
+            <h3 className="mb-2 text-sm font-bold">State</h3>
+            <div className="flex gap-2">
               {(['feed', 'inbox', 'archive'] as VideoState[]).map(state => (
                 <button
                   key={state}
                   onClick={() => handleStateChange(state)}
-                  style={{
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontWeight: video.state === state ? 'bold' : 'normal',
-                    backgroundColor: video.state === state ? getStateColor(state) : '#e9ecef',
-                    color: video.state === state ? 'white' : '#333',
-                    textTransform: 'capitalize'
-                  }}
+                  className={`px-4 py-2 border-none rounded cursor-pointer capitalize ${
+                    video.state === state
+                      ? `${getStateColorClasses(state)} text-white font-bold`
+                      : 'bg-gray-200 text-gray-800'
+                  }`}
                 >
                   {state}
                 </button>
@@ -155,15 +117,15 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
           </div>
 
           {video.description && (
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Description</h3>
-              <p style={{ color: '#495057', whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>
+            <div className="mb-5">
+              <h3 className="mb-2 text-sm font-bold">Description</h3>
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                 {video.description}
               </p>
             </div>
           )}
 
-          <div style={{ marginBottom: '20px' }}>
+          <div className="mb-5">
             <TagInput
               videoId={video.id}
               existingTags={video.tags || []}
@@ -172,7 +134,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
+          <div className="mb-5">
             <CommentSection
               videoId={video.id}
               comments={video.comments || []}
@@ -182,7 +144,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: '#6c757d', flexWrap: 'wrap' }}>
+          <div className="flex gap-4 text-xs text-gray-500 flex-wrap">
             {video.duration && <span>Duration: {video.duration}</span>}
             {video.published_at && (
               <span>Published: {format(new Date(video.published_at), 'MMM d, yyyy')}</span>
@@ -191,7 +153,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
               href={`https://www.youtube.com/watch?v=${video.youtube_id}`}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: '#007bff', textDecoration: 'none' }}
+              className="text-blue-500 no-underline"
             >
               Watch on YouTube →
             </a>

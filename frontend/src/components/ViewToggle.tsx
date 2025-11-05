@@ -7,38 +7,24 @@ interface ViewToggleProps {
 
 function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps) {
   return (
-    <div style={{
-      display: 'flex',
-      gap: '8px',
-      padding: '8px',
-      backgroundColor: '#f0f0f0',
-      borderRadius: '4px'
-    }}>
+    <div className="flex gap-2 p-2 bg-gray-200 rounded">
       <button
         onClick={() => onViewModeChange('card')}
-        style={{
-          padding: '8px 16px',
-          border: 'none',
-          borderRadius: '4px',
-          backgroundColor: viewMode === 'card' ? '#007bff' : 'transparent',
-          color: viewMode === 'card' ? 'white' : '#333',
-          cursor: 'pointer',
-          fontWeight: viewMode === 'card' ? 'bold' : 'normal'
-        }}
+        className={`px-4 py-2 border-none rounded cursor-pointer ${
+          viewMode === 'card'
+            ? 'bg-blue-500 text-white font-bold'
+            : 'bg-transparent text-gray-800'
+        }`}
       >
         Cards
       </button>
       <button
         onClick={() => onViewModeChange('table')}
-        style={{
-          padding: '8px 16px',
-          border: 'none',
-          borderRadius: '4px',
-          backgroundColor: viewMode === 'table' ? '#007bff' : 'transparent',
-          color: viewMode === 'table' ? 'white' : '#333',
-          cursor: 'pointer',
-          fontWeight: viewMode === 'table' ? 'bold' : 'normal'
-        }}
+        className={`px-4 py-2 border-none rounded cursor-pointer ${
+          viewMode === 'table'
+            ? 'bg-blue-500 text-white font-bold'
+            : 'bg-transparent text-gray-800'
+        }`}
       >
         Table
       </button>

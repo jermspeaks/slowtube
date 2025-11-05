@@ -24,68 +24,30 @@ function Login() {
   const authSuccess = searchParams.get('auth') === 'success'
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      minHeight: '100vh',
-      padding: '20px'
-    }}>
-      <div style={{
-        maxWidth: '400px',
-        width: '100%',
-        padding: '40px',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
-      }}>
-        <h1 style={{ marginBottom: '20px', textAlign: 'center' }}>
+    <div className="flex flex-col items-center justify-center min-h-screen p-5">
+      <div className="max-w-[400px] w-full p-10 bg-white rounded-lg shadow-lg">
+        <h1 className="mb-5 text-center">
           YouTube Watch Later
         </h1>
-        <p style={{ marginBottom: '30px', textAlign: 'center', color: '#666' }}>
+        <p className="mb-8 text-center text-gray-600">
           Connect your YouTube account to import your watch later playlist
         </p>
         
         {error && (
-          <div style={{
-            padding: '12px',
-            marginBottom: '20px',
-            backgroundColor: '#fee',
-            color: '#c33',
-            borderRadius: '4px',
-            textAlign: 'center'
-          }}>
+          <div className="p-3 mb-5 bg-red-50 text-red-700 rounded text-center">
             Authentication failed. Please try again.
           </div>
         )}
 
         {authSuccess && (
-          <div style={{
-            padding: '12px',
-            marginBottom: '20px',
-            backgroundColor: '#efe',
-            color: '#3c3',
-            borderRadius: '4px',
-            textAlign: 'center'
-          }}>
+          <div className="p-3 mb-5 bg-green-50 text-green-700 rounded text-center">
             Successfully connected! Redirecting...
           </div>
         )}
 
         <button
           onClick={handleConnect}
-          style={{
-            width: '100%',
-            padding: '12px 24px',
-            backgroundColor: '#ff0000',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '16px',
-            cursor: 'pointer',
-            fontWeight: 'bold'
-          }}
+          className="w-full px-6 py-3 bg-red-600 text-white border-none rounded text-base cursor-pointer font-bold"
         >
           Connect with YouTube
         </button>

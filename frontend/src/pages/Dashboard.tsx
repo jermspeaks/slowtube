@@ -189,44 +189,20 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh'
-      }}>
+      <div className="flex justify-center items-center min-h-screen">
         <div>Loading...</div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f5f5f5' }}>
-      <header style={{
-        backgroundColor: 'white',
-        padding: '16px 24px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        marginBottom: '24px'
-      }}>
-        <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px'
-        }}>
-          <h1 style={{ margin: 0 }}>YouTube Watch Later</h1>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-white px-6 py-4 shadow-md mb-6">
+        <div className="max-w-[1400px] mx-auto flex justify-between items-center flex-wrap gap-4">
+          <h1 className="m-0">YouTube Watch Later</h1>
+          <div className="flex gap-3 items-center flex-wrap">
             {fetchingDetails && fetchProgress && (
-              <div style={{
-                padding: '8px 16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                borderRadius: '4px',
-                fontSize: '14px'
-              }}>
+              <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
                 Fetching details... {fetchProgress.remaining} remaining
               </div>
             )}
@@ -235,33 +211,18 @@ function Dashboard() {
               type="file"
               accept=".json,.csv,application/json,text/csv"
               onChange={handleFileSelect}
-              style={{ display: 'none' }}
+              className="hidden"
             />
             <button
               onClick={handleClearAll}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#dc3545',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
+              className="px-4 py-2 bg-red-500 text-white border-none rounded cursor-pointer"
             >
               Clear All Videos
             </button>
             <button
               onClick={handleImportClick}
               disabled={uploading || fetchingDetails}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: (uploading || fetchingDetails) ? 'not-allowed' : 'pointer',
-                opacity: (uploading || fetchingDetails) ? 0.5 : 1
-              }}
+              className="px-4 py-2 bg-green-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? 'Uploading...' : 'Import Google Takeout File'}
             </button>
@@ -269,26 +230,14 @@ function Dashboard() {
         </div>
       </header>
 
-      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 24px 24px' }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
-          flexWrap: 'wrap',
-          gap: '16px'
-        }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <label style={{ fontWeight: 'bold', marginRight: '8px' }}>Filter:</label>
+      <main className="max-w-[1400px] mx-auto px-6 pb-6">
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+          <div className="flex gap-2 items-center">
+            <label className="font-bold mr-2">Filter:</label>
             <select
               value={stateFilter}
               onChange={(e) => setStateFilter(e.target.value as VideoState | 'all')}
-              style={{
-                padding: '8px 12px',
-                border: '1px solid #ced4da',
-                borderRadius: '4px',
-                fontSize: '14px'
-              }}
+              className="px-3 py-2 border border-gray-300 rounded text-sm"
             >
               <option value="all">All</option>
               <option value="feed">Feed</option>
@@ -300,13 +249,8 @@ function Dashboard() {
         </div>
 
         {videos.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '60px 20px',
-            backgroundColor: 'white',
-            borderRadius: '8px'
-          }}>
-            <p style={{ fontSize: '18px', color: '#6c757d', marginBottom: '16px' }}>
+          <div className="text-center py-[60px] px-5 bg-white rounded-lg">
+            <p className="text-lg text-gray-500 mb-4">
               No videos found
             </p>
             <div>
@@ -315,25 +259,16 @@ function Dashboard() {
                 type="file"
                 accept=".json,.csv,application/json,text/csv"
                 onChange={handleFileSelect}
-                style={{ display: 'none' }}
+                className="hidden"
               />
               <button
                 onClick={handleImportClick}
                 disabled={uploading}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#007bff',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: uploading ? 'not-allowed' : 'pointer',
-                  fontSize: '16px',
-                  opacity: uploading ? 0.5 : 1
-                }}
+                className="px-6 py-3 bg-blue-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed text-base"
               >
                 {uploading ? 'Uploading...' : 'Import Google Takeout File'}
               </button>
-              <p style={{ fontSize: '14px', color: '#6c757d', marginTop: '12px' }}>
+              <p className="text-sm text-gray-500 mt-3">
                 Upload your watch-history.json or watch-history.csv file from Google Takeout
               </p>
             </div>
@@ -341,11 +276,7 @@ function Dashboard() {
         ) : (
           <>
             {viewMode === 'card' ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '24px'
-              }}>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
                 {videos.map(video => (
                   <VideoCard
                     key={video.id}

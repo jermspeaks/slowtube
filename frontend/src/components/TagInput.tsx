@@ -80,44 +80,28 @@ function TagInput({ videoId, existingTags, onTagAdded, onTagRemoved }: TagInputP
   }
 
   return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ marginBottom: '12px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+    <div className="relative">
+      <div className="mb-3">
+        <label className="block mb-2 font-bold">
           Tags
         </label>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+        <div className="flex gap-2 flex-wrap mb-2">
           {existingTags.map(tag => (
             <span
               key={tag.id}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-                backgroundColor: '#e9ecef',
-                borderRadius: '16px',
-                fontSize: '14px'
-              }}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 rounded-full text-sm"
             >
               {tag.name}
               <button
                 onClick={() => handleRemoveTag(tag.id)}
-                style={{
-                  border: 'none',
-                  background: 'none',
-                  cursor: 'pointer',
-                  padding: '0',
-                  marginLeft: '4px',
-                  fontSize: '16px',
-                  color: '#6c757d'
-                }}
+                className="border-none bg-transparent cursor-pointer p-0 ml-1 text-base text-gray-500"
               >
                 ×
               </button>
             </span>
           ))}
         </div>
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <input
             ref={inputRef}
             type="text"
@@ -128,46 +112,19 @@ function TagInput({ videoId, existingTags, onTagAdded, onTagRemoved }: TagInputP
               if (suggestions.length > 0) setShowSuggestions(true)
             }}
             placeholder="Add a tag..."
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #ced4da',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
           />
           {showSuggestions && suggestions.length > 0 && (
-            <div style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              backgroundColor: 'white',
-              border: '1px solid #ced4da',
-              borderRadius: '4px',
-              marginTop: '4px',
-              maxHeight: '200px',
-              overflowY: 'auto',
-              zIndex: 1000,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-            }}>
+            <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded mt-1 max-h-[200px] overflow-y-auto z-[1000] shadow-md">
               {suggestions.map((suggestion, index) => (
                 <div
                   key={index}
                   onClick={() => {
                     handleAddTag(suggestion)
                   }}
-                  style={{
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderBottom: index < suggestions.length - 1 ? '1px solid #e9ecef' : 'none'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8f9fa'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'white'
-                  }}
+                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
+                    index < suggestions.length - 1 ? 'border-b border-gray-200' : ''
+                  }`}
                 >
                   {suggestion}
                 </div>
