@@ -285,9 +285,16 @@ function Dashboard() {
                     setSortBy(null)
                     setSortOrder('asc')
                   } else {
-                    const [by, order] = value.split('_') as ['published_at' | 'added_to_playlist_at', 'asc' | 'desc']
-                    setSortBy(by)
-                    setSortOrder(order)
+                    // Split from the end - last part is order, rest is sortBy
+                    const lastUnderscoreIndex = value.lastIndexOf('_')
+                    if (lastUnderscoreIndex !== -1) {
+                      const by = value.substring(0, lastUnderscoreIndex) as 'published_at' | 'added_to_playlist_at'
+                      const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
+                      if ((by === 'published_at' || by === 'added_to_playlist_at') && (order === 'asc' || order === 'desc')) {
+                        setSortBy(by)
+                        setSortOrder(order)
+                      }
+                    }
                   }
                 }}
                 className="px-3 py-2 border border-gray-300 rounded text-sm"
