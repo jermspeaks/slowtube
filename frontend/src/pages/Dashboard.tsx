@@ -6,6 +6,7 @@ import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
 import ViewToggle from '../components/ViewToggle'
+import FiltersAndSort from '../components/FiltersAndSort'
 
 function Dashboard() {
   const navigate = useNavigate()
@@ -13,7 +14,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
-  const [stateFilter, setStateFilter] = useState<VideoState | 'all'>('all')
+  const [stateFilter, setStateFilter] = useState<VideoState | 'all'>('feed')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
@@ -83,6 +84,17 @@ function Dashboard() {
     }
   }
 
+  const handleStateChange = (updatedVideo: Video) => {
+    // Update the video in the list
+    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
+    // If the video is selected, update it too
+    if (selectedVideo?.id === updatedVideo.id) {
+      setSelectedVideo(updatedVideo)
+    }
+    // Reload videos to ensure the list is up to date
+    loadVideos()
+  }
+
   // Debounce search query
   useEffect(() => {
     if (searchTimeoutRef.current) {
@@ -108,89 +120,21 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <div className="flex gap-2 items-center flex-wrap">
-            <div className="flex gap-2 items-center">
-              <label className="font-bold mr-2">Filter:</label>
-              <select
-                value={stateFilter}
-                onChange={(e) => setStateFilter(e.target.value as VideoState | 'all')}
-                className="px-3 py-2 border border-gray-300 rounded text-sm"
-              >
-                <option value="all">All</option>
-                <option value="feed">Feed</option>
-                <option value="inbox">Inbox</option>
-                <option value="archive">Archive</option>
-              </select>
-            </div>
-            <div className="flex gap-2 items-center">
-              <label className="font-bold mr-2">Channels:</label>
-              <select
-                multiple
-                value={selectedChannels}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions, option => option.value)
-                  setSelectedChannels(selected)
-                }}
-                className="px-3 py-2 border border-gray-300 rounded text-sm min-w-[200px] max-h-[120px]"
-                size={Math.min(availableChannels.length, 5)}
-              >
-                {availableChannels.map(channel => (
-                  <option key={channel} value={channel}>
-                    {channel}
-                  </option>
-                ))}
-              </select>
-              {selectedChannels.length > 0 && (
-                <button
-                  onClick={() => setSelectedChannels([])}
-                  className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="flex gap-2 items-center">
-              <label className="font-bold mr-2">Search:</label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by title or description..."
-                className="px-3 py-2 border border-gray-300 rounded text-sm min-w-[200px]"
-              />
-            </div>
-            <div className="flex gap-2 items-center">
-              <label className="font-bold mr-2">Sort:</label>
-              <select
-                value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
-                onChange={(e) => {
-                  const value = e.target.value
-                  if (value === 'none') {
-                    setSortBy(null)
-                    setSortOrder('asc')
-                  } else {
-                    // Split from the end - last part is order, rest is sortBy
-                    const lastUnderscoreIndex = value.lastIndexOf('_')
-                    if (lastUnderscoreIndex !== -1) {
-                      const by = value.substring(0, lastUnderscoreIndex) as 'published_at' | 'added_to_playlist_at'
-                      const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
-                      if ((by === 'published_at' || by === 'added_to_playlist_at') && (order === 'asc' || order === 'desc')) {
-                        setSortBy(by)
-                        setSortOrder(order)
-                      }
-                    }
-                  }
-                }}
-                className="px-3 py-2 border border-gray-300 rounded text-sm"
-              >
-                <option value="none">None</option>
-                <option value="published_at_desc">Date Published (Newest)</option>
-                <option value="published_at_asc">Date Published (Oldest)</option>
-                <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
-                <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
-              </select>
-            </div>
+        <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
+          <div className="flex-1 min-w-0">
+            <FiltersAndSort
+              stateFilter={stateFilter}
+              onStateFilterChange={setStateFilter}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              selectedChannels={selectedChannels}
+              onSelectedChannelsChange={setSelectedChannels}
+              availableChannels={availableChannels}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+            />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>
@@ -217,6 +161,7 @@ function Dashboard() {
                     key={video.id}
                     video={video}
                     onClick={() => handleVideoClick(video)}
+                    onStateChange={handleStateChange}
                   />
                 ))}
               </div>
@@ -224,6 +169,7 @@ function Dashboard() {
               <VideoTable
                 videos={videos}
                 onVideoClick={handleVideoClick}
+                onStateChange={handleStateChange}
               />
             )}
           </>
