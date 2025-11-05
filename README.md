@@ -15,10 +15,11 @@ A web application for managing your YouTube watch later list with tags, comments
 
 ## Tech Stack
 
-- **Frontend**: Vite + React + TypeScript
+- **Frontend**: Vite + React + TypeScript + Tailwind CSS
 - **Backend**: Node.js + Express + TypeScript
 - **Database**: SQLite
 - **Authentication**: YouTube OAuth 2.0
+- **Styling**: Tailwind CSS
 
 ## Setup
 
@@ -47,6 +48,11 @@ npm install
 cd ../frontend
 npm install
 ```
+
+**Note**: Tailwind CSS is already configured in this project. The frontend uses Tailwind CSS for all styling. Configuration files:
+- `frontend/tailwind.config.js` - Tailwind configuration
+- `frontend/postcss.config.js` - PostCSS configuration
+- `frontend/src/index.css` - Contains Tailwind directives
 
 4. Configure environment variables:
 ```bash
