@@ -12,7 +12,7 @@
 - [ ] Export channel information as markdown
 - [ ] Add favicon
 - [ ] Date range filter for dashboard, stats, and group views
-- [ ] Pagination! Might be good to only show 100 items at a time?
+- [x] Pagination! Might be good to only show 100 items at a time?
 
 
 ## Questions
@@ -21,7 +21,7 @@
 
 ## Bugs
 
-- [ ] Better filters and sort view, since it's starting to clutter terrible. We should have a show more, so only show most prominent items on top. It should all be in a different background color. 
+- [x] Better filters and sort view, since it's starting to clutter terrible. We should have a show more, so only show most prominent items on top. It should all be in a different background color. 
 - [ ] Channel filter not filtering by the channel names
 - [ ] The "Filter with all, feed, inbox, and archive" need to now just be feed, inbox, and archive. No need to have "All" unless we are in group view.
 - [ ] Settings should be moved to the rightmost side, not left at all.

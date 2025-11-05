@@ -54,7 +54,9 @@ export const videoQueries = {
     search?: string,
     sortBy?: 'published_at' | 'added_to_playlist_at',
     sortOrder?: 'asc' | 'desc',
-    channels?: string[]
+    channels?: string[],
+    limit?: number,
+    offset?: number
   ) => {
     // Build WHERE clause conditions
     const conditions: string[] = []
@@ -92,15 +94,69 @@ export const videoQueries = {
         v.${sortBy} ${order}`
     }
 
+    // Build LIMIT and OFFSET clauses
+    let limitClause = ''
+    if (limit !== undefined) {
+      limitClause = `LIMIT ?`
+      params.push(limit)
+      if (offset !== undefined) {
+        limitClause += ` OFFSET ?`
+        params.push(offset)
+      }
+    }
+
     const query = `
       SELECT v.*, vs.state 
       FROM videos v
       LEFT JOIN video_states vs ON v.id = vs.video_id
       ${whereClause}
       ${orderBy}
+      ${limitClause}
     `
 
     return db.prepare(query).all(...params) as (Video & { state: string | null })[]
+  },
+
+  getCount: (
+    state?: string,
+    search?: string,
+    channels?: string[]
+  ) => {
+    // Build WHERE clause conditions (same as getAll)
+    const conditions: string[] = []
+    const params: any[] = []
+
+    // State filter
+    if (state) {
+      conditions.push('vs.state = ?')
+      params.push(state)
+    }
+
+    // Search filter (case-insensitive search on title and description)
+    if (search && search.trim()) {
+      conditions.push('(LOWER(v.title) LIKE ? OR LOWER(v.description) LIKE ?)')
+      const searchTerm = `%${search.trim().toLowerCase()}%`
+      params.push(searchTerm, searchTerm)
+    }
+
+    // Channel filter
+    if (channels && channels.length > 0) {
+      const placeholders = channels.map(() => '?').join(',')
+      conditions.push(`v.channel_title IN (${placeholders})`)
+      params.push(...channels)
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const query = `
+      SELECT COUNT(*) as count
+      FROM videos v
+      LEFT JOIN video_states vs ON v.id = vs.video_id
+      ${whereClause}
+    `
+
+    const result = db.prepare(query).get(...params) as { count: number }
+    return result.count
   },
 
   getById: (id: number) => {

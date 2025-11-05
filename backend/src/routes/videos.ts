@@ -119,7 +119,7 @@ router.get('/channels', (req, res) => {
 // Get all videos with optional filters
 router.get('/', (req, res) => {
   try {
-    const { state, search, sortBy, sortOrder, channels } = req.query
+    const { state, search, sortBy, sortOrder, channels, page, limit } = req.query
     
     // Validate sortBy and sortOrder
     let validSortBy: 'published_at' | 'added_to_playlist_at' | undefined
@@ -142,12 +142,29 @@ router.get('/', (req, res) => {
       }
     }
     
+    // Parse pagination parameters
+    const pageNum = page ? parseInt(String(page), 10) : 1
+    const limitNum = limit ? parseInt(String(limit), 10) : 100
+    const offsetNum = (pageNum - 1) * limitNum
+    
+    // Get total count for pagination metadata
+    const total = videoQueries.getCount(
+      state as string | undefined,
+      search as string | undefined,
+      channelArray
+    )
+    
+    const totalPages = Math.ceil(total / limitNum)
+    
+    // Get paginated videos
     const videos = videoQueries.getAll(
       state as string | undefined,
       search as string | undefined,
       validSortBy,
       validSortOrder,
-      channelArray
+      channelArray,
+      limitNum,
+      offsetNum
     )
     
     // Get tags and comments for each video
@@ -162,7 +179,15 @@ router.get('/', (req, res) => {
       }
     })
 
-    res.json(videosWithDetails)
+    res.json({
+      videos: videosWithDetails,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      },
+    })
   } catch (error) {
     console.error('Error fetching videos:', error)
     res.status(500).json({ error: 'Failed to fetch videos' })
