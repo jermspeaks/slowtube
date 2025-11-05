@@ -1,4 +1,4 @@
-import { Video, VideoState } from '../types/video'
+import { Video, VideoState, Comment } from '../types/video'
 import { videosAPI } from '../services/api'
 import TagInput from './TagInput'
 import CommentSection from './CommentSection'
@@ -37,14 +37,14 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
     })
   }
 
-  const handleCommentAdded = (comment: typeof video.comments![0]) => {
+  const handleCommentAdded = (comment: Comment) => {
     onVideoUpdated({
       ...video,
       comments: [...(video.comments || []), comment]
     })
   }
 
-  const handleCommentUpdated = (comment: typeof video.comments![0]) => {
+  const handleCommentUpdated = (comment: Comment) => {
     onVideoUpdated({
       ...video,
       comments: video.comments?.map(c => c.id === comment.id ? comment : c) || []
