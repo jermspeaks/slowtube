@@ -149,6 +149,11 @@ export const videoQueries = {
     `).get() as { count: number }
     return result.count
   },
+
+  deleteAll: () => {
+    // Delete all videos - cascading deletes will handle tags, comments, and video_states
+    return db.prepare('DELETE FROM videos').run().changes
+  },
 }
 
 // Tag operations

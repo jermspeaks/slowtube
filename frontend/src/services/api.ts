@@ -71,6 +71,10 @@ export const videosAPI = {
     const response = await api.delete(`/api/videos/${videoId}/comments/${commentId}`)
     return response.data
   },
+  deleteAll: async () => {
+    const response = await api.delete('/api/videos/all')
+    return response.data
+  },
 }
 
 export default api

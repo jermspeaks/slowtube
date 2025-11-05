@@ -337,4 +337,18 @@ router.delete('/:id/comments/:commentId', (req, res) => {
   }
 })
 
+// Delete all videos (for testing purposes)
+router.delete('/all', (req, res) => {
+  try {
+    const deletedCount = videoQueries.deleteAll()
+    res.json({ 
+      message: 'All videos deleted successfully',
+      deletedCount 
+    })
+  } catch (error) {
+    console.error('Error deleting all videos:', error)
+    res.status(500).json({ error: 'Failed to delete all videos' })
+  }
+})
+
 export default router

@@ -165,6 +165,23 @@ function Dashboard() {
     }
   }
 
+  const handleClearAll = async () => {
+    if (!window.confirm('Are you sure you want to delete all videos? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await videosAPI.deleteAll()
+      setVideos([])
+      setSelectedVideo(null)
+      alert('All videos have been deleted successfully.')
+    } catch (error: any) {
+      console.error('Error clearing videos:', error)
+      const errorMessage = error.response?.data?.error || 'Failed to clear videos'
+      alert(errorMessage)
+    }
+  }
+
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -220,6 +237,19 @@ function Dashboard() {
               onChange={handleFileSelect}
               style={{ display: 'none' }}
             />
+            <button
+              onClick={handleClearAll}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Clear All Videos
+            </button>
             <button
               onClick={handleImportClick}
               disabled={uploading || fetchingDetails}
