@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Video, VideoState, ViewMode } from '../types/video'
 import { authAPI, videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
@@ -20,10 +20,6 @@ function GroupedView() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [availableChannels, setAvailableChannels] = useState<string[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [fetchingDetails, setFetchingDetails] = useState(false)
-  const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -80,108 +76,6 @@ function GroupedView() {
     return grouped
   }
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    const isJson = file.name.endsWith('.json') || file.type === 'application/json'
-    const isCsv = file.name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/csv'
-    
-    if (!isJson && !isCsv) {
-      alert('Please upload a JSON or CSV file (Google Takeout watch-history.json or watch-history.csv)')
-      return
-    }
-
-    try {
-      setUploading(true)
-      const result = await videosAPI.import(file)
-      console.log('Import result:', result)
-      
-      // Ensure we're showing all videos or at least 'feed' videos to see newly imported ones
-      if (stateFilter !== 'all' && stateFilter !== 'feed') {
-        setStateFilter('feed')
-      }
-      
-      await loadChannels()
-      await loadVideos()
-      
-      const message = result.imported > 0 || result.updated > 0
-        ? `Videos imported successfully! ${result.imported} new, ${result.updated} updated.`
-        : 'No new videos to import.'
-      
-      // Start fetching video details if there are videos queued
-      if (result.fetchQueued > 0) {
-        setFetchingDetails(true)
-        setFetchProgress({ remaining: result.fetchQueued, processed: 0, unavailable: 0 })
-        // Start fetching details in background
-        fetchVideoDetailsInBackground()
-      } else {
-        alert(message)
-      }
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    } catch (error: any) {
-      console.error('Error importing videos:', error)
-      const errorMessage = error.response?.data?.error || 'Failed to import videos'
-      alert(errorMessage)
-      
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click()
-  }
-
-  const fetchVideoDetailsInBackground = async () => {
-    try {
-      let totalProcessed = 0
-      let totalUnavailable = 0
-      
-      while (true) {
-        const result = await videosAPI.fetchDetails()
-        
-        totalProcessed += result.processed || 0
-        totalUnavailable += result.unavailable || 0
-        
-        setFetchProgress({
-          remaining: result.remaining || 0,
-          processed: totalProcessed,
-          unavailable: totalUnavailable,
-        })
-        
-        // Reload videos to show updated details
-        await loadVideos()
-        
-        if (result.status === 'completed' || result.remaining === 0) {
-          // All videos processed
-          setFetchingDetails(false)
-          alert(`Video details fetched successfully! ${totalProcessed} processed, ${totalUnavailable} unavailable.`)
-          setFetchProgress(null)
-          break
-        }
-        
-        // Wait a bit before next batch
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      }
-    } catch (error: any) {
-      console.error('Error fetching video details:', error)
-      setFetchingDetails(false)
-      const errorMessage = error.response?.data?.error || 'Failed to fetch video details'
-      alert(errorMessage)
-      setFetchProgress(null)
-    }
-  }
-
   const handleVideoClick = async (video: Video) => {
     try {
       // Fetch full video details
@@ -198,23 +92,6 @@ function GroupedView() {
     setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
     if (selectedVideo?.id === updatedVideo.id) {
       setSelectedVideo(updatedVideo)
-    }
-  }
-
-  const handleClearAll = async () => {
-    if (!window.confirm('Are you sure you want to delete all videos? This action cannot be undone.')) {
-      return
-    }
-
-    try {
-      await videosAPI.deleteAll()
-      setVideos([])
-      setSelectedVideo(null)
-      alert('All videos have been deleted successfully.')
-    } catch (error: any) {
-      console.error('Error clearing videos:', error)
-      const errorMessage = error.response?.data?.error || 'Failed to clear videos'
-      alert(errorMessage)
     }
   }
 
@@ -245,48 +122,7 @@ function GroupedView() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white px-6 py-4 shadow-md mb-6">
-        <div className="max-w-[1400px] mx-auto flex justify-between items-center flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <h1 className="m-0">YouTube Watch Later - Grouped View</h1>
-            <Link
-              to="/dashboard"
-              className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 underline"
-            >
-              Standard View
-            </Link>
-          </div>
-          <div className="flex gap-3 items-center flex-wrap">
-            {fetchingDetails && fetchProgress && (
-              <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
-                Fetching details... {fetchProgress.remaining} remaining
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,.csv,application/json,text/csv"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <button
-              onClick={handleClearAll}
-              className="px-4 py-2 bg-red-500 text-white border-none rounded cursor-pointer"
-            >
-              Clear All Videos
-            </button>
-            <button
-              onClick={handleImportClick}
-              disabled={uploading || fetchingDetails}
-              className="px-4 py-2 bg-green-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {uploading ? 'Uploading...' : 'Import Google Takeout File'}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-[1400px] mx-auto px-6 pb-6">
+      <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <div className="flex gap-2 items-center flex-wrap">
             <div className="flex gap-2 items-center">
@@ -383,25 +219,9 @@ function GroupedView() {
             <p className="text-lg text-gray-500 mb-4">
               No videos found
             </p>
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,.csv,application/json,text/csv"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <button
-                onClick={handleImportClick}
-                disabled={uploading}
-                className="px-6 py-3 bg-blue-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed text-base"
-              >
-                {uploading ? 'Uploading...' : 'Import Google Takeout File'}
-              </button>
-              <p className="text-sm text-gray-500 mt-3">
-                Upload your watch-history.json or watch-history.csv file from Google Takeout
-              </p>
-            </div>
+            <p className="text-sm text-gray-500">
+              Import videos from the Settings page to get started.
+            </p>
           </div>
         ) : (
           <>
