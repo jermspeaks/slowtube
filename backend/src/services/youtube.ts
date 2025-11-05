@@ -1,166 +1,325 @@
+import Papa from 'papaparse'
 import { google } from 'googleapis'
 import { getAuthenticatedClient } from '../routes/auth.js'
 import { videoQueries, videoStateQueries } from './database.js'
 
-export interface YouTubeVideo {
-  id: string
-  snippet: {
-    title: string
-    description: string
-    publishedAt: string
-    thumbnails: {
-      default?: { url: string }
-      medium?: { url: string }
-      high?: { url: string }
-    }
-  }
-  contentDetails?: {
-    duration: string
-  }
+// Google Takeout watch history entry format
+export interface GoogleTakeoutWatchHistoryEntry {
+  header?: string
+  title?: string
+  titleUrl?: string
+  time?: string
+  subtitles?: Array<{
+    name?: string
+    url?: string
+  }>
 }
 
-// Get user's watch later playlist ID
-async function getWatchLaterPlaylistId(auth: any): Promise<string> {
-  const youtube = google.youtube({ version: 'v3', auth })
+// Extract video ID from YouTube URL
+function extractVideoId(url: string): string | null {
+  if (!url) return null
   
+  // Match patterns like:
+  // https://www.youtube.com/watch?v=VIDEO_ID
+  // https://youtu.be/VIDEO_ID
+  // https://www.youtube.com/embed/VIDEO_ID
+  const patterns = [
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /\/embed\/([a-zA-Z0-9_-]{11})/,
+  ]
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match && match[1]) {
+      return match[1]
+    }
+  }
+  
+  return null
+}
+
+// Parse Google Takeout JSON and extract video information
+export function parseGoogleTakeoutJSON(jsonData: any): Array<{
+  id: string
+  title: string
+  watchedAt: string | null
+}> {
+  if (!Array.isArray(jsonData)) {
+    throw new Error('Invalid JSON format: expected an array of watch history entries')
+  }
+
+  const videos: Array<{
+    id: string
+    title: string
+    watchedAt: string | null
+  }> = []
+
+  for (const entry of jsonData) {
+    const entryObj = entry as GoogleTakeoutWatchHistoryEntry
+    
+    // Skip entries without titleUrl (not YouTube videos)
+    if (!entryObj.titleUrl) continue
+    
+    // Extract video ID from URL
+    const videoId = extractVideoId(entryObj.titleUrl)
+    if (!videoId) continue
+    
+    // Skip if we already have this video (takeout may have duplicates)
+    if (videos.find(v => v.id === videoId)) continue
+    
+    videos.push({
+      id: videoId,
+      title: entryObj.title || 'Untitled Video',
+      watchedAt: entryObj.time || null,
+    })
+  }
+
+  console.log(`Parsed ${videos.length} unique videos from Google Takeout JSON`)
+  return videos
+}
+
+// Parse Google Takeout CSV and extract video information
+export function parseGoogleTakeoutCSV(csvContent: string): Array<{
+  id: string
+  title: string
+  watchedAt: string | null
+}> {
+  const videos: Array<{
+    id: string
+    title: string
+    watchedAt: string | null
+  }> = []
+
+  // Parse CSV using papaparse
+  const result = Papa.parse(csvContent, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (header: string) => header.trim(), // Trim whitespace from headers
+  })
+
+  if (result.errors.length > 0) {
+    console.warn('CSV parsing warnings:', result.errors)
+  }
+
+  const rows = result.data as any[]
+
+  // Google Takeout CSV can have different formats:
+  // 1. Playlist format: Video ID, Playlist Video Creation Timestamp
+  // 2. Watch history format: Title, Channel, URL, Time
+  // We'll be flexible to handle both formats
+  
+  for (const row of rows) {
+    let videoId: string | null = null
+    
+    // First, try to get Video ID directly (playlist format)
+    const directVideoId = row['Video ID'] || row['video id'] || row['videoId'] || row['VideoId'] || row['Video_Id']
+    
+    if (directVideoId && typeof directVideoId === 'string' && directVideoId.trim().length === 11) {
+      // Looks like a valid YouTube video ID (11 characters)
+      videoId = directVideoId.trim()
+    } else {
+      // Try to extract from URL (watch history format)
+      const url = row['URL'] || row['url'] || row['Url'] || row['Video URL'] || row['Link'] || row['link']
+      if (url) {
+        videoId = extractVideoId(url)
+      }
+    }
+    
+    if (!videoId) continue
+
+    // Skip if we already have this video (takeout may have duplicates)
+    if (videos.find(v => v.id === videoId)) continue
+
+    // Try different possible column names for Title
+    const title = row['Title'] || row['title'] || row['Video Title'] || row['Video title'] || 'Untitled Video'
+    
+    // Try different possible column names for Time/Timestamp
+    const time = row['Time'] || 
+                 row['time'] || 
+                 row['Timestamp'] || 
+                 row['timestamp'] || 
+                 row['Date'] || 
+                 row['date'] || 
+                 row['Playlist Video Creation Timestamp'] ||
+                 row['Playlist Video Creation timestamp'] ||
+                 row['playlist video creation timestamp'] ||
+                 null
+
+    videos.push({
+      id: videoId,
+      title: title || 'Untitled Video',
+      watchedAt: time || null,
+    })
+  }
+
+  console.log(`Parsed ${videos.length} unique videos from Google Takeout CSV`)
+  return videos
+}
+
+// Generate thumbnail URL from video ID
+function getThumbnailUrl(videoId: string): string {
+  return `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+}
+
+// Import videos from Google Takeout JSON or CSV into database
+export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'json'): { imported: number; updated: number } {
   try {
-    // First, try to get it from channel's relatedPlaylists
-    const channelResponse = await youtube.channels.list({
-      part: ['contentDetails'],
-      mine: true,
-    })
-    
-    const channel = channelResponse.data.items?.[0]
-    
-    if (channel?.contentDetails?.relatedPlaylists?.watchLater) {
-      return channel.contentDetails.relatedPlaylists.watchLater
-    }
+    let parsedVideos: Array<{
+      id: string
+      title: string
+      watchedAt: string | null
+    }>
 
-    // If not found in relatedPlaylists, try using the special "WL" playlist ID
-    // This is a special playlist ID that YouTube uses for watch later
-    console.log('Watch later not found in relatedPlaylists, trying special WL playlist ID...')
-    
-    // Try to access the WL playlist to verify it exists
-    try {
-      const testResponse = await youtube.playlistItems.list({
-        part: ['id'],
-        playlistId: 'WL',
-        maxResults: 1,
-      })
-      console.log(testResponse.data);
-      
-      if (testResponse.data !== undefined) {
-        console.log('Successfully accessed WL playlist')
-        return 'WL'
+    if (format === 'csv') {
+      // data is a string (CSV content)
+      if (typeof data !== 'string') {
+        throw new Error('CSV data must be a string')
       }
-    } catch (wlError: any) {
-      console.error('WL playlist test failed:', wlError.message)
-      // If WL doesn't work, try searching through playlists
-      console.log('Searching through user playlists for watch later playlist...')
-      
-      let nextPageToken: string | undefined = undefined
-      const maxPages = 5 // Limit to prevent infinite loops
-      
-      for (let page = 0; page < maxPages; page++) {
-        const playlistsResponse = await youtube.playlists.list({
-          part: ['id', 'snippet'],
-          mine: true,
-          maxResults: 50,
-          pageToken: nextPageToken,
-        })
+      parsedVideos = parseGoogleTakeoutCSV(data)
+    } else {
+      // data is JSON object/array
+      parsedVideos = parseGoogleTakeoutJSON(data)
+    }
+    let imported = 0
+    let updated = 0
+    let firstImported = false
 
-        const playlists = playlistsResponse.data.items || []
+    for (const video of parsedVideos) {
+      const existingVideo = videoQueries.getByYoutubeId(video.id)
+
+      const videoData = {
+        youtube_id: video.id,
+        title: 'Untitled Video', // Will be updated by YouTube API fetch
+        description: null, // Will be updated by YouTube API fetch
+        thumbnail_url: getThumbnailUrl(video.id), // Temporary thumbnail, may be updated by API
+        duration: null, // Will be updated by YouTube API fetch
+        published_at: null, // Will be fetched from YouTube API
+        added_to_playlist_at: video.watchedAt, // Store CSV timestamp here
+        fetch_status: 'pending' as const, // Mark as pending for YouTube API fetch
+        channel_title: null, // Will be updated by YouTube API fetch
+        youtube_url: `https://www.youtube.com/watch?v=${video.id}`, // Construct URL from video ID
+      }
+
+      if (existingVideo) {
+        // Update existing video - only update if it's not already fetched
+        if (existingVideo.fetch_status !== 'completed') {
+          // Update added_to_playlist_at if it's newer
+          const updateData: any = {
+            added_to_playlist_at: video.watchedAt,
+            youtube_url: `https://www.youtube.com/watch?v=${video.id}`,
+          }
+          // Only update fetch_status if it's not already set
+          if (!existingVideo.fetch_status || existingVideo.fetch_status === 'pending') {
+            updateData.fetch_status = 'pending'
+          }
+          videoQueries.update(existingVideo.id, updateData)
+          updated++
+        }
+        if (!firstImported) {
+          console.log('First video updated:', {
+            id: existingVideo.id,
+            youtube_id: video.id,
+            added_to_playlist_at: video.watchedAt,
+          })
+          firstImported = true
+        }
+      } else {
+        // Create new video
+        const videoId = videoQueries.create(videoData)
         
-        // Look for watch later playlist by title (it's usually called "Watch later" in English)
-        // Also check for common variations
-        const watchLaterPlaylist = playlists.find((playlist: any) => {
-          const title = playlist.snippet?.title?.toLowerCase() || ''
-          return title.includes('watch later') || 
-                 title === 'watch later' ||
-                 title === 'watchlater'
-        })
-
-        if (watchLaterPlaylist?.id) {
-          console.log('Found watch later playlist:', watchLaterPlaylist.id, watchLaterPlaylist.snippet?.title)
-          return watchLaterPlaylist.id
-        }
-
-        nextPageToken = playlistsResponse.data.nextPageToken || undefined
-        if (!nextPageToken) {
-          break
+        // Set initial state to 'feed'
+        videoStateQueries.setState(videoId, 'feed')
+        imported++
+        if (!firstImported) {
+          console.log('First video imported:', {
+            id: videoId,
+            youtube_id: video.id,
+            added_to_playlist_at: video.watchedAt,
+            fetch_status: 'pending',
+            state: 'feed',
+          })
+          firstImported = true
         }
       }
     }
 
-    throw new Error('Watch later playlist not found. Please ensure your YouTube account has a watch later playlist.')
-  } catch (error: any) {
-    console.error('Error getting watch later playlist ID:', error)
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      response: error.response?.data,
-    })
-    
-    throw new Error(`Watch later playlist not found: ${error.message}`)
+    console.log(`Import complete: ${imported} imported, ${updated} updated`)
+    return { imported, updated }
+  } catch (error) {
+    console.error('Error importing videos:', error)
+    throw error
   }
 }
 
-// Fetch all videos from watch later playlist
-export async function fetchWatchLaterVideos(): Promise<YouTubeVideo[]> {
-  const auth = await getAuthenticatedClient()
-  const youtube = google.youtube({ version: 'v3', auth })
+// YouTube API video details interface
+export interface YouTubeVideoDetails {
+  id: string
+  title: string
+  description: string | null
+  channelTitle: string | null
+  publishedAt: string | null
+  duration: string | null
+  thumbnails: {
+    default?: { url: string }
+    medium?: { url: string }
+    high?: { url: string }
+  }
+}
+
+// Fetch video details from YouTube API in batches
+export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<Map<string, YouTubeVideoDetails | null>> {
+  if (videoIds.length === 0) {
+    return new Map()
+  }
+
+  if (videoIds.length > 50) {
+    throw new Error('Cannot fetch more than 50 videos at once')
+  }
 
   try {
-    // Get watch later playlist ID
-    const playlistId = await getWatchLaterPlaylistId(auth)
+    const auth = await getAuthenticatedClient()
+    const youtube = google.youtube({ version: 'v3', auth })
 
-    const allVideos: YouTubeVideo[] = []
-    let nextPageToken: string | undefined = undefined
+    // Fetch video details
+    const videosResponse = await youtube.videos.list({
+      part: ['snippet', 'contentDetails'],
+      id: videoIds,
+    })
 
-    do {
-      // Fetch playlist items
-      const playlistResponse = await youtube.playlistItems.list({
-        part: ['snippet', 'contentDetails'],
-        playlistId: playlistId,
-        maxResults: 50,
-        pageToken: nextPageToken,
-      })
+    const result = new Map<string, YouTubeVideoDetails | null>()
+    
+    // Mark all videos as null initially
+    for (const videoId of videoIds) {
+      result.set(videoId, null)
+    }
 
-      const items = playlistResponse.data.items || []
-      
-      // Get video IDs
-      const videoIds = items
-        .map(item => item.contentDetails?.videoId)
-        .filter((id): id is string => !!id)
+    const videos = videosResponse.data.items || []
+    
+    for (const video of videos) {
+      if (!video.id) continue
 
-      if (videoIds.length > 0) {
-        // Fetch video details
-        const videosResponse = await youtube.videos.list({
-          part: ['snippet', 'contentDetails'],
-          id: videoIds,
-        })
-
-        const videos = videosResponse.data.items || []
-        allVideos.push(...(videos as YouTubeVideo[]))
-        
-        // Log first video entry if this is the first batch
-        if (allVideos.length > 0 && allVideos.length === videos.length) {
-          const firstVideo = allVideos[0]
-          console.log('First video entry:', {
-            id: firstVideo.id,
-            title: firstVideo.snippet.title,
-            publishedAt: firstVideo.snippet.publishedAt,
-          })
-        }
+      const details: YouTubeVideoDetails = {
+        id: video.id,
+        title: video.snippet?.title || 'Untitled Video',
+        description: video.snippet?.description || null,
+        channelTitle: video.snippet?.channelTitle || null,
+        publishedAt: video.snippet?.publishedAt || null,
+        duration: video.contentDetails?.duration || null,
+        thumbnails: {
+          default: video.snippet?.thumbnails?.default?.url ? { url: video.snippet.thumbnails.default.url } : undefined,
+          medium: video.snippet?.thumbnails?.medium?.url ? { url: video.snippet.thumbnails.medium.url } : undefined,
+          high: video.snippet?.thumbnails?.high?.url ? { url: video.snippet.thumbnails.high.url } : undefined,
+        },
       }
 
-      nextPageToken = playlistResponse.data.nextPageToken || undefined
-    } while (nextPageToken)
+      result.set(video.id, details)
+    }
 
-    console.log(`Fetched ${allVideos.length} videos from watch later playlist`)
-    return allVideos
+    console.log(`Fetched details for ${videos.length} out of ${videoIds.length} videos`)
+    return result
   } catch (error) {
-    console.error('Error fetching watch later videos:', error)
+    console.error('Error fetching video details from YouTube:', error)
     throw error
   }
 }
@@ -182,66 +341,64 @@ function parseDuration(duration: string): string {
   return parts.join(' ') || '0s'
 }
 
-// Import videos into database
-export async function importVideos(): Promise<{ imported: number; updated: number }> {
+// Process a batch of videos to fetch details from YouTube API
+export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ processed: number; unavailable: number }> {
   try {
-    const youtubeVideos = await fetchWatchLaterVideos()
-    let imported = 0
-    let updated = 0
-    let firstImported = false
+    // Get batch of videos that need fetching
+    const videos = videoQueries.getVideosNeedingFetch(batchSize)
+    
+    if (videos.length === 0) {
+      return { processed: 0, unavailable: 0 }
+    }
 
-    for (const youtubeVideo of youtubeVideos) {
-      const existingVideo = videoQueries.getByYoutubeId(youtubeVideo.id)
+    const videoIds = videos.map(v => v.youtube_id)
+    console.log(`Processing batch of ${videoIds.length} videos`)
 
-      const videoData = {
-        youtube_id: youtubeVideo.id,
-        title: youtubeVideo.snippet.title,
-        description: youtubeVideo.snippet.description || null,
-        thumbnail_url: youtubeVideo.snippet.thumbnails.medium?.url 
-          || youtubeVideo.snippet.thumbnails.high?.url 
-          || youtubeVideo.snippet.thumbnails.default?.url 
-          || null,
-        duration: youtubeVideo.contentDetails?.duration 
-          ? parseDuration(youtubeVideo.contentDetails.duration)
-          : null,
-        published_at: youtubeVideo.snippet.publishedAt || null,
-      }
+    // Fetch details from YouTube API
+    const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds)
 
-      if (existingVideo) {
-        // Update existing video
-        videoQueries.update(existingVideo.id, videoData)
-        updated++
-        if (!firstImported) {
-          console.log('First video updated:', {
-            id: existingVideo.id,
-            youtube_id: youtubeVideo.id,
-            title: videoData.title,
-          })
-          firstImported = true
+    let processed = 0
+    let unavailable = 0
+
+    // Update each video with fetched details
+    for (const video of videos) {
+      const details = videoDetailsMap.get(video.youtube_id)
+
+      if (details) {
+        // Video was successfully fetched
+        const updateData: any = {
+          title: details.title,
+          description: details.description,
+          channel_title: details.channelTitle,
+          published_at: details.publishedAt,
+          duration: details.duration ? parseDuration(details.duration) : null,
+          fetch_status: 'completed',
+          youtube_url: `https://www.youtube.com/watch?v=${video.youtube_id}`,
         }
+
+        // Update thumbnail if we got a better one from API
+        if (details.thumbnails.medium?.url || details.thumbnails.high?.url || details.thumbnails.default?.url) {
+          updateData.thumbnail_url = details.thumbnails.medium?.url 
+            || details.thumbnails.high?.url 
+            || details.thumbnails.default?.url
+        }
+
+        videoQueries.update(video.id, updateData)
+        processed++
       } else {
-        // Create new video
-        const videoId = videoQueries.create(videoData)
-        
-        // Set initial state to 'feed'
-        videoStateQueries.setState(videoId, 'feed')
-        imported++
-        if (!firstImported) {
-          console.log('First video imported:', {
-            id: videoId,
-            youtube_id: youtubeVideo.id,
-            title: videoData.title,
-            state: 'feed',
-          })
-          firstImported = true
-        }
+        // Video not found or unavailable (private/deleted)
+        videoQueries.update(video.id, {
+          fetch_status: 'unavailable',
+          title: 'Untitled Video',
+        })
+        unavailable++
       }
     }
 
-    console.log(`Import complete: ${imported} imported, ${updated} updated`)
-    return { imported, updated }
+    console.log(`Batch processed: ${processed} completed, ${unavailable} unavailable`)
+    return { processed, unavailable }
   } catch (error) {
-    console.error('Error importing videos:', error)
+    console.error('Error processing batch video fetch:', error)
     throw error
   }
 }

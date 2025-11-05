@@ -29,10 +29,12 @@ function VideoTable({ videos, onVideoClick }: VideoTableProps) {
           <tr style={{ backgroundColor: '#f8f9fa' }}>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Thumbnail</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Title</th>
+            <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Channel</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>State</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Tags</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Duration</th>
             <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Published</th>
+            <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #dee2e6' }}>Added</th>
           </tr>
         </thead>
         <tbody>
@@ -71,9 +73,26 @@ function VideoTable({ videos, onVideoClick }: VideoTableProps) {
                   marginBottom: '4px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
                 }}>
                   {video.title}
+                  {video.fetch_status === 'pending' && (
+                    <span style={{
+                      fontSize: '10px',
+                      color: '#ffc107',
+                      fontWeight: 'normal'
+                    }}>(fetching...)</span>
+                  )}
+                  {video.fetch_status === 'unavailable' && (
+                    <span style={{
+                      fontSize: '10px',
+                      color: '#dc3545',
+                      fontWeight: 'normal'
+                    }}>(unavailable)</span>
+                  )}
                 </div>
                 {video.description && (
                   <div style={{
@@ -86,6 +105,9 @@ function VideoTable({ videos, onVideoClick }: VideoTableProps) {
                     {video.description}
                   </div>
                 )}
+              </td>
+              <td style={{ padding: '12px', color: '#6c757d', fontSize: '12px' }}>
+                {video.channel_title || '-'}
               </td>
               <td style={{ padding: '12px' }}>
                 {video.state && (
@@ -135,6 +157,9 @@ function VideoTable({ videos, onVideoClick }: VideoTableProps) {
               </td>
               <td style={{ padding: '12px', color: '#6c757d', fontSize: '12px' }}>
                 {video.published_at ? format(new Date(video.published_at), 'MMM d, yyyy') : '-'}
+              </td>
+              <td style={{ padding: '12px', color: '#6c757d', fontSize: '12px' }}>
+                {video.added_to_playlist_at ? format(new Date(video.added_to_playlist_at), 'MMM d, yyyy') : '-'}
               </td>
             </tr>
           ))}

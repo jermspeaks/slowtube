@@ -78,7 +78,28 @@ function VideoCard({ video, onClick }: VideoCardProps) {
           textOverflow: 'ellipsis'
         }}>
           {video.title}
+          {video.fetch_status === 'pending' && (
+            <span style={{
+              fontSize: '10px',
+              color: '#ffc107',
+              fontWeight: 'normal',
+              marginLeft: '4px'
+            }}>(fetching...)</span>
+          )}
+          {video.fetch_status === 'unavailable' && (
+            <span style={{
+              fontSize: '10px',
+              color: '#dc3545',
+              fontWeight: 'normal',
+              marginLeft: '4px'
+            }}>(unavailable)</span>
+          )}
         </h3>
+        {video.channel_title && (
+          <div style={{ marginBottom: '8px', fontSize: '12px', color: '#6c757d' }}>
+            {video.channel_title}
+          </div>
+        )}
         {video.state && (
           <span style={{
             display: 'inline-block',
@@ -117,11 +138,18 @@ function VideoCard({ video, onClick }: VideoCardProps) {
             )}
           </div>
         )}
-        {video.published_at && (
-          <div style={{ marginTop: '8px', fontSize: '11px', color: '#6c757d' }}>
-            {format(new Date(video.published_at), 'MMM d, yyyy')}
-          </div>
-        )}
+        <div style={{ marginTop: '8px', fontSize: '11px', color: '#6c757d', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {video.published_at && (
+            <div>
+              Published: {format(new Date(video.published_at), 'MMM d, yyyy')}
+            </div>
+          )}
+          {video.added_to_playlist_at && (
+            <div>
+              Added: {format(new Date(video.added_to_playlist_at), 'MMM d, yyyy')}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

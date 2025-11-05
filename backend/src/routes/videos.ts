@@ -1,8 +1,30 @@
 import express from 'express'
+import multer from 'multer'
 import { videoQueries, tagQueries, commentQueries, videoStateQueries } from '../services/database.js'
-import { importVideos } from '../services/youtube.js'
+import { importVideosFromTakeout, processBatchVideoFetch } from '../services/youtube.js'
 
 const router = express.Router()
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept JSON and CSV files
+    const isJson = file.mimetype === 'application/json' || file.originalname.endsWith('.json')
+    const isCsv = file.mimetype === 'text/csv' || 
+                 file.mimetype === 'application/csv' || 
+                 file.originalname.endsWith('.csv')
+    
+    if (isJson || isCsv) {
+      cb(null, true)
+    } else {
+      cb(new Error('Only JSON and CSV files are allowed'))
+    }
+  },
+})
 
 // Get all videos with optional filters
 router.get('/', (req, res) => {
@@ -56,39 +78,92 @@ router.get('/:id', (req, res) => {
   }
 })
 
-// Import videos from YouTube
-router.post('/import', async (req, res) => {
+// Import videos from Google Takeout JSON or CSV file
+router.post('/import', upload.single('file'), async (req, res) => {
   try {
-    const result = await importVideos()
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded. Please upload a Google Takeout JSON or CSV file.' })
+    }
+
+    // Detect file format from extension or mimetype
+    const fileName = req.file.originalname.toLowerCase()
+    const isCsv = fileName.endsWith('.csv') || 
+                  req.file.mimetype === 'text/csv' || 
+                  req.file.mimetype === 'application/csv'
+    const isJson = fileName.endsWith('.json') || req.file.mimetype === 'application/json'
+
+    if (!isCsv && !isJson) {
+      return res.status(400).json({ error: 'Invalid file type. Please upload a JSON or CSV file.' })
+    }
+
+    const fileContent = req.file.buffer.toString('utf-8')
+    let result: { imported: number; updated: number }
+
+    if (isCsv) {
+      // Process CSV file
+      try {
+        result = importVideosFromTakeout(fileContent, 'csv')
+      } catch (parseError: any) {
+        console.error('Error parsing CSV file:', parseError)
+        return res.status(400).json({ error: 'Invalid CSV file. Please upload a valid Google Takeout CSV file.' })
+      }
+    } else {
+      // Process JSON file
+      let jsonData: any
+      try {
+        jsonData = JSON.parse(fileContent)
+      } catch (parseError: any) {
+        console.error('Error parsing JSON file:', parseError)
+        return res.status(400).json({ error: 'Invalid JSON file. Please upload a valid Google Takeout JSON file.' })
+      }
+      result = importVideosFromTakeout(jsonData, 'json')
+    }
+    
+    // Count videos queued for fetching
+    const fetchQueued = videoQueries.countPendingFetch()
+    
     res.json({
       message: 'Videos imported successfully',
       imported: result.imported,
       updated: result.updated,
+      fetchQueued,
     })
   } catch (error: any) {
     console.error('Error importing videos:', error)
-    if (error.message === 'No authenticated session found') {
-      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
-    }
-    res.status(500).json({ error: 'Failed to import videos' })
+    res.status(500).json({ error: error.message || 'Failed to import videos' })
   }
 })
 
-// Manual refresh trigger
-router.post('/refresh', async (req, res) => {
+// Fetch video details from YouTube API (background job)
+router.post('/fetch-details', async (req, res) => {
   try {
-    const result = await importVideos()
+    // Check authentication by attempting to get authenticated client
+    // This will throw if not authenticated
+    try {
+      const { getAuthenticatedClient } = await import('../routes/auth.js')
+      await getAuthenticatedClient()
+    } catch (authError: any) {
+      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
+    }
+
+    // Process a batch of videos
+    const batchResult = await processBatchVideoFetch(50)
+    
+    // Count remaining videos that need fetching
+    const remaining = videoQueries.countPendingFetch()
+    
     res.json({
-      message: 'Videos refreshed successfully',
-      imported: result.imported,
-      updated: result.updated,
+      processed: batchResult.processed,
+      unavailable: batchResult.unavailable,
+      remaining,
+      status: remaining > 0 ? 'pending' : 'completed',
     })
   } catch (error: any) {
-    console.error('Error refreshing videos:', error)
+    console.error('Error fetching video details:', error)
     if (error.message === 'No authenticated session found') {
       return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
     }
-    res.status(500).json({ error: 'Failed to refresh videos' })
+    res.status(500).json({ error: error.message || 'Failed to fetch video details' })
   }
 })
 

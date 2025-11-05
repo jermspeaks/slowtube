@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS videos (
   thumbnail_url TEXT,
   duration TEXT,
   published_at TEXT,
+  added_to_playlist_at TEXT,
+  fetch_status TEXT CHECK(fetch_status IN ('pending', 'completed', 'unavailable', 'failed')) DEFAULT 'pending',
+  channel_title TEXT,
+  youtube_url TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -52,6 +56,7 @@ CREATE TABLE IF NOT EXISTS oauth_sessions (
 
 -- Indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_videos_youtube_id ON videos(youtube_id);
+CREATE INDEX IF NOT EXISTS idx_videos_fetch_status ON videos(fetch_status);
 CREATE INDEX IF NOT EXISTS idx_tags_video_id ON tags(video_id);
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
 CREATE INDEX IF NOT EXISTS idx_comments_video_id ON comments(video_id);

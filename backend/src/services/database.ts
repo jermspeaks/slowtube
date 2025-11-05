@@ -8,6 +8,10 @@ export interface Video {
   thumbnail_url: string | null
   duration: string | null
   published_at: string | null
+  added_to_playlist_at: string | null
+  fetch_status: 'pending' | 'completed' | 'unavailable' | 'failed' | null
+  channel_title: string | null
+  youtube_url: string | null
   created_at: string
   updated_at: string
 }
@@ -78,8 +82,8 @@ export const videoQueries = {
 
   create: (video: Omit<Video, 'id' | 'created_at' | 'updated_at'>) => {
     const stmt = db.prepare(`
-      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, fetch_status, channel_title, youtube_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const result = stmt.run(
       video.youtube_id,
@@ -87,7 +91,11 @@ export const videoQueries = {
       video.description,
       video.thumbnail_url,
       video.duration,
-      video.published_at
+      video.published_at,
+      video.added_to_playlist_at,
+      video.fetch_status || 'pending',
+      video.channel_title,
+      video.youtube_url
     )
     return result.lastInsertRowid as number
   },
@@ -114,6 +122,32 @@ export const videoQueries = {
 
   delete: (id: number) => {
     return db.prepare('DELETE FROM videos WHERE id = ?').run(id).changes
+  },
+
+  getPendingFetch: (limit: number = 50) => {
+    return db.prepare(`
+      SELECT * FROM videos 
+      WHERE fetch_status = 'pending' OR fetch_status IS NULL
+      ORDER BY created_at ASC
+      LIMIT ?
+    `).all(limit) as Video[]
+  },
+
+  getVideosNeedingFetch: (limit: number = 50) => {
+    return db.prepare(`
+      SELECT * FROM videos 
+      WHERE fetch_status = 'pending' OR fetch_status IS NULL
+      ORDER BY created_at ASC
+      LIMIT ?
+    `).all(limit) as Video[]
+  },
+
+  countPendingFetch: () => {
+    const result = db.prepare(`
+      SELECT COUNT(*) as count FROM videos 
+      WHERE fetch_status = 'pending' OR fetch_status IS NULL
+    `).get() as { count: number }
+    return result.count
   },
 }
 

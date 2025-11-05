@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Video, VideoState, ViewMode } from '../types/video'
 import { authAPI, videosAPI } from '../services/api'
-import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
@@ -15,7 +14,10 @@ function Dashboard() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [stateFilter, setStateFilter] = useState<VideoState | 'all'>('all')
-  const [refreshing, setRefreshing] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [fetchingDetails, setFetchingDetails] = useState(false)
+  const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     // Check authentication
@@ -43,28 +45,22 @@ function Dashboard() {
     }
   }
 
-  const handleRefresh = async () => {
-    try {
-      setRefreshing(true)
-      await videosAPI.refresh()
-      await loadVideos()
-    } catch (error: any) {
-      console.error('Error refreshing videos:', error)
-      if (error.response?.status === 401) {
-        alert('Not authenticated. Please connect with YouTube.')
-        navigate('/login')
-      } else {
-        alert('Failed to refresh videos')
-      }
-    } finally {
-      setRefreshing(false)
-    }
-  }
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
 
-  const handleImport = async () => {
+    // Validate file type
+    const isJson = file.name.endsWith('.json') || file.type === 'application/json'
+    const isCsv = file.name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/csv'
+    
+    if (!isJson && !isCsv) {
+      alert('Please upload a JSON or CSV file (Google Takeout watch-history.json or watch-history.csv)')
+      return
+    }
+
     try {
-      setRefreshing(true)
-      const result = await videosAPI.import()
+      setUploading(true)
+      const result = await videosAPI.import(file)
       console.log('Import result:', result)
       
       // Ensure we're showing all videos or at least 'feed' videos to see newly imported ones
@@ -77,24 +73,78 @@ function Dashboard() {
       const message = result.imported > 0 || result.updated > 0
         ? `Videos imported successfully! ${result.imported} new, ${result.updated} updated.`
         : 'No new videos to import.'
-      alert(message)
+      
+      // Start fetching video details if there are videos queued
+      if (result.fetchQueued > 0) {
+        setFetchingDetails(true)
+        setFetchProgress({ remaining: result.fetchQueued, processed: 0, unavailable: 0 })
+        // Start fetching details in background
+        fetchVideoDetailsInBackground()
+      } else {
+        alert(message)
+      }
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     } catch (error: any) {
       console.error('Error importing videos:', error)
-      if (error.response?.status === 401) {
-        alert('Not authenticated. Please connect with YouTube.')
-        navigate('/login')
-      } else {
-        alert('Failed to import videos')
+      const errorMessage = error.response?.data?.error || 'Failed to import videos'
+      alert(errorMessage)
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
       }
     } finally {
-      setRefreshing(false)
+      setUploading(false)
     }
   }
 
-  const { manualRefresh } = useAutoRefresh({
-    onRefresh: handleRefresh,
-    intervalHours: 24
-  })
+  const handleImportClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const fetchVideoDetailsInBackground = async () => {
+    try {
+      let totalProcessed = 0
+      let totalUnavailable = 0
+      
+      while (true) {
+        const result = await videosAPI.fetchDetails()
+        
+        totalProcessed += result.processed || 0
+        totalUnavailable += result.unavailable || 0
+        
+        setFetchProgress({
+          remaining: result.remaining || 0,
+          processed: totalProcessed,
+          unavailable: totalUnavailable,
+        })
+        
+        // Reload videos to show updated details
+        await loadVideos()
+        
+        if (result.status === 'completed' || result.remaining === 0) {
+          // All videos processed
+          setFetchingDetails(false)
+          alert(`Video details fetched successfully! ${totalProcessed} processed, ${totalUnavailable} unavailable.`)
+          setFetchProgress(null)
+          break
+        }
+        
+        // Wait a bit before next batch
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    } catch (error: any) {
+      console.error('Error fetching video details:', error)
+      setFetchingDetails(false)
+      const errorMessage = error.response?.data?.error || 'Failed to fetch video details'
+      alert(errorMessage)
+      setFetchProgress(null)
+    }
+  }
 
   const handleVideoClick = async (video: Video) => {
     try {
@@ -151,36 +201,39 @@ function Dashboard() {
           gap: '16px'
         }}>
           <h1 style={{ margin: 0 }}>YouTube Watch Later</h1>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {fetchingDetails && fetchProgress && (
+              <div style={{
+                padding: '8px 16px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                borderRadius: '4px',
+                fontSize: '14px'
+              }}>
+                Fetching details... {fetchProgress.remaining} remaining
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,.csv,application/json,text/csv"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+            />
             <button
-              onClick={handleImport}
-              disabled={refreshing}
+              onClick={handleImportClick}
+              disabled={uploading || fetchingDetails}
               style={{
                 padding: '8px 16px',
                 backgroundColor: '#28a745',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: refreshing ? 'not-allowed' : 'pointer',
-                opacity: refreshing ? 0.5 : 1
+                cursor: (uploading || fetchingDetails) ? 'not-allowed' : 'pointer',
+                opacity: (uploading || fetchingDetails) ? 0.5 : 1
               }}
             >
-              Import Videos
-            </button>
-            <button
-              onClick={manualRefresh}
-              disabled={refreshing}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: refreshing ? 'not-allowed' : 'pointer',
-                opacity: refreshing ? 0.5 : 1
-              }}
-            >
-              {refreshing ? 'Refreshing...' : 'Refresh'}
+              {uploading ? 'Uploading...' : 'Import Google Takeout File'}
             </button>
           </div>
         </div>
@@ -226,20 +279,34 @@ function Dashboard() {
             <p style={{ fontSize: '18px', color: '#6c757d', marginBottom: '16px' }}>
               No videos found
             </p>
-            <button
-              onClick={handleImport}
-              style={{
-                padding: '12px 24px',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '16px'
-              }}
-            >
-              Import Your Watch Later Playlist
-            </button>
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,.csv,application/json,text/csv"
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+              />
+              <button
+                onClick={handleImportClick}
+                disabled={uploading}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: uploading ? 'not-allowed' : 'pointer',
+                  fontSize: '16px',
+                  opacity: uploading ? 0.5 : 1
+                }}
+              >
+                {uploading ? 'Uploading...' : 'Import Google Takeout File'}
+              </button>
+              <p style={{ fontSize: '14px', color: '#6c757d', marginTop: '12px' }}>
+                Upload your watch-history.json or watch-history.csv file from Google Takeout
+              </p>
+            </div>
           </div>
         ) : (
           <>

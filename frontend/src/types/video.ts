@@ -6,6 +6,10 @@ export interface Video {
   thumbnail_url: string | null
   duration: string | null
   published_at: string | null
+  added_to_playlist_at: string | null
+  fetch_status: 'pending' | 'completed' | 'unavailable' | 'failed' | null
+  channel_title: string | null
+  youtube_url: string | null
   created_at: string
   updated_at: string
   state?: 'feed' | 'inbox' | 'archive' | null

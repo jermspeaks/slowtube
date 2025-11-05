@@ -29,12 +29,18 @@ export const videosAPI = {
     const response = await api.get(`/api/videos/${id}`)
     return response.data
   },
-  import: async () => {
-    const response = await api.post('/api/videos/import')
+  import: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await api.post('/api/videos/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return response.data
   },
-  refresh: async () => {
-    const response = await api.post('/api/videos/refresh')
+  fetchDetails: async () => {
+    const response = await api.post('/api/videos/fetch-details')
     return response.data
   },
   updateState: async (id: number, state: 'feed' | 'inbox' | 'archive') => {
