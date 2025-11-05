@@ -15,6 +15,8 @@
 - [ ] Export channel information as markdown
 - [ ] Add favicon
 - [ ] import liked videos. Allow us to analyze them, see what channels are cool, etc.
+- [ ] Add a download function per video so we can have a local copy to do playback
+  - [ ] Add sponsorblock so we can skip past it
 
 ## Questions
 
