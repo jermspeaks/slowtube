@@ -36,6 +36,16 @@ export function Navbar() {
                 Grouped View
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/channels/subscribed" className="w-full">
+                Subscribed Channels
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/channels/watch-later" className="w-full">
+                Watch Later Channels
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 

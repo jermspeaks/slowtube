@@ -1,7 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries } from '../services/database.js'
-import { importVideosFromTakeout, processBatchVideoFetch } from '../services/youtube.js'
+import { importVideosFromTakeout, processBatchVideoFetch, backfillChannelIds } from '../services/youtube.js'
 
 const router = express.Router()
 
@@ -361,6 +361,72 @@ router.post('/fetch-details', async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
     }
     res.status(500).json({ error: error.message || 'Failed to fetch video details' })
+  }
+})
+
+// Check how many videos need channel_id backfill
+router.get('/backfill-channel-ids/status', (req, res) => {
+  try {
+    const remaining = videoQueries.countVideosNeedingChannelIdBackfill()
+    res.json({
+      remaining,
+      status: remaining > 0 ? 'pending' : 'completed',
+    })
+  } catch (error) {
+    console.error('Error checking backfill status:', error)
+    res.status(500).json({ error: 'Failed to check backfill status' })
+  }
+})
+
+// Backfill youtube_channel_id for existing videos (continuously processes all videos)
+router.post('/backfill-channel-ids', async (req, res) => {
+  try {
+    // Check authentication by attempting to get authenticated client
+    // This will throw if not authenticated
+    try {
+      const { getAuthenticatedClient } = await import('../routes/auth.js')
+      await getAuthenticatedClient()
+    } catch (authError: any) {
+      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
+    }
+
+    // Get batch size from query params or use default
+    const batchSize = req.query.batchSize 
+      ? parseInt(String(req.query.batchSize), 10) 
+      : 50
+
+    if (isNaN(batchSize) || batchSize < 1 || batchSize > 50) {
+      return res.status(400).json({ error: 'Invalid batch size. Must be between 1 and 50.' })
+    }
+
+    // Get delay between batches (in milliseconds) or use default
+    const delayBetweenBatches = req.query.delay 
+      ? parseInt(String(req.query.delay), 10) 
+      : 1000
+
+    if (isNaN(delayBetweenBatches) || delayBetweenBatches < 0) {
+      return res.status(400).json({ error: 'Invalid delay. Must be a non-negative number.' })
+    }
+
+    // Process all videos continuously in batches
+    const result = await backfillChannelIds(batchSize, delayBetweenBatches)
+    
+    // Count remaining videos (should be 0 unless safety limit was reached)
+    const remaining = videoQueries.countVideosNeedingChannelIdBackfill()
+    
+    res.json({
+      totalProcessed: result.totalProcessed,
+      totalUnavailable: result.totalUnavailable,
+      batchesProcessed: result.batchesProcessed,
+      remaining,
+      status: remaining > 0 ? 'partial' : 'completed',
+    })
+  } catch (error: any) {
+    console.error('Error backfilling channel IDs:', error)
+    if (error.message === 'No authenticated session found') {
+      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
+    }
+    res.status(500).json({ error: error.message || 'Failed to backfill channel IDs' })
   }
 })
 

@@ -117,5 +117,33 @@ export const videosAPI = {
   },
 }
 
+// Channels API
+export const channelsAPI = {
+  getAll: async (filter?: 'subscribed' | 'watch_later') => {
+    const params: Record<string, string> = {}
+    if (filter) params.filter = filter
+    const response = await api.get('/api/channels', { params })
+    return response.data
+  },
+  getById: async (channelId: string) => {
+    const response = await api.get(`/api/channels/${channelId}`)
+    return response.data
+  },
+  getVideos: async (channelId: string, type: 'watch_later' | 'latest' | 'liked') => {
+    const response = await api.get(`/api/channels/${channelId}/videos`, {
+      params: { type },
+    })
+    return response.data
+  },
+  subscribe: async (channelId: string) => {
+    const response = await api.post(`/api/channels/${channelId}/subscribe`)
+    return response.data
+  },
+  unsubscribe: async (channelId: string) => {
+    const response = await api.delete(`/api/channels/${channelId}/subscribe`)
+    return response.data
+  },
+}
+
 export default api
 

@@ -11,6 +11,7 @@ export interface Video {
   added_to_playlist_at: string | null
   fetch_status: 'pending' | 'completed' | 'unavailable' | 'failed' | null
   channel_title: string | null
+  youtube_channel_id: string | null
   youtube_url: string | null
   created_at: string
   updated_at: string
@@ -43,6 +44,19 @@ export interface OAuthSession {
   access_token: string
   refresh_token: string | null
   expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Channel {
+  id: number
+  youtube_channel_id: string
+  channel_title: string | null
+  description: string | null
+  thumbnail_url: string | null
+  subscriber_count: number | null
+  is_subscribed: number // 0 or 1 (boolean as integer in SQLite)
+  custom_tags: string | null // JSON array as string
   created_at: string
   updated_at: string
 }
@@ -216,8 +230,8 @@ export const videoQueries = {
 
   create: (video: Omit<Video, 'id' | 'created_at' | 'updated_at'>) => {
     const stmt = db.prepare(`
-      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, fetch_status, channel_title, youtube_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, fetch_status, channel_title, youtube_channel_id, youtube_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const result = stmt.run(
       video.youtube_id,
@@ -229,6 +243,7 @@ export const videoQueries = {
       video.added_to_playlist_at,
       video.fetch_status || 'pending',
       video.channel_title,
+      video.youtube_channel_id || null,
       video.youtube_url
     )
     return result.lastInsertRowid as number
@@ -296,6 +311,37 @@ export const videoQueries = {
       WHERE channel_title IS NOT NULL AND channel_title != ''
       ORDER BY channel_title ASC
     `).all() as { channel_title: string }[]
+  },
+
+  getWatchLaterVideosByChannel: (channelId: string) => {
+    return db.prepare(`
+      SELECT v.*, vs.state 
+      FROM videos v
+      LEFT JOIN video_states vs ON v.id = vs.video_id
+      WHERE v.youtube_channel_id = ?
+      ORDER BY v.added_to_playlist_at DESC
+    `).all(channelId) as (Video & { state: string | null })[]
+  },
+
+  getVideosNeedingChannelIdBackfill: (limit: number = 50) => {
+    return db.prepare(`
+      SELECT * FROM videos 
+      WHERE fetch_status = 'completed' 
+        AND youtube_channel_id IS NULL
+        AND youtube_id IS NOT NULL
+      ORDER BY created_at ASC
+      LIMIT ?
+    `).all(limit) as Video[]
+  },
+
+  countVideosNeedingChannelIdBackfill: () => {
+    const result = db.prepare(`
+      SELECT COUNT(*) as count FROM videos 
+      WHERE fetch_status = 'completed' 
+        AND youtube_channel_id IS NULL
+        AND youtube_id IS NOT NULL
+    `).get() as { count: number }
+    return result.count
   },
 }
 
@@ -620,6 +666,126 @@ export const statsQueries = {
     }
 
     return totalSeconds
+  },
+}
+
+// Channel operations
+export const channelQueries = {
+  getAll: (filterType?: 'subscribed' | 'watch_later') => {
+    let query = ''
+    const params: any[] = []
+
+    if (filterType === 'subscribed') {
+      query = 'SELECT * FROM channels WHERE is_subscribed = 1 ORDER BY channel_title ASC'
+    } else if (filterType === 'watch_later') {
+      // Get channels that have videos in watch later
+      query = `
+        SELECT DISTINCT c.*
+        FROM channels c
+        INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+        WHERE v.youtube_channel_id IS NOT NULL
+        ORDER BY c.channel_title ASC
+      `
+    } else {
+      query = 'SELECT * FROM channels ORDER BY channel_title ASC'
+    }
+
+    return db.prepare(query).all(...params) as Channel[]
+  },
+
+  getByChannelId: (youtubeChannelId: string) => {
+    return db.prepare('SELECT * FROM channels WHERE youtube_channel_id = ?').get(youtubeChannelId) as Channel | undefined
+  },
+
+  create: (channel: Omit<Channel, 'id' | 'created_at' | 'updated_at'>) => {
+    const stmt = db.prepare(`
+      INSERT INTO channels (youtube_channel_id, channel_title, description, thumbnail_url, subscriber_count, is_subscribed, custom_tags)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `)
+    const result = stmt.run(
+      channel.youtube_channel_id,
+      channel.channel_title,
+      channel.description,
+      channel.thumbnail_url,
+      channel.subscriber_count,
+      channel.is_subscribed || 0,
+      channel.custom_tags
+    )
+    return result.lastInsertRowid as number
+  },
+
+  update: (id: number, channel: Partial<Omit<Channel, 'id' | 'created_at' | 'updated_at'>>) => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    Object.entries(channel).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    })
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(id)
+
+    const stmt = db.prepare(`UPDATE channels SET ${fields.join(', ')} WHERE id = ?`)
+    return stmt.run(...values).changes
+  },
+
+  updateByChannelId: (youtubeChannelId: string, channel: Partial<Omit<Channel, 'id' | 'youtube_channel_id' | 'created_at' | 'updated_at'>>) => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    Object.entries(channel).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    })
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(youtubeChannelId)
+
+    const stmt = db.prepare(`UPDATE channels SET ${fields.join(', ')} WHERE youtube_channel_id = ?`)
+    return stmt.run(...values).changes
+  },
+
+  getChannelsWithWatchLaterCount: () => {
+    return db.prepare(`
+      SELECT 
+        c.*,
+        COUNT(v.id) as watch_later_count,
+        MAX(v.added_to_playlist_at) as last_video_date
+      FROM channels c
+      INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+      WHERE v.youtube_channel_id IS NOT NULL
+      GROUP BY c.youtube_channel_id
+      ORDER BY c.channel_title ASC
+    `).all() as (Channel & { watch_later_count: number; last_video_date: string | null })[]
+  },
+
+  getWatchLaterVideosByChannel: (channelId: string) => {
+    return db.prepare(`
+      SELECT v.*, vs.state 
+      FROM videos v
+      LEFT JOIN video_states vs ON v.id = vs.video_id
+      WHERE v.youtube_channel_id = ?
+      ORDER BY v.added_to_playlist_at DESC
+    `).all(channelId) as (Video & { state: string | null })[]
+  },
+
+  subscribe: (youtubeChannelId: string) => {
+    const stmt = db.prepare('UPDATE channels SET is_subscribed = 1, updated_at = CURRENT_TIMESTAMP WHERE youtube_channel_id = ?')
+    return stmt.run(youtubeChannelId).changes
+  },
+
+  unsubscribe: (youtubeChannelId: string) => {
+    const stmt = db.prepare('UPDATE channels SET is_subscribed = 0, updated_at = CURRENT_TIMESTAMP WHERE youtube_channel_id = ?')
+    return stmt.run(youtubeChannelId).changes
   },
 }
 

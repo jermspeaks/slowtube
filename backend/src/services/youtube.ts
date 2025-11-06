@@ -1,7 +1,7 @@
 import Papa from 'papaparse'
 import { google } from 'googleapis'
 import { getAuthenticatedClient } from '../routes/auth.js'
-import { videoQueries, videoStateQueries } from './database.js'
+import { videoQueries, videoStateQueries, channelQueries } from './database.js'
 
 // Google Takeout watch history entry format
 export interface GoogleTakeoutWatchHistoryEntry {
@@ -257,6 +257,7 @@ export interface YouTubeVideoDetails {
   id: string
   title: string
   description: string | null
+  channelId: string | null
   channelTitle: string | null
   publishedAt: string | null
   duration: string | null
@@ -303,6 +304,7 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<
         id: video.id,
         title: video.snippet?.title || 'Untitled Video',
         description: video.snippet?.description || null,
+        channelId: video.snippet?.channelId || null,
         channelTitle: video.snippet?.channelTitle || null,
         publishedAt: video.snippet?.publishedAt || null,
         duration: video.contentDetails?.duration || null,
@@ -341,6 +343,71 @@ function parseDuration(duration: string): string {
   return parts.join(' ') || '0s'
 }
 
+// Fetch channel details from YouTube API
+async function fetchChannelDetailsFromYouTube(channelIds: string[]): Promise<Map<string, {
+  id: string
+  title: string | null
+  description: string | null
+  thumbnailUrl: string | null
+  subscriberCount: number | null
+} | null>> {
+  if (channelIds.length === 0) {
+    return new Map()
+  }
+
+  if (channelIds.length > 50) {
+    throw new Error('Cannot fetch more than 50 channels at once')
+  }
+
+  try {
+    const auth = await getAuthenticatedClient()
+    const youtube = google.youtube({ version: 'v3', auth })
+
+    // Fetch channel details
+    const channelsResponse = await youtube.channels.list({
+      part: ['snippet', 'statistics'],
+      id: channelIds,
+    })
+
+    const result = new Map<string, {
+      id: string
+      title: string | null
+      description: string | null
+      thumbnailUrl: string | null
+      subscriberCount: number | null
+    } | null>()
+
+    // Mark all channels as null initially
+    for (const channelId of channelIds) {
+      result.set(channelId, null)
+    }
+
+    const channels = channelsResponse.data.items || []
+
+    for (const channel of channels) {
+      if (!channel.id) continue
+
+      result.set(channel.id, {
+        id: channel.id,
+        title: channel.snippet?.title || null,
+        description: channel.snippet?.description || null,
+        thumbnailUrl: channel.snippet?.thumbnails?.medium?.url || 
+                      channel.snippet?.thumbnails?.default?.url || 
+                      channel.snippet?.thumbnails?.high?.url || 
+                      null,
+        subscriberCount: channel.statistics?.subscriberCount ? 
+          parseInt(channel.statistics.subscriberCount, 10) : null,
+      })
+    }
+
+    console.log(`Fetched details for ${channels.length} out of ${channelIds.length} channels`)
+    return result
+  } catch (error) {
+    console.error('Error fetching channel details from YouTube:', error)
+    throw error
+  }
+}
+
 // Process a batch of videos to fetch details from YouTube API
 export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ processed: number; unavailable: number }> {
   try {
@@ -357,10 +424,33 @@ export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ 
     // Fetch details from YouTube API
     const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds)
 
+    // Collect unique channel IDs
+    const channelIdsSet = new Set<string>()
+    videoDetailsMap.forEach((details) => {
+      if (details?.channelId) {
+        channelIdsSet.add(details.channelId)
+      }
+    })
+    const channelIds = Array.from(channelIdsSet)
+
+    // Fetch channel details for all unique channels
+    let channelDetailsMap = new Map<string, {
+      id: string
+      title: string | null
+      description: string | null
+      thumbnailUrl: string | null
+      subscriberCount: number | null
+    } | null>()
+
+    if (channelIds.length > 0) {
+      console.log(`Fetching details for ${channelIds.length} unique channels`)
+      channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds)
+    }
+
     let processed = 0
     let unavailable = 0
 
-    // Update each video with fetched details
+    // Update each video with fetched details and create/update channels
     for (const video of videos) {
       const details = videoDetailsMap.get(video.youtube_id)
 
@@ -370,6 +460,7 @@ export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ 
           title: details.title,
           description: details.description,
           channel_title: details.channelTitle,
+          youtube_channel_id: details.channelId,
           published_at: details.publishedAt,
           duration: details.duration ? parseDuration(details.duration) : null,
           fetch_status: 'completed',
@@ -384,6 +475,54 @@ export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ 
         }
 
         videoQueries.update(video.id, updateData)
+
+        // Create or update channel if we have channel ID
+        if (details.channelId) {
+          const channelDetails = channelDetailsMap.get(details.channelId)
+          const existingChannel = channelQueries.getByChannelId(details.channelId)
+
+          if (existingChannel) {
+            // Update existing channel with latest info
+            if (channelDetails) {
+              channelQueries.updateByChannelId(details.channelId, {
+                channel_title: channelDetails.title || existingChannel.channel_title,
+                description: channelDetails.description || existingChannel.description,
+                thumbnail_url: channelDetails.thumbnailUrl || existingChannel.thumbnail_url,
+                subscriber_count: channelDetails.subscriberCount || existingChannel.subscriber_count,
+              })
+            } else {
+              // Update with what we have from video
+              channelQueries.updateByChannelId(details.channelId, {
+                channel_title: details.channelTitle || existingChannel.channel_title,
+              })
+            }
+          } else {
+            // Create new channel
+            if (channelDetails) {
+              channelQueries.create({
+                youtube_channel_id: details.channelId,
+                channel_title: channelDetails.title || details.channelTitle,
+                description: channelDetails.description,
+                thumbnail_url: channelDetails.thumbnailUrl,
+                subscriber_count: channelDetails.subscriberCount,
+                is_subscribed: 0,
+                custom_tags: null,
+              })
+            } else {
+              // Create with minimal info from video
+              channelQueries.create({
+                youtube_channel_id: details.channelId,
+                channel_title: details.channelTitle,
+                description: null,
+                thumbnail_url: null,
+                subscriber_count: null,
+                is_subscribed: 0,
+                custom_tags: null,
+              })
+            }
+          }
+        }
+
         processed++
       } else {
         // Video not found or unavailable (private/deleted)
@@ -401,5 +540,181 @@ export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ 
     console.error('Error processing batch video fetch:', error)
     throw error
   }
+}
+
+// Process a single batch of videos for channel_id backfill
+async function processBackfillBatch(batchSize: number): Promise<{ processed: number; unavailable: number }> {
+  // Get batch of videos that need channel_id backfill
+  const videos = videoQueries.getVideosNeedingChannelIdBackfill(batchSize)
+  
+  if (videos.length === 0) {
+    return { processed: 0, unavailable: 0 }
+  }
+
+  const videoIds = videos.map(v => v.youtube_id)
+  console.log(`Backfilling channel IDs for ${videoIds.length} videos`)
+
+  // Fetch details from YouTube API
+  const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds)
+
+  // Collect unique channel IDs
+  const channelIdsSet = new Set<string>()
+  videoDetailsMap.forEach((details) => {
+    if (details?.channelId) {
+      channelIdsSet.add(details.channelId)
+    }
+  })
+  const channelIds = Array.from(channelIdsSet)
+
+  // Fetch channel details for all unique channels
+  let channelDetailsMap = new Map<string, {
+    id: string
+    title: string | null
+    description: string | null
+    thumbnailUrl: string | null
+    subscriberCount: number | null
+  } | null>()
+
+  if (channelIds.length > 0) {
+    console.log(`Fetching details for ${channelIds.length} unique channels`)
+    channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds)
+  }
+
+  let processed = 0
+  let unavailable = 0
+
+  // Update each video with channel_id and create/update channels
+  for (const video of videos) {
+    const details = videoDetailsMap.get(video.youtube_id)
+
+    if (details && details.channelId) {
+      // Update video with channel_id
+      videoQueries.update(video.id, {
+        youtube_channel_id: details.channelId,
+      })
+
+      // Create or update channel if we have channel ID
+      const channelDetails = channelDetailsMap.get(details.channelId)
+      const existingChannel = channelQueries.getByChannelId(details.channelId)
+
+      if (existingChannel) {
+        // Update existing channel with latest info
+        if (channelDetails) {
+          channelQueries.updateByChannelId(details.channelId, {
+            channel_title: channelDetails.title || existingChannel.channel_title,
+            description: channelDetails.description || existingChannel.description,
+            thumbnail_url: channelDetails.thumbnailUrl || existingChannel.thumbnail_url,
+            subscriber_count: channelDetails.subscriberCount || existingChannel.subscriber_count,
+          })
+        } else {
+          // Update with what we have from video
+          channelQueries.updateByChannelId(details.channelId, {
+            channel_title: details.channelTitle || existingChannel.channel_title,
+          })
+        }
+      } else {
+        // Create new channel
+        if (channelDetails) {
+          channelQueries.create({
+            youtube_channel_id: details.channelId,
+            channel_title: channelDetails.title || details.channelTitle,
+            description: channelDetails.description,
+            thumbnail_url: channelDetails.thumbnailUrl,
+            subscriber_count: channelDetails.subscriberCount,
+            is_subscribed: 0,
+            custom_tags: null,
+          })
+        } else {
+          // Create with minimal info from video
+          channelQueries.create({
+            youtube_channel_id: details.channelId,
+            channel_title: details.channelTitle,
+            description: null,
+            thumbnail_url: null,
+            subscriber_count: null,
+            is_subscribed: 0,
+            custom_tags: null,
+          })
+        }
+      }
+
+      processed++
+    } else {
+      // Video not found or unavailable (private/deleted)
+      unavailable++
+      console.warn(`Video ${video.youtube_id} not found or unavailable during backfill`)
+    }
+  }
+
+  console.log(`Backfill batch processed: ${processed} completed, ${unavailable} unavailable`)
+  return { processed, unavailable }
+}
+
+// Helper function to add delay between batches (to avoid rate limiting)
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Backfill youtube_channel_id for existing videos continuously in batches
+export async function backfillChannelIds(batchSize: number = 50, delayBetweenBatches: number = 1000): Promise<{
+  totalProcessed: number
+  totalUnavailable: number
+  batchesProcessed: number
+}> {
+  let totalProcessed = 0
+  let totalUnavailable = 0
+  let batchesProcessed = 0
+  const maxBatches = 1000 // Safety limit to prevent infinite loops
+
+  try {
+    console.log('Starting continuous channel ID backfill...')
+    
+    while (batchesProcessed < maxBatches) {
+      const batchResult = await processBackfillBatch(batchSize)
+      
+      totalProcessed += batchResult.processed
+      totalUnavailable += batchResult.unavailable
+      batchesProcessed++
+
+      // Check if there are more videos to process
+      const remaining = videoQueries.countVideosNeedingChannelIdBackfill()
+      
+      if (remaining === 0) {
+        console.log(`Backfill completed. Total processed: ${totalProcessed}, unavailable: ${totalUnavailable}, batches: ${batchesProcessed}`)
+        break
+      }
+
+      // Add delay between batches to avoid rate limiting (except for the last batch)
+      if (remaining > 0) {
+        console.log(`Processed batch ${batchesProcessed}. Remaining: ${remaining}. Continuing...`)
+        await delay(delayBetweenBatches)
+      }
+    }
+
+    if (batchesProcessed >= maxBatches) {
+      console.warn(`Backfill reached safety limit of ${maxBatches} batches. There may be more videos to process.`)
+    }
+
+    return {
+      totalProcessed,
+      totalUnavailable,
+      batchesProcessed,
+    }
+  } catch (error) {
+    console.error('Error during continuous channel ID backfill:', error)
+    // Return partial results even on error
+    return {
+      totalProcessed,
+      totalUnavailable,
+      batchesProcessed,
+    }
+  }
+}
+
+// Fetch latest videos from a channel (placeholder for future implementation)
+export async function fetchLatestVideosFromChannel(channelId: string, limit: number = 50): Promise<any[]> {
+  // TODO: Implement fetching latest videos from YouTube API
+  // This will use youtube.search.list with channelId filter
+  return []
 }
 

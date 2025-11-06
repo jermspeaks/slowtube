@@ -5,6 +5,7 @@ import express from 'express'
 import cors from 'cors'
 import authRoutes from './routes/auth.js'
 import videoRoutes from './routes/videos.js'
+import channelRoutes from './routes/channels.js'
 
 // Validate required environment variables
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
@@ -27,6 +28,7 @@ app.use(express.json())
 // Routes
 app.use('/auth', authRoutes)
 app.use('/api/videos', videoRoutes)
+app.use('/api/channels', channelRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' })

@@ -9,6 +9,7 @@ export interface Video {
   added_to_playlist_at: string | null
   fetch_status: 'pending' | 'completed' | 'unavailable' | 'failed' | null
   channel_title: string | null
+  youtube_channel_id: string | null
   youtube_url: string | null
   created_at: string
   updated_at: string

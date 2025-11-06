@@ -4,6 +4,8 @@ import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
 import GroupedView from './pages/GroupedView'
 import Settings from './pages/Settings'
+import ChannelsList from './pages/ChannelsList'
+import ChannelDetail from './pages/ChannelDetail'
 import { Navbar } from './components/Navbar'
 
 function AppContent() {
@@ -19,6 +21,9 @@ function AppContent() {
         <Route path="/stats" element={<Stats />} />
         <Route path="/grouped" element={<GroupedView />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/channels/subscribed" element={<ChannelsList />} />
+        <Route path="/channels/watch-later" element={<ChannelsList />} />
+        <Route path="/channels/:channelId" element={<ChannelDetail />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </>
