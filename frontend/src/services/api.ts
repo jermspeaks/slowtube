@@ -38,7 +38,8 @@ export const videosAPI = {
     if (sortBy) params.sortBy = sortBy
     if (sortOrder) params.sortOrder = sortOrder
     if (channels && channels.length > 0) {
-      params.channels = channels
+      // Send channels as comma-separated string - backend handles both string and array
+      params.channels = channels.join(',')
     }
     if (page !== undefined) params.page = page
     if (limit !== undefined) params.limit = limit
