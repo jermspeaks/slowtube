@@ -4,7 +4,7 @@
 - [x] Pagination! Might be good to only show 100 items at a time?
 - [x] Add a count of videos next to the channel in group view
 - [ ] Subscribed channels view -- import the subscribed channels and see latest videos PER channel
-- [ ] Create lists of subscribers so I can group WHICH videos I want to see by my grouping
+- [ ] Create lists (segments) of subscribers so I can group WHICH videos I want to see by my grouping
 - [ ] Adding tags to channels so I can easily organize and filter by that
 - [ ] Channels view - seeing what channels I've added to watch later
 - [ ] Channel details - fetch the latest channel information

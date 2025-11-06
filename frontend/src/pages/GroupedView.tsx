@@ -59,8 +59,8 @@ function GroupedView() {
         sortBy || undefined,
         sortBy ? sortOrder : undefined,
         selectedChannels.length > 0 ? selectedChannels : undefined,
-        undefined,
-        undefined,
+        1, // page - start at page 1
+        100000, // limit - use a very large number to fetch all videos for grouping
         dateField || undefined,
         startDate || undefined,
         endDate || undefined

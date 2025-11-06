@@ -2,6 +2,7 @@ import { Video, VideoState, Comment } from '../types/video'
 import { videosAPI } from '../services/api'
 import TagInput from './TagInput'
 import CommentSection from './CommentSection'
+import VideoPlayer from './VideoPlayer'
 import { format } from 'date-fns'
 
 interface VideoDetailModalProps {
@@ -87,15 +88,9 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
             </button>
           </div>
 
-          {video.thumbnail_url && (
-            <div className="mb-5">
-              <img
-                src={video.thumbnail_url}
-                alt={video.title}
-                className="w-full max-h-[400px] object-contain rounded"
-              />
-            </div>
-          )}
+          <div className="mb-5">
+            <VideoPlayer video={video} />
+          </div>
 
           <div className="mb-5">
             <h3 className="mb-2 text-sm font-bold">State</h3>
