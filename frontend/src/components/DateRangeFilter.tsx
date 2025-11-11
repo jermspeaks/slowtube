@@ -57,13 +57,13 @@ function DateRangeFilter({
     <div className="space-y-4">
       {/* Date Field Selector */}
       <div className="flex gap-2 items-center">
-        <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Date Field:</label>
+        <label className="font-semibold text-sm text-foreground whitespace-nowrap">Date Field:</label>
         <select
           value={dateField || ''}
           onChange={(e) => onDateFieldChange(
             e.target.value === '' ? null : e.target.value as 'added_to_playlist_at' | 'published_at'
           )}
-          className="px-3 py-2 border border-gray-300 rounded text-sm bg-white"
+          className="px-3 py-2 border border-border rounded text-sm bg-background"
         >
           <option value="">None</option>
           <option value="added_to_playlist_at">Date Added</option>
@@ -76,22 +76,22 @@ function DateRangeFilter({
         <>
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex gap-2 items-center w-full sm:w-auto">
-              <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Start Date:</label>
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Start Date:</label>
               <input
                 type="date"
                 value={startDate || ''}
                 onChange={(e) => onStartDateChange(e.target.value || null)}
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white flex-1 sm:flex-initial"
+                className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
               />
             </div>
             <div className="flex gap-2 items-center w-full sm:w-auto">
-              <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">End Date:</label>
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">End Date:</label>
               <input
                 type="date"
                 value={endDate || ''}
                 onChange={(e) => onEndDateChange(e.target.value || null)}
                 min={startDate || undefined}
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white flex-1 sm:flex-initial"
+                className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
               />
             </div>
           </div>
@@ -100,32 +100,32 @@ function DateRangeFilter({
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => applyPreset('last7days')}
-              className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+              className="px-3 py-1.5 text-xs bg-muted text-foreground rounded hover:bg-accent transition-colors"
             >
               Last 7 days
             </button>
             <button
               onClick={() => applyPreset('last30days')}
-              className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+              className="px-3 py-1.5 text-xs bg-muted text-foreground rounded hover:bg-accent transition-colors"
             >
               Last 30 days
             </button>
             <button
               onClick={() => applyPreset('thisMonth')}
-              className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+              className="px-3 py-1.5 text-xs bg-muted text-foreground rounded hover:bg-accent transition-colors"
             >
               This month
             </button>
             <button
               onClick={() => applyPreset('thisYear')}
-              className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+              className="px-3 py-1.5 text-xs bg-muted text-foreground rounded hover:bg-accent transition-colors"
             >
               This year
             </button>
             {(startDate || endDate) && (
               <button
                 onClick={handleClear}
-                className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                className="px-3 py-1.5 text-xs bg-destructive/20 text-destructive rounded hover:bg-destructive/30 transition-colors"
               >
                 Clear
               </button>

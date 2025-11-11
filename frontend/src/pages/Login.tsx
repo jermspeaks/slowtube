@@ -24,12 +24,12 @@ function Login() {
   const authSuccess = searchParams.get('auth') === 'success'
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-5">
-      <div className="max-w-[400px] w-full p-10 bg-white rounded-lg shadow-lg">
+    <div className="flex flex-col items-center justify-center min-h-screen p-5 bg-background">
+      <div className="max-w-[400px] w-full p-10 bg-card rounded-lg shadow-lg">
         <h1 className="mb-5 text-center">
           YouTube Watch Later
         </h1>
-        <p className="mb-8 text-center text-gray-600">
+        <p className="mb-8 text-center text-muted-foreground">
           Connect your YouTube account to import your watch later playlist
         </p>
         

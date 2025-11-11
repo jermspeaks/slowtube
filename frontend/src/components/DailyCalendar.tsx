@@ -40,32 +40,32 @@ function DailyCalendar({ episodes, currentDate, onDateChange, onUpdate }: DailyC
         <div className="flex items-center gap-4">
           <button
             onClick={goToPreviousDay}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
           >
             ← Previous
           </button>
-          <h2 className={`text-lg font-semibold ${isToday ? 'text-blue-600' : ''}`}>
+          <h2 className={`text-lg font-semibold ${isToday ? 'text-primary' : ''}`}>
             {format(currentDate, 'EEEE, MMMM d, yyyy')}
             {isToday && ' (Today)'}
           </h2>
           <button
             onClick={goToNextDay}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
           >
             Next →
           </button>
         </div>
         <button
           onClick={goToToday}
-          className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+          className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
         >
           Today
         </button>
       </div>
 
       {dayEpisodes.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg">
-          <p className="text-gray-500">No episodes airing on this day</p>
+        <div className="text-center py-12 bg-card rounded-lg">
+          <p className="text-muted-foreground">No episodes airing on this day</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

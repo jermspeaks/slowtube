@@ -71,40 +71,40 @@ function Calendar() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h1 className="text-2xl font-bold">TV Show Calendar</h1>
           
           <div className="flex items-center gap-4">
             {/* View toggle */}
-            <div className="flex border border-gray-300 rounded overflow-hidden">
+            <div className="flex border border-border rounded overflow-hidden">
               <button
                 onClick={() => setView('monthly')}
-                className={`px-4 py-2 text-sm font-medium ${
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
                   view === 'monthly'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground hover:bg-accent'
                 }`}
               >
                 Monthly
               </button>
               <button
                 onClick={() => setView('weekly')}
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-300 ${
+                className={`px-4 py-2 text-sm font-medium border-l border-border transition-colors ${
                   view === 'weekly'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground hover:bg-accent'
                 }`}
               >
                 Weekly
               </button>
               <button
                 onClick={() => setView('daily')}
-                className={`px-4 py-2 text-sm font-medium border-l border-gray-300 ${
+                className={`px-4 py-2 text-sm font-medium border-l border-border transition-colors ${
                   view === 'daily'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card text-foreground hover:bg-accent'
                 }`}
               >
                 Daily
@@ -125,8 +125,8 @@ function Calendar() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-            <div className="text-lg text-gray-500">Loading episodes...</div>
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading episodes...</div>
           </div>
         ) : (
           <>

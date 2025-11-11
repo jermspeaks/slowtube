@@ -125,7 +125,7 @@ function Dashboard() {
   }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
           <div className="flex-1 min-w-0">
@@ -153,15 +153,15 @@ function Dashboard() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-            <div className="text-lg text-gray-500">Loading videos...</div>
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading videos...</div>
           </div>
         ) : videos.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-            <p className="text-lg text-gray-500 mb-4">
+          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-lg text-muted-foreground mb-4">
               No videos found
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Import videos from the Settings page to get started.
             </p>
           </div>
@@ -190,16 +190,16 @@ function Dashboard() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">Page</span>
+                  <span className="text-sm text-foreground">Page</span>
                   <select
                     value={currentPage}
                     onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-                    className="px-3 py-2 border border-gray-300 rounded text-sm"
+                    className="px-3 py-2 border border-border rounded text-sm"
                   >
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                       <option key={page} value={page}>
@@ -207,12 +207,12 @@ function Dashboard() {
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                  <span className="text-sm text-foreground">of {totalPages}</span>
                 </div>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>

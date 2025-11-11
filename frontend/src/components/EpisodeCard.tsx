@@ -44,8 +44,8 @@ function EpisodeCard({ episode, onUpdate }: EpisodeCardProps) {
   }
 
   return (
-    <div className={`bg-white rounded-lg overflow-hidden shadow-md border-2 transition-all ${
-      isWatched ? 'border-gray-300 opacity-60' : 'border-transparent hover:border-blue-300'
+    <div className={`bg-card rounded-lg overflow-hidden shadow-md border-2 transition-all ${
+      isWatched ? 'border-border opacity-60' : 'border-transparent hover:border-primary'
     }`}>
       {imageUrl && (
         <div className="relative w-full pt-[56.25%]">
@@ -67,12 +67,12 @@ function EpisodeCard({ episode, onUpdate }: EpisodeCardProps) {
             <h3 className="text-sm font-bold line-clamp-2 mb-1">
               {episode.tv_show_title}
             </h3>
-            <p className="text-xs text-gray-600 mb-1">
+            <p className="text-xs text-muted-foreground mb-1">
               S{episode.season_number.toString().padStart(2, '0')}E{episode.episode_number.toString().padStart(2, '0')}
               {episode.name && ` - ${episode.name}`}
             </p>
             {episode.air_date && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {new Date(episode.air_date).toLocaleDateString()}
               </p>
             )}

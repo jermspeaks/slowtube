@@ -74,7 +74,7 @@ function WatchNext() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h1 className="text-2xl font-bold">Watch Next</h1>
@@ -82,9 +82,9 @@ function WatchNext() {
         </div>
 
         {/* Movies/TV Shows Starred Section - Placeholder */}
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
           <h2 className="text-lg font-semibold mb-2">Starred Movies & TV Shows</h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Starred movies and TV shows will appear here once the starring feature is implemented.
           </p>
         </div>
@@ -95,15 +95,15 @@ function WatchNext() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-            <div className="text-lg text-gray-500">Loading videos...</div>
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading videos...</div>
           </div>
         ) : videos.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-            <p className="text-lg text-gray-500 mb-4">
+          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-lg text-muted-foreground mb-4">
               No videos in your inbox
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Videos you mark as "inbox" will appear here.
             </p>
           </div>
@@ -132,16 +132,16 @@ function WatchNext() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">Page</span>
+                  <span className="text-sm text-foreground">Page</span>
                   <select
                     value={currentPage}
                     onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-                    className="px-3 py-2 border border-gray-300 rounded text-sm"
+                    className="px-3 py-2 border border-border rounded text-sm bg-background"
                   >
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                       <option key={page} value={page}>
@@ -149,12 +149,12 @@ function WatchNext() {
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                  <span className="text-sm text-foreground">of {totalPages}</span>
                 </div>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>

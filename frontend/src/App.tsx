@@ -12,8 +12,12 @@ import Upcoming from './pages/Upcoming'
 import WatchNext from './pages/WatchNext'
 import Tags from './pages/Tags'
 import { Navbar } from './components/Navbar'
+import { useTheme } from './hooks/useTheme'
 
 function AppContent() {
+  // Initialize theme on app load
+  useTheme()
+
   return (
     <>
       <Navbar />

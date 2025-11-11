@@ -26,24 +26,24 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden">
+      <table className="w-full border-collapse bg-card rounded-lg overflow-hidden">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="p-3 text-left border-b-2 border-gray-300">Thumbnail</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Title</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Channel</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">State</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Tags</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Duration</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Published</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Added</th>
+          <tr className="bg-muted">
+            <th className="p-3 text-left border-b-2 border-border">Thumbnail</th>
+            <th className="p-3 text-left border-b-2 border-border">Title</th>
+            <th className="p-3 text-left border-b-2 border-border">Channel</th>
+            <th className="p-3 text-left border-b-2 border-border">State</th>
+            <th className="p-3 text-left border-b-2 border-border">Tags</th>
+            <th className="p-3 text-left border-b-2 border-border">Duration</th>
+            <th className="p-3 text-left border-b-2 border-border">Published</th>
+            <th className="p-3 text-left border-b-2 border-border">Added</th>
           </tr>
         </thead>
         <tbody>
           {videos.map(video => (
             <tr
               key={video.id}
-              className="border-b border-gray-300 hover:bg-gray-100"
+              className="border-b border-border hover:bg-accent transition-colors"
             >
               <td
                 className="p-2 cursor-pointer"
@@ -68,12 +68,12 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
                   )}
                 </div>
                 {video.description && (
-                  <div className="text-xs text-gray-500 overflow-hidden text-ellipsis whitespace-nowrap">
+                  <div className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
                     {video.description}
                   </div>
                 )}
               </td>
-              <td className="p-3 text-gray-500 text-xs">
+              <td className="p-3 text-muted-foreground text-xs">
                 {video.channel_title || '-'}
               </td>
               <td className="p-3">
@@ -94,28 +94,28 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
                     {video.tags.slice(0, 3).map(tag => (
                       <span
                         key={tag.id}
-                        className="px-1.5 py-0.5 bg-gray-200 rounded text-[11px] text-gray-700"
+                        className="px-1.5 py-0.5 bg-muted rounded text-[11px] text-muted-foreground"
                       >
                         {tag.name}
                       </span>
                     ))}
                     {video.tags.length > 3 && (
-                      <span className="text-[11px] text-gray-500">
+                      <span className="text-[11px] text-muted-foreground">
                         +{video.tags.length - 3}
                       </span>
                     )}
                   </div>
                 ) : (
-                  <span className="text-gray-500 text-xs">-</span>
+                  <span className="text-muted-foreground text-xs">-</span>
                 )}
               </td>
-              <td className="p-3 text-gray-500 text-xs">
+              <td className="p-3 text-muted-foreground text-xs">
                 {video.duration || '-'}
               </td>
-              <td className="p-3 text-gray-500 text-xs">
+              <td className="p-3 text-muted-foreground text-xs">
                 {video.published_at ? format(new Date(video.published_at), 'MMM d, yyyy') : '-'}
               </td>
-              <td className="p-3 text-gray-500 text-xs">
+              <td className="p-3 text-muted-foreground text-xs">
                 {video.added_to_playlist_at ? format(new Date(video.added_to_playlist_at), 'MMM d, yyyy') : '-'}
               </td>
             </tr>

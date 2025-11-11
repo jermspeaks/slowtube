@@ -22,15 +22,15 @@ function MovieTable({ movies, onDelete }: MovieTableProps) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden">
+      <table className="w-full border-collapse bg-card rounded-lg overflow-hidden">
         <thead>
-          <tr className="bg-gray-100">
-            <th className="p-3 text-left border-b-2 border-gray-300">Poster</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Title</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Overview</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Release Date</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Created At</th>
-            <th className="p-3 text-left border-b-2 border-gray-300">Actions</th>
+          <tr className="bg-muted">
+            <th className="p-3 text-left border-b-2 border-border">Poster</th>
+            <th className="p-3 text-left border-b-2 border-border">Title</th>
+            <th className="p-3 text-left border-b-2 border-border">Overview</th>
+            <th className="p-3 text-left border-b-2 border-border">Release Date</th>
+            <th className="p-3 text-left border-b-2 border-border">Created At</th>
+            <th className="p-3 text-left border-b-2 border-border">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -39,7 +39,7 @@ function MovieTable({ movies, onDelete }: MovieTableProps) {
             return (
               <tr
                 key={movie.id}
-                className="border-b border-gray-300 hover:bg-gray-100"
+                className="border-b border-border hover:bg-accent transition-colors"
               >
                 <td className="p-2">
                   {posterUrl ? (
@@ -49,7 +49,7 @@ function MovieTable({ movies, onDelete }: MovieTableProps) {
                       className="w-20 h-30 object-cover rounded"
                     />
                   ) : (
-                    <div className="w-20 h-30 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">
+                    <div className="w-20 h-30 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
                       No poster
                     </div>
                   )}
@@ -57,26 +57,26 @@ function MovieTable({ movies, onDelete }: MovieTableProps) {
                 <td className="p-3 max-w-[300px]">
                   <div className="font-bold mb-1">{movie.title}</div>
                   {movie.tmdb_id && (
-                    <div className="text-xs text-gray-500">TMDB: {movie.tmdb_id}</div>
+                    <div className="text-xs text-muted-foreground">TMDB: {movie.tmdb_id}</div>
                   )}
                 </td>
                 <td className="p-3 max-w-[400px]">
                   {movie.overview ? (
-                    <div className="text-sm text-gray-600 line-clamp-3">
+                    <div className="text-sm text-muted-foreground line-clamp-3">
                       {movie.overview}
                     </div>
                   ) : (
-                    <span className="text-gray-500 text-sm">-</span>
+                    <span className="text-muted-foreground text-sm">-</span>
                   )}
                 </td>
-                <td className="p-3 text-gray-500 text-sm">
+                <td className="p-3 text-muted-foreground text-sm">
                   {movie.release_date ? (
                     format(new Date(movie.release_date), 'MMM d, yyyy')
                   ) : (
                     '-'
                   )}
                 </td>
-                <td className="p-3 text-gray-500 text-sm">
+                <td className="p-3 text-muted-foreground text-sm">
                   {movie.created_at ? (
                     format(new Date(movie.created_at), 'MMM d, yyyy')
                   ) : (

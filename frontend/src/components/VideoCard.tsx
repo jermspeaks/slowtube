@@ -25,7 +25,7 @@ function VideoCard({ video, onClick, onStateChange }: VideoCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-md transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+    <div className="bg-card rounded-lg overflow-hidden shadow-md transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg">
       {video.thumbnail_url && (
         <div
           onClick={onClick}
@@ -57,7 +57,7 @@ function VideoCard({ video, onClick, onStateChange }: VideoCardProps) {
           )}
         </h3>
         {video.channel_title && (
-          <div className="mb-2 text-xs text-gray-500">
+          <div className="mb-2 text-xs text-muted-foreground">
             {video.channel_title}
           </div>
         )}
@@ -76,19 +76,19 @@ function VideoCard({ video, onClick, onStateChange }: VideoCardProps) {
             {video.tags.slice(0, 3).map(tag => (
               <span
                 key={tag.id}
-                className="px-1.5 py-0.5 bg-gray-200 rounded text-[11px] text-gray-700"
+                className="px-1.5 py-0.5 bg-muted rounded text-[11px] text-muted-foreground"
               >
                 {tag.name}
               </span>
             ))}
             {video.tags.length > 3 && (
-              <span className="text-[11px] text-gray-500">
+              <span className="text-[11px] text-muted-foreground">
                 +{video.tags.length - 3}
               </span>
             )}
           </div>
         )}
-        <div className="mt-2 text-[11px] text-gray-500 flex flex-col gap-1">
+        <div className="mt-2 text-[11px] text-muted-foreground flex flex-col gap-1">
           {video.published_at && (
             <div>
               Published: {format(new Date(video.published_at), 'MMM d, yyyy')}
