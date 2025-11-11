@@ -147,12 +147,36 @@ export const channelsAPI = {
 
 // TV Shows API
 export const tvShowsAPI = {
-  getAll: async (includeArchived?: boolean) => {
-    const params: Record<string, string> = {}
+  getAll: async (
+    includeArchived?: boolean,
+    search?: string,
+    sortBy?: 'title' | 'first_air_date' | 'created_at',
+    sortOrder?: 'asc' | 'desc',
+    page?: number,
+    limit?: number
+  ) => {
+    const params: Record<string, string | number> = {}
     if (includeArchived !== undefined) {
       params.includeArchived = includeArchived ? 'true' : 'false'
     }
+    if (search) params.search = search
+    if (sortBy) params.sortBy = sortBy
+    if (sortOrder) params.sortOrder = sortOrder
+    if (page !== undefined) params.page = page
+    if (limit !== undefined) params.limit = limit
     const response = await api.get('/api/tv-shows', { params })
+    return response.data
+  },
+  search: async (query: string) => {
+    const response = await api.post('/api/tv-shows/search', { query })
+    return response.data
+  },
+  create: async (tmdbId: number) => {
+    const response = await api.post('/api/tv-shows', { tmdbId })
+    return response.data
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/api/tv-shows/${id}`)
     return response.data
   },
   getById: async (id: number) => {
@@ -183,8 +207,32 @@ export const tvShowsAPI = {
 
 // Movies API
 export const moviesAPI = {
-  getAll: async () => {
-    const response = await api.get('/api/movies')
+  getAll: async (
+    search?: string,
+    sortBy?: 'title' | 'release_date' | 'created_at',
+    sortOrder?: 'asc' | 'desc',
+    page?: number,
+    limit?: number
+  ) => {
+    const params: Record<string, string | number> = {}
+    if (search) params.search = search
+    if (sortBy) params.sortBy = sortBy
+    if (sortOrder) params.sortOrder = sortOrder
+    if (page !== undefined) params.page = page
+    if (limit !== undefined) params.limit = limit
+    const response = await api.get('/api/movies', { params })
+    return response.data
+  },
+  search: async (query: string) => {
+    const response = await api.post('/api/movies/search', { query })
+    return response.data
+  },
+  create: async (tmdbId: number) => {
+    const response = await api.post('/api/movies', { tmdbId })
+    return response.data
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/api/movies/${id}`)
     return response.data
   },
   getById: async (id: number) => {
@@ -212,6 +260,10 @@ export const calendarAPI = {
 export const importAPI = {
   importTMDB: async () => {
     const response = await api.post('/api/import/tmdb')
+    return response.data
+  },
+  importIMDB: async () => {
+    const response = await api.post('/api/import/imdb')
     return response.data
   },
 }

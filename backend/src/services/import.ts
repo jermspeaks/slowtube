@@ -19,19 +19,19 @@ interface DataEntry {
   savedAt: number // timestamp in milliseconds
 }
 
-// Parse data.json file
-function parseDataJson(): DataEntry[] {
-  const dataJsonPath = path.join(__dirname, '../../../data.json')
+// Parse data.json or data2.json file
+function parseDataJson(filePath: string): DataEntry[] {
+  const fullPath = path.join(__dirname, '../../../', filePath)
   
-  if (!fs.existsSync(dataJsonPath)) {
-    throw new Error('data.json file not found in project root')
+  if (!fs.existsSync(fullPath)) {
+    throw new Error(`${filePath} file not found in project root`)
   }
 
-  const fileContent = fs.readFileSync(dataJsonPath, 'utf-8')
+  const fileContent = fs.readFileSync(fullPath, 'utf-8')
   const data = JSON.parse(fileContent)
 
   if (!data.result || !Array.isArray(data.result)) {
-    throw new Error('Invalid data.json format: expected result array')
+    throw new Error(`Invalid ${filePath} format: expected result array`)
   }
 
   return data.result.map((entry: [string, number]) => ({
@@ -41,11 +41,22 @@ function parseDataJson(): DataEntry[] {
 }
 
 // Extract ID and type from entry ID
-function parseEntryId(entryId: string): { type: 'tmdb' | 'imdb' | 'other', id: string } {
+function parseEntryId(entryId: string, expectedType?: 'tmdb' | 'imdb'): { type: 'tmdb' | 'imdb' | 'other', id: string } {
+  // If expected type is provided, use it
+  if (expectedType === 'tmdb') {
+    return { type: 'tmdb', id: entryId }
+  } else if (expectedType === 'imdb') {
+    return { type: 'imdb', id: entryId }
+  }
+
+  // Auto-detect based on format
   if (entryId.startsWith('tmdb:')) {
     return { type: 'tmdb', id: entryId.replace('tmdb:', '') }
   } else if (entryId.startsWith('tt')) {
     return { type: 'imdb', id: entryId }
+  } else if (/^\d+$/.test(entryId)) {
+    // Numeric IDs are treated as TMDB IDs
+    return { type: 'tmdb', id: entryId }
   } else {
     return { type: 'other', id: entryId }
   }
@@ -57,8 +68,8 @@ function timestampToISO(timestamp: number): string {
 }
 
 // Import a single entry
-async function importEntry(entry: DataEntry): Promise<{ type: 'tv' | 'movie' | 'skipped', tmdbId?: number }> {
-  const { type, id } = parseEntryId(entry.id)
+async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Promise<{ type: 'tv' | 'movie' | 'skipped', tmdbId?: number }> {
+  const { type, id } = parseEntryId(entry.id, expectedType)
   let tmdbId: number | null = null
   let mediaType: 'movie' | 'tv' | null = null
 
@@ -199,8 +210,8 @@ async function importEntry(entry: DataEntry): Promise<{ type: 'tv' | 'movie' | '
   return { type: 'skipped' }
 }
 
-// Import all entries from data.json
-export async function importFromDataJson(): Promise<{
+// Import all entries from a data file
+async function importFromDataFile(filePath: string, expectedType: 'tmdb' | 'imdb'): Promise<{
   total: number
   imported: number
   tvShows: number
@@ -208,9 +219,9 @@ export async function importFromDataJson(): Promise<{
   skipped: number
   errors: number
 }> {
-  console.log('Starting import from data.json...')
+  console.log(`Starting import from ${filePath} (${expectedType.toUpperCase()} IDs)...`)
 
-  const entries = parseDataJson()
+  const entries = parseDataJson(filePath)
   console.log(`Found ${entries.length} entries to process`)
 
   let imported = 0
@@ -224,7 +235,7 @@ export async function importFromDataJson(): Promise<{
     const entry = entries[i]
     
     try {
-      const result = await importEntry(entry)
+      const result = await importEntry(entry, expectedType)
       
       if (result.type === 'tv') {
         imported++
@@ -265,5 +276,29 @@ export async function importFromDataJson(): Promise<{
     skipped,
     errors,
   }
+}
+
+// Import all entries from data.json (TMDB IDs)
+export async function importFromDataJson(): Promise<{
+  total: number
+  imported: number
+  tvShows: number
+  movies: number
+  skipped: number
+  errors: number
+}> {
+  return importFromDataFile('data.json', 'tmdb')
+}
+
+// Import all entries from data2.json (IMDb IDs)
+export async function importFromData2Json(): Promise<{
+  total: number
+  imported: number
+  tvShows: number
+  movies: number
+  skipped: number
+  errors: number
+}> {
+  return importFromDataFile('data2.json', 'imdb')
 }
 

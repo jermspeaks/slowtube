@@ -844,18 +844,90 @@ export interface TVShowState {
 
 // TV Show operations
 export const tvShowQueries = {
-  getAll: (includeArchived: boolean = true) => {
-    if (includeArchived) {
-      return db.prepare('SELECT * FROM tv_shows ORDER BY title ASC').all() as TVShow[]
-    } else {
-      return db.prepare(`
-        SELECT ts.*
-        FROM tv_shows ts
-        LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
-        WHERE tss.is_archived = 0 OR tss.is_archived IS NULL
-        ORDER BY ts.title ASC
-      `).all() as TVShow[]
+  getAll: (
+    includeArchived: boolean = true,
+    search?: string,
+    sortBy?: 'title' | 'first_air_date' | 'created_at',
+    sortOrder?: 'asc' | 'desc',
+    limit?: number,
+    offset?: number
+  ) => {
+    const conditions: string[] = []
+    const params: any[] = []
+
+    // Archived filter
+    if (!includeArchived) {
+      conditions.push('(tss.is_archived = 0 OR tss.is_archived IS NULL)')
     }
+
+    // Search filter (case-insensitive search on title and overview)
+    if (search && search.trim()) {
+      conditions.push('(LOWER(ts.title) LIKE ? OR LOWER(ts.overview) LIKE ?)')
+      const searchTerm = `%${search.trim().toLowerCase()}%`
+      params.push(searchTerm, searchTerm)
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    // Build ORDER BY clause
+    let orderBy = 'ORDER BY ts.title ASC' // Default sort
+    if (sortBy && (sortBy === 'title' || sortBy === 'first_air_date' || sortBy === 'created_at')) {
+      const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
+      // Handle NULL values - put them at the end
+      orderBy = `ORDER BY 
+        CASE WHEN ts.${sortBy} IS NULL THEN 1 ELSE 0 END,
+        ts.${sortBy} ${order}`
+    }
+
+    // Build LIMIT and OFFSET clauses
+    let limitClause = ''
+    if (limit !== undefined) {
+      limitClause = `LIMIT ?`
+      params.push(limit)
+      if (offset !== undefined) {
+        limitClause += ` OFFSET ?`
+        params.push(offset)
+      }
+    }
+
+    const query = `
+      SELECT ts.*
+      FROM tv_shows ts
+      LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
+      ${whereClause}
+      ${orderBy}
+      ${limitClause}
+    `
+
+    return db.prepare(query).all(...params) as TVShow[]
+  },
+
+  getCount: (includeArchived: boolean = true, search?: string) => {
+    const conditions: string[] = []
+    const params: any[] = []
+
+    // Archived filter
+    if (!includeArchived) {
+      conditions.push('(tss.is_archived = 0 OR tss.is_archived IS NULL)')
+    }
+
+    // Search filter (case-insensitive search on title and overview)
+    if (search && search.trim()) {
+      conditions.push('(LOWER(ts.title) LIKE ? OR LOWER(ts.overview) LIKE ?)')
+      const searchTerm = `%${search.trim().toLowerCase()}%`
+      params.push(searchTerm, searchTerm)
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const query = `
+      SELECT COUNT(*) as count
+      FROM tv_shows ts
+      LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
+      ${whereClause}
+    `
+    const result = db.prepare(query).get(...params) as { count: number }
+    return result.count
   },
 
   getById: (id: number) => {
@@ -917,8 +989,72 @@ export const tvShowQueries = {
 
 // Movie operations
 export const movieQueries = {
-  getAll: () => {
-    return db.prepare('SELECT * FROM movies ORDER BY title ASC').all() as Movie[]
+  getAll: (
+    search?: string,
+    sortBy?: 'title' | 'release_date' | 'created_at',
+    sortOrder?: 'asc' | 'desc',
+    limit?: number,
+    offset?: number
+  ) => {
+    const conditions: string[] = []
+    const params: any[] = []
+
+    // Search filter (case-insensitive search on title and overview)
+    if (search && search.trim()) {
+      conditions.push('(LOWER(title) LIKE ? OR LOWER(overview) LIKE ?)')
+      const searchTerm = `%${search.trim().toLowerCase()}%`
+      params.push(searchTerm, searchTerm)
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    // Build ORDER BY clause
+    let orderBy = 'ORDER BY title ASC' // Default sort
+    if (sortBy && (sortBy === 'title' || sortBy === 'release_date' || sortBy === 'created_at')) {
+      const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
+      // Handle NULL values - put them at the end
+      orderBy = `ORDER BY 
+        CASE WHEN ${sortBy} IS NULL THEN 1 ELSE 0 END,
+        ${sortBy} ${order}`
+    }
+
+    // Build LIMIT and OFFSET clauses
+    let limitClause = ''
+    if (limit !== undefined) {
+      limitClause = `LIMIT ?`
+      params.push(limit)
+      if (offset !== undefined) {
+        limitClause += ` OFFSET ?`
+        params.push(offset)
+      }
+    }
+
+    const query = `
+      SELECT * FROM movies
+      ${whereClause}
+      ${orderBy}
+      ${limitClause}
+    `
+
+    return db.prepare(query).all(...params) as Movie[]
+  },
+
+  getCount: (search?: string) => {
+    const conditions: string[] = []
+    const params: any[] = []
+
+    // Search filter (case-insensitive search on title and overview)
+    if (search && search.trim()) {
+      conditions.push('(LOWER(title) LIKE ? OR LOWER(overview) LIKE ?)')
+      const searchTerm = `%${search.trim().toLowerCase()}%`
+      params.push(searchTerm, searchTerm)
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
+    const query = `SELECT COUNT(*) as count FROM movies ${whereClause}`
+    const result = db.prepare(query).get(...params) as { count: number }
+    return result.count
   },
 
   getById: (id: number) => {

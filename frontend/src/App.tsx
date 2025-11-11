@@ -7,6 +7,8 @@ import Settings from './pages/Settings'
 import ChannelsList from './pages/ChannelsList'
 import ChannelDetail from './pages/ChannelDetail'
 import Calendar from './pages/Calendar'
+import MoviesList from './pages/MoviesList'
+import TVShowsList from './pages/TVShowsList'
 import { Navbar } from './components/Navbar'
 
 function AppContent() {
@@ -26,6 +28,8 @@ function AppContent() {
         <Route path="/channels/subscribed" element={<ChannelsList />} />
         <Route path="/channels/watch-later" element={<ChannelsList />} />
         <Route path="/channels/:channelId" element={<ChannelDetail />} />
+        <Route path="/movies" element={<MoviesList />} />
+        <Route path="/tv-shows" element={<TVShowsList />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </>

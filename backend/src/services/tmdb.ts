@@ -26,7 +26,9 @@ export function getImageUrl(path: string | null, size: 'w92' | 'w154' | 'w185' |
 async function tmdbRequest(endpoint: string, params: Record<string, any> = {}) {
   const config = getTMDBConfig()
   
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = {
+    'Accept': 'application/json',
+  }
   if (config.accessToken) {
     headers['Authorization'] = `Bearer ${config.accessToken}`
   }
@@ -67,21 +69,29 @@ async function tmdbRequest(endpoint: string, params: Record<string, any> = {}) {
 export async function findTmdbIdByImdbId(imdbId: string): Promise<number | null> {
   try {
     // Pass the full IMDb ID (including 'tt' prefix) directly to the API
+    // Format: /find/{external_id}?external_source=imdb_id
     const data = await tmdbRequest(`/find/${imdbId}`, {
       external_source: 'imdb_id',
     }) as {
       movie_results?: Array<{ id: number }>
       tv_results?: Array<{ id: number }>
+      tv_episode_results?: Array<{ id: number }>
+      person_results?: Array<{ id: number }>
     }
 
     // Prefer movie_results over tv_results when both exist
     if (data.movie_results && data.movie_results.length > 0) {
-      return data.movie_results[0].id
+      const tmdbId = data.movie_results[0].id
+      console.log(`Found TMDB movie ID ${tmdbId} for IMDb ID ${imdbId}`)
+      return tmdbId
     }
     if (data.tv_results && data.tv_results.length > 0) {
-      return data.tv_results[0].id
+      const tmdbId = data.tv_results[0].id
+      console.log(`Found TMDB TV ID ${tmdbId} for IMDb ID ${imdbId}`)
+      return tmdbId
     }
 
+    console.warn(`No TMDB ID found for IMDb ID ${imdbId}`)
     return null
   } catch (error: any) {
     console.error(`Error finding TMDB ID for IMDb ID ${imdbId}:`, error.message)
@@ -97,13 +107,14 @@ export async function getMediaType(tmdbId: number): Promise<'movie' | 'tv' | nul
       await tmdbRequest(`/tv/${tmdbId}`)
       return 'tv'
     } catch (tvError: any) {
-      // If 404, try movie
-      if (tvError.response?.status === 404) {
+      // Check if it's a 404 error by parsing the error message
+      // Error format: "TMDB API error: 404 - ..."
+      if (tvError.message?.includes('404')) {
         try {
           await tmdbRequest(`/movie/${tmdbId}`)
           return 'movie'
         } catch (movieError: any) {
-          if (movieError.response?.status === 404) {
+          if (movieError.message?.includes('404')) {
             return null
           }
           throw movieError
@@ -213,6 +224,74 @@ export async function fetchMediaDetails(tmdbId: number, type: 'movie' | 'tv') {
     return await fetchTVShowDetails(tmdbId)
   } else {
     return await fetchMovieDetails(tmdbId)
+  }
+}
+
+// Search movies on TMDB
+export async function searchMovies(query: string) {
+  try {
+    const data = await tmdbRequest('/search/movie', {
+      query,
+      include_adult: false,
+    }) as {
+      results: Array<{
+        id: number
+        title: string
+        overview: string | null
+        poster_path: string | null
+        backdrop_path: string | null
+        release_date: string | null
+        popularity: number
+      }>
+      total_results: number
+      total_pages: number
+    }
+    return data.results.map(result => ({
+      tmdb_id: result.id,
+      title: result.title,
+      overview: result.overview || null,
+      poster_path: result.poster_path || null,
+      backdrop_path: result.backdrop_path || null,
+      release_date: result.release_date || null,
+      popularity: result.popularity,
+    }))
+  } catch (error: any) {
+    console.error(`Error searching movies for query "${query}":`, error.message)
+    throw error
+  }
+}
+
+// Search TV shows on TMDB
+export async function searchTVShows(query: string) {
+  try {
+    const data = await tmdbRequest('/search/tv', {
+      query,
+      include_adult: false,
+    }) as {
+      results: Array<{
+        id: number
+        name: string
+        overview: string | null
+        poster_path: string | null
+        backdrop_path: string | null
+        first_air_date: string | null
+        popularity: number
+      }>
+      total_results: number
+      total_pages: number
+    }
+    return data.results.map(result => ({
+      tmdb_id: result.id,
+      title: result.name,
+      overview: result.overview || null,
+      poster_path: result.poster_path || null,
+      backdrop_path: result.backdrop_path || null,
+      first_air_date: result.first_air_date || null,
+      popularity: result.popularity,
+    }))
+  } catch (error: any) {
+    console.error(`Error searching TV shows for query "${query}":`, error.message)
+    throw error
   }
 }
 

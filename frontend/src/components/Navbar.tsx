@@ -46,6 +46,16 @@ export function Navbar() {
                 Watch Later Channels
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/movies" className="w-full">
+                Movies
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/tv-shows" className="w-full">
+                TV Shows
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 

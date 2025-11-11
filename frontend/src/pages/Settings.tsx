@@ -11,6 +11,8 @@ function Settings() {
   const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
   const [importingTMDB, setImportingTMDB] = useState(false)
   const [tmdbImportProgress, setTmdbImportProgress] = useState<string | null>(null)
+  const [importingIMDB, setImportingIMDB] = useState(false)
+  const [imdbImportProgress, setImdbImportProgress] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -116,7 +118,7 @@ function Settings() {
   }
 
   const handleImportTMDB = async () => {
-    if (!window.confirm('This will import all TV shows and movies from data.json. This may take a while. Continue?')) {
+    if (!window.confirm('This will import all TV shows and movies from data.json (TMDB IDs). This may take a while. Continue?')) {
       return
     }
 
@@ -141,6 +143,35 @@ function Settings() {
       setTmdbImportProgress(null)
     } finally {
       setImportingTMDB(false)
+    }
+  }
+
+  const handleImportIMDB = async () => {
+    if (!window.confirm('This will import all TV shows and movies from data2.json (IMDb IDs). This may take a while. Continue?')) {
+      return
+    }
+
+    try {
+      setImportingIMDB(true)
+      setImdbImportProgress('Starting import...')
+      
+      const result = await importAPI.importIMDB()
+      
+      setImdbImportProgress(null)
+      alert(
+        `Import completed!\n` +
+        `Total: ${result.total}\n` +
+        `Imported: ${result.imported} (${result.tvShows} TV shows, ${result.movies} movies)\n` +
+        `Skipped: ${result.skipped}\n` +
+        `Errors: ${result.errors}`
+      )
+    } catch (error: any) {
+      console.error('Error importing from IMDb:', error)
+      const errorMessage = error.response?.data?.error || 'Failed to import from IMDb'
+      alert(errorMessage)
+      setImdbImportProgress(null)
+    } finally {
+      setImportingIMDB(false)
     }
   }
 
@@ -216,23 +247,48 @@ function Settings() {
             <div className="space-y-4 border-t pt-6">
               <h2 className="text-xl font-semibold">Import TV Shows & Movies</h2>
               <p className="text-sm text-muted-foreground">
-                Import TV shows and movies from data.json using TMDB API. This will fetch details for all entries and import episodes for TV shows.
+                Import TV shows and movies from data files using TMDB API. This will fetch details for all entries and import episodes for TV shows.
               </p>
               
-              {tmdbImportProgress && (
-                <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
-                  {tmdbImportProgress}
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Import from data.json (TMDB IDs - numeric IDs)
+                  </p>
+                  {tmdbImportProgress && (
+                    <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm mb-2">
+                      {tmdbImportProgress}
+                    </div>
+                  )}
+                  <Button
+                    onClick={handleImportTMDB}
+                    disabled={importingTMDB || importingIMDB}
+                    className="gap-2"
+                  >
+                    <Film className="h-4 w-4" />
+                    {importingTMDB ? 'Importing...' : 'Import from TMDB (data.json)'}
+                  </Button>
                 </div>
-              )}
-              
-              <Button
-                onClick={handleImportTMDB}
-                disabled={importingTMDB}
-                className="gap-2"
-              >
-                <Film className="h-4 w-4" />
-                {importingTMDB ? 'Importing...' : 'Import from TMDB (data.json)'}
-              </Button>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Import from data2.json (IMDb IDs - IDs starting with "tt")
+                  </p>
+                  {imdbImportProgress && (
+                    <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm mb-2">
+                      {imdbImportProgress}
+                    </div>
+                  )}
+                  <Button
+                    onClick={handleImportIMDB}
+                    disabled={importingTMDB || importingIMDB}
+                    className="gap-2"
+                  >
+                    <Film className="h-4 w-4" />
+                    {importingIMDB ? 'Importing...' : 'Import from IMDb (data2.json)'}
+                  </Button>
+                </div>
+              </div>
             </div>
 
             {/* Clear All Section */}
