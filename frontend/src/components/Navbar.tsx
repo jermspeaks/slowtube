@@ -51,7 +51,7 @@ export function Navbar() {
   )
 
   return (
-    <nav className="bg-white border-b border-border shadow-sm">
+    <nav className="bg-background border-b border-border shadow-sm">
       <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-4">
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center justify-between gap-6">
@@ -222,10 +222,10 @@ export function Navbar() {
               className="fixed inset-0 bg-black/50 z-40 md:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
-            <div className="md:hidden fixed top-[73px] left-0 right-0 bottom-0 bg-white z-50 overflow-y-auto">
+            <div className="md:hidden fixed top-[73px] left-0 right-0 bottom-0 bg-background z-50 overflow-y-auto">
               <div className="p-4 space-y-2">
                 <div className="mb-4">
-                  <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  <h3 className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
                     Discover
                   </h3>
                   <div className="space-y-1">
@@ -251,7 +251,7 @@ export function Navbar() {
                 </div>
 
                 <div className="mb-4">
-                  <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  <h3 className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
                     Organize
                   </h3>
                   <div className="space-y-1">
@@ -268,7 +268,7 @@ export function Navbar() {
                 </div>
 
                 <div className="mb-4">
-                  <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  <h3 className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
                     Watch
                   </h3>
                   <div className="space-y-1">

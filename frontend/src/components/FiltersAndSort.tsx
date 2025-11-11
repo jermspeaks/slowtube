@@ -66,15 +66,15 @@ function FiltersAndSort({
   }
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm">
+    <div className="bg-card rounded-lg p-4 border border-border shadow-sm">
       {/* Always visible section */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <div className="flex gap-2 items-center w-full sm:w-auto">
-          <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Filter:</label>
+          <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
           <select
             value={stateFilter}
             onChange={(e) => onStateFilterChange(e.target.value as VideoState | 'all')}
-            className="px-3 py-2 border border-gray-300 rounded text-sm bg-white flex-1 sm:flex-initial"
+            className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
           >
             <option value="all">All</option>
             <option value="feed">Feed</option>
@@ -84,13 +84,13 @@ function FiltersAndSort({
         </div>
         
         <div className="flex gap-2 items-center w-full sm:w-auto sm:flex-1 sm:max-w-md">
-          <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Search:</label>
+          <label className="font-semibold text-sm text-foreground whitespace-nowrap">Search:</label>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             placeholder="Search by title or description..."
-            className="px-3 py-2 border border-gray-300 rounded text-sm bg-white flex-1"
+            className="px-3 py-2 border border-border rounded text-sm bg-background flex-1"
           />
         </div>
       </div>
@@ -99,7 +99,7 @@ function FiltersAndSort({
       <div className="mt-4">
         <button
           onClick={() => setShowMore(!showMore)}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-medium transition-colors"
           aria-expanded={showMore}
           aria-label={showMore ? 'Show less filters' : 'Show more filters'}
         >
@@ -116,17 +116,17 @@ function FiltersAndSort({
         </button>
 
         {showMore && (
-          <div className="mt-4 pt-4 border-t border-gray-200 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="mt-4 pt-4 border-t border-border space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
             {/* Channels section */}
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <div className="flex gap-2 items-start w-full sm:w-auto sm:flex-1">
-                <label className="font-semibold text-sm text-gray-700 whitespace-nowrap pt-2">Channels:</label>
+                <label className="font-semibold text-sm text-foreground whitespace-nowrap pt-2">Channels:</label>
                 <div className="flex-1 flex flex-col gap-2">
                   <select
                     multiple
                     value={selectedChannels}
                     onChange={handleChannelChange}
-                    className="px-3 py-2 border border-gray-300 rounded text-sm bg-white min-h-[120px] max-h-[200px] overflow-y-auto"
+                    className="px-3 py-2 border border-border rounded text-sm bg-background min-h-[120px] max-h-[200px] overflow-y-auto"
                     size={Math.min(availableChannels.length, 8)}
                   >
                     {availableChannels.map(channel => (
@@ -138,7 +138,7 @@ function FiltersAndSort({
                   {selectedChannels.length > 0 && (
                     <button
                       onClick={() => onSelectedChannelsChange([])}
-                      className="px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors self-start"
+                      className="px-3 py-1.5 text-xs bg-muted text-foreground rounded hover:bg-accent transition-colors self-start"
                     >
                       Clear selected ({selectedChannels.length})
                     </button>
@@ -159,11 +159,11 @@ function FiltersAndSort({
 
             {/* Sort section */}
             <div className="flex gap-2 items-center">
-              <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Sort:</label>
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
               <select
                 value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white"
+                className="px-3 py-2 border border-border rounded text-sm bg-background"
               >
                 <option value="none">None</option>
                 <option value="published_at_desc">Date Published (Newest)</option>
@@ -177,7 +177,7 @@ function FiltersAndSort({
 
         {/* Show selected channels count when collapsed */}
         {!showMore && selectedChannels.length > 0 && (
-          <div className="mt-2 text-xs text-gray-500">
+          <div className="mt-2 text-xs text-muted-foreground">
             {selectedChannels.length} channel{selectedChannels.length !== 1 ? 's' : ''} selected
           </div>
         )}

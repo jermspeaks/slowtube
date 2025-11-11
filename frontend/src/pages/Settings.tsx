@@ -3,6 +3,7 @@ import { videosAPI, importAPI, tvShowsAPI } from '../services/api'
 import { Button } from '@/components/ui/button'
 import { Upload, Trash2, Film } from 'lucide-react'
 import { useTimezone } from '../hooks/useTimezone'
+import { useTheme } from '../hooks/useTheme'
 
 function Settings() {
   const [uploading, setUploading] = useState(false)
@@ -16,12 +17,21 @@ function Settings() {
   const { timezone, loading: timezoneLoading, updateTimezone } = useTimezone()
   const [selectedTimezone, setSelectedTimezone] = useState<string>('')
   const [savingTimezone, setSavingTimezone] = useState(false)
+  const { theme, loading: themeLoading, updateTheme } = useTheme()
+  const [selectedTheme, setSelectedTheme] = useState<'system' | 'light' | 'dark'>('system')
+  const [savingTheme, setSavingTheme] = useState(false)
 
   useEffect(() => {
     if (!timezoneLoading && timezone) {
       setSelectedTimezone(timezone)
     }
   }, [timezone, timezoneLoading])
+
+  useEffect(() => {
+    if (!themeLoading && theme) {
+      setSelectedTheme(theme)
+    }
+  }, [theme, themeLoading])
 
   const handleTimezoneChange = async (newTimezone: string) => {
     setSelectedTimezone(newTimezone)
@@ -36,6 +46,22 @@ function Settings() {
       setSelectedTimezone(timezone)
     } finally {
       setSavingTimezone(false)
+    }
+  }
+
+  const handleThemeChange = async (newTheme: 'system' | 'light' | 'dark') => {
+    setSelectedTheme(newTheme)
+    try {
+      setSavingTheme(true)
+      await updateTheme(newTheme)
+      alert('Theme preference saved successfully!')
+    } catch (error: any) {
+      console.error('Error saving theme:', error)
+      alert('Failed to save theme preference')
+      // Revert to previous theme
+      setSelectedTheme(theme)
+    } finally {
+      setSavingTheme(false)
     }
   }
 
@@ -346,6 +372,43 @@ function Settings() {
                   {!savingTimezone && selectedTimezone && (
                     <div className="text-sm text-gray-500">
                       Current timezone: {selectedTimezone}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Theme Settings Section */}
+            <div className="space-y-4 border-t pt-6">
+              <h2 className="text-xl font-semibold">Theme Settings</h2>
+              <p className="text-sm text-muted-foreground">
+                Choose your preferred color theme. System will follow your device's theme preference.
+              </p>
+              
+              {themeLoading ? (
+                <div className="text-sm text-gray-500">Loading theme settings...</div>
+              ) : (
+                <div className="space-y-2">
+                  <label htmlFor="theme-select" className="block text-sm font-medium text-gray-700">
+                    Theme
+                  </label>
+                  <select
+                    id="theme-select"
+                    value={selectedTheme}
+                    onChange={(e) => handleThemeChange(e.target.value as 'system' | 'light' | 'dark')}
+                    disabled={savingTheme}
+                    className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                  </select>
+                  {savingTheme && (
+                    <div className="text-sm text-blue-500">Saving theme preference...</div>
+                  )}
+                  {!savingTheme && selectedTheme && (
+                    <div className="text-sm text-gray-500">
+                      Current theme: {selectedTheme === 'system' ? 'System (follows device)' : selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}
                     </div>
                   )}
                 </div>
