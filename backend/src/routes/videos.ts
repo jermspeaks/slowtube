@@ -334,15 +334,6 @@ router.post('/import', upload.single('file'), async (req, res) => {
 // Fetch video details from YouTube API (background job)
 router.post('/fetch-details', async (req, res) => {
   try {
-    // Check authentication by attempting to get authenticated client
-    // This will throw if not authenticated
-    try {
-      const { getAuthenticatedClient } = await import('../routes/auth.js')
-      await getAuthenticatedClient()
-    } catch (authError: any) {
-      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
-    }
-
     // Process a batch of videos
     const batchResult = await processBatchVideoFetch(50)
     
@@ -357,9 +348,6 @@ router.post('/fetch-details', async (req, res) => {
     })
   } catch (error: any) {
     console.error('Error fetching video details:', error)
-    if (error.message === 'No authenticated session found') {
-      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
-    }
     res.status(500).json({ error: error.message || 'Failed to fetch video details' })
   }
 })
@@ -381,15 +369,6 @@ router.get('/backfill-channel-ids/status', (req, res) => {
 // Backfill youtube_channel_id for existing videos (continuously processes all videos)
 router.post('/backfill-channel-ids', async (req, res) => {
   try {
-    // Check authentication by attempting to get authenticated client
-    // This will throw if not authenticated
-    try {
-      const { getAuthenticatedClient } = await import('../routes/auth.js')
-      await getAuthenticatedClient()
-    } catch (authError: any) {
-      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
-    }
-
     // Get batch size from query params or use default
     const batchSize = req.query.batchSize 
       ? parseInt(String(req.query.batchSize), 10) 
@@ -423,9 +402,6 @@ router.post('/backfill-channel-ids', async (req, res) => {
     })
   } catch (error: any) {
     console.error('Error backfilling channel IDs:', error)
-    if (error.message === 'No authenticated session found') {
-      return res.status(401).json({ error: 'Not authenticated. Please connect with YouTube.' })
-    }
     res.status(500).json({ error: error.message || 'Failed to backfill channel IDs' })
   }
 })

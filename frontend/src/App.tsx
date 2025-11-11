@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import Login from './pages/Login'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
 import GroupedView from './pages/GroupedView'
@@ -12,14 +11,10 @@ import TVShowsList from './pages/TVShowsList'
 import { Navbar } from './components/Navbar'
 
 function AppContent() {
-  const location = useLocation()
-  const showNavbar = location.pathname !== '/login'
-
   return (
     <>
-      {showNavbar && <Navbar />}
+      <Navbar />
       <Routes>
-        <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/stats" element={<Stats />} />

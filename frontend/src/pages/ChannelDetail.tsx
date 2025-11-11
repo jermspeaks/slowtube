@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Channel, ChannelVideoType } from '../types/channel'
 import { Video } from '../types/video'
-import { authAPI, channelsAPI } from '../services/api'
+import { channelsAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoDetailModal from '../components/VideoDetailModal'
 
@@ -22,16 +22,7 @@ function ChannelDetail() {
       return
     }
 
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      } else {
-        loadChannel()
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
+    loadChannel()
   }, [navigate, channelId])
 
   useEffect(() => {

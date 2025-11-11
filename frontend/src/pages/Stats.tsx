@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { authAPI, videosAPI } from '../services/api'
+import { videosAPI } from '../services/api'
 import DateRangeFilter from '../components/DateRangeFilter'
 
 interface ChannelRanking {
@@ -39,7 +38,6 @@ interface StatsData {
 }
 
 function Stats() {
-  const navigate = useNavigate()
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -66,17 +64,8 @@ function Stats() {
   }
 
   useEffect(() => {
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      } else {
-        loadStats()
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
-  }, [navigate])
+    loadStats()
+  }, [])
 
   useEffect(() => {
     loadStats()

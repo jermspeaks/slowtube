@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Movie } from '../types/movie'
-import { authAPI, moviesAPI } from '../services/api'
+import { moviesAPI } from '../services/api'
 import MovieTable from '../components/MovieTable'
 import TMDBSearchModal from '../components/TMDBSearchModal'
 
 function MoviesList() {
-  const navigate = useNavigate()
   const [movies, setMovies] = useState<Movie[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -20,17 +18,8 @@ function MoviesList() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      } else {
-        loadMovies()
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
-  }, [navigate])
+    loadMovies()
+  }, [])
 
   const loadMovies = async () => {
     try {

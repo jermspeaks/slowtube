@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Video, VideoState, ViewMode } from '../types/video'
-import { authAPI, videosAPI } from '../services/api'
+import { videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
@@ -9,7 +8,6 @@ import ViewToggle from '../components/ViewToggle'
 import FiltersAndSort from '../components/FiltersAndSort'
 
 function Dashboard() {
-  const navigate = useNavigate()
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
@@ -29,18 +27,9 @@ function Dashboard() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      } else {
-        loadChannels()
-        loadVideos()
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
-  }, [navigate])
+    loadChannels()
+    loadVideos()
+  }, [])
 
   const loadChannels = async () => {
     try {

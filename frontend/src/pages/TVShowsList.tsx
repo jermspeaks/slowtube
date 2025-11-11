@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { TVShow } from '../types/tv-show'
-import { authAPI, tvShowsAPI } from '../services/api'
+import { tvShowsAPI } from '../services/api'
 import TVShowTable from '../components/TVShowTable'
 import TMDBSearchModal from '../components/TMDBSearchModal'
 
 function TVShowsList() {
-  const navigate = useNavigate()
   const [tvShows, setTvShows] = useState<TVShow[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -21,17 +19,8 @@ function TVShowsList() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      } else {
-        loadTVShows()
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
-  }, [navigate])
+    loadTVShows()
+  }, [])
 
   const loadTVShows = async () => {
     try {

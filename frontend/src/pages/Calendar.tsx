@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { authAPI, calendarAPI } from '../services/api'
+import { calendarAPI } from '../services/api'
 import { Episode } from '../types/episode'
 import { CalendarView } from '../types/calendar'
 import WeeklyCalendar from '../components/WeeklyCalendar'
@@ -9,7 +8,6 @@ import DailyCalendar from '../components/DailyCalendar'
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format } from 'date-fns'
 
 function Calendar() {
-  const navigate = useNavigate()
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<CalendarView>('weekly')
@@ -17,17 +15,8 @@ function Calendar() {
   const [hideArchived, setHideArchived] = useState(false)
 
   useEffect(() => {
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      } else {
-        loadEpisodes()
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
-  }, [navigate, currentDate, view, hideArchived])
+    loadEpisodes()
+  }, [currentDate, view, hideArchived])
 
   const loadEpisodes = async () => {
     try {

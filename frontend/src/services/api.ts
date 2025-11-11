@@ -7,17 +7,6 @@ const api = axios.create({
   withCredentials: true,
 })
 
-// Auth API
-export const authAPI = {
-  checkSession: async () => {
-    const response = await api.get('/auth/session')
-    return response.data
-  },
-  getAuthUrl: () => {
-    return `${API_BASE_URL}/auth/youtube`
-  },
-}
-
 // Videos API
 export const videosAPI = {
   getAll: async (

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { Channel, ChannelWithCount } from '../types/channel'
-import { authAPI, channelsAPI } from '../services/api'
+import { channelsAPI } from '../services/api'
 
 function ChannelsList() {
-  const navigate = useNavigate()
   const location = useLocation()
   const [channels, setChannels] = useState<ChannelWithCount[]>([])
   const [loading, setLoading] = useState(true)
@@ -13,17 +12,8 @@ function ChannelsList() {
   const filterType = location.pathname.includes('/subscribed') ? 'subscribed' : 'watch_later'
 
   useEffect(() => {
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      } else {
-        loadChannels()
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
-  }, [navigate, location.pathname])
+    loadChannels()
+  }, [location.pathname])
 
   const loadChannels = async () => {
     try {

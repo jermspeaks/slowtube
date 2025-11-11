@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { authAPI, videosAPI, importAPI, tvShowsAPI } from '../services/api'
+import { videosAPI, importAPI, tvShowsAPI } from '../services/api'
 import { Button } from '@/components/ui/button'
 import { Upload, Trash2, Film } from 'lucide-react'
 
 function Settings() {
-  const navigate = useNavigate()
   const [uploading, setUploading] = useState(false)
   const [fetchingDetails, setFetchingDetails] = useState(false)
   const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
@@ -15,16 +13,6 @@ function Settings() {
   const [imdbImportProgress, setImdbImportProgress] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    // Check authentication
-    authAPI.checkSession().then((data) => {
-      if (!data.authenticated) {
-        navigate('/login')
-      }
-    }).catch(() => {
-      navigate('/login')
-    })
-  }, [navigate])
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]

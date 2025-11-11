@@ -1,6 +1,5 @@
 import Papa from 'papaparse'
 import { google } from 'googleapis'
-import { getAuthenticatedClient } from '../routes/auth.js'
 import { videoQueries, videoStateQueries, channelQueries } from './database.js'
 
 // Google Takeout watch history entry format
@@ -268,6 +267,22 @@ export interface YouTubeVideoDetails {
   }
 }
 
+// Get YouTube API key (returns null if not available)
+function getYouTubeApiKey(): string | null {
+  return process.env.YOUTUBE_API_KEY || null
+}
+
+// Get YouTube API client (using API key if available, otherwise returns null)
+function getYouTubeClient() {
+  const apiKey = getYouTubeApiKey()
+  if (!apiKey) {
+    return null
+  }
+  // For API key authentication with googleapis, we create a client
+  // and pass the key in each request's params
+  return google.youtube({ version: 'v3' })
+}
+
 // Fetch video details from YouTube API in batches
 export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<Map<string, YouTubeVideoDetails | null>> {
   if (videoIds.length === 0) {
@@ -278,14 +293,28 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<
     throw new Error('Cannot fetch more than 50 videos at once')
   }
 
+  const youtube = getYouTubeClient()
+  if (!youtube) {
+    console.warn('YOUTUBE_API_KEY not set. Cannot fetch video details from YouTube API.')
+    // Return empty map with all videos marked as null
+    const result = new Map<string, YouTubeVideoDetails | null>()
+    for (const videoId of videoIds) {
+      result.set(videoId, null)
+    }
+    return result
+  }
+
   try {
-    const auth = await getAuthenticatedClient()
-    const youtube = google.youtube({ version: 'v3', auth })
+    const apiKey = getYouTubeApiKey()
+    if (!apiKey) {
+      throw new Error('YOUTUBE_API_KEY not set')
+    }
 
     // Fetch video details
     const videosResponse = await youtube.videos.list({
       part: ['snippet', 'contentDetails'],
       id: videoIds,
+      key: apiKey,
     })
 
     const result = new Map<string, YouTubeVideoDetails | null>()
@@ -359,14 +388,34 @@ async function fetchChannelDetailsFromYouTube(channelIds: string[]): Promise<Map
     throw new Error('Cannot fetch more than 50 channels at once')
   }
 
+  const youtube = getYouTubeClient()
+  if (!youtube) {
+    console.warn('YOUTUBE_API_KEY not set. Cannot fetch channel details from YouTube API.')
+    // Return empty map with all channels marked as null
+    const result = new Map<string, {
+      id: string
+      title: string | null
+      description: string | null
+      thumbnailUrl: string | null
+      subscriberCount: number | null
+    } | null>()
+    for (const channelId of channelIds) {
+      result.set(channelId, null)
+    }
+    return result
+  }
+
   try {
-    const auth = await getAuthenticatedClient()
-    const youtube = google.youtube({ version: 'v3', auth })
+    const apiKey = getYouTubeApiKey()
+    if (!apiKey) {
+      throw new Error('YOUTUBE_API_KEY not set')
+    }
 
     // Fetch channel details
     const channelsResponse = await youtube.channels.list({
       part: ['snippet', 'statistics'],
       id: channelIds,
+      key: apiKey,
     })
 
     const result = new Map<string, {
