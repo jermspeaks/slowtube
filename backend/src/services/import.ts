@@ -90,18 +90,15 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
   }
   // Handle IMDb IDs
   else if (type === 'imdb') {
-    tmdbId = await findTmdbIdByImdbId(id)
-    if (!tmdbId) {
+    const result = await findTmdbIdByImdbId(id)
+    if (!result) {
       console.warn(`Could not find TMDB ID for IMDb ID: ${id}`)
       return { type: 'skipped' }
     }
 
-    // Determine if it's a movie or TV show
-    mediaType = await getMediaType(tmdbId)
-    if (!mediaType) {
-      console.warn(`Could not determine media type for TMDB ID: ${tmdbId} (from IMDb: ${id})`)
-      return { type: 'skipped' }
-    }
+    // Use the media type directly from the find result (which knows if it came from movie_results or tv_results)
+    tmdbId = result.tmdbId
+    mediaType = result.mediaType
   }
   // Skip other types
   else {

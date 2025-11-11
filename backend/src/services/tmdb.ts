@@ -66,7 +66,7 @@ async function tmdbRequest(endpoint: string, params: Record<string, any> = {}) {
 }
 
 // Find TMDB ID from IMDb ID
-export async function findTmdbIdByImdbId(imdbId: string): Promise<number | null> {
+export async function findTmdbIdByImdbId(imdbId: string): Promise<{ tmdbId: number; mediaType: 'movie' | 'tv' } | null> {
   try {
     // Pass the full IMDb ID (including 'tt' prefix) directly to the API
     // Format: /find/{external_id}?external_source=imdb_id
@@ -83,12 +83,12 @@ export async function findTmdbIdByImdbId(imdbId: string): Promise<number | null>
     if (data.movie_results && data.movie_results.length > 0) {
       const tmdbId = data.movie_results[0].id
       console.log(`Found TMDB movie ID ${tmdbId} for IMDb ID ${imdbId}`)
-      return tmdbId
+      return { tmdbId, mediaType: 'movie' }
     }
     if (data.tv_results && data.tv_results.length > 0) {
       const tmdbId = data.tv_results[0].id
       console.log(`Found TMDB TV ID ${tmdbId} for IMDb ID ${imdbId}`)
-      return tmdbId
+      return { tmdbId, mediaType: 'tv' }
     }
 
     console.warn(`No TMDB ID found for IMDb ID ${imdbId}`)
