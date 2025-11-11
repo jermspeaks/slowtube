@@ -49,6 +49,16 @@ export function Navbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Calendar Link */}
+        <Link to="/calendar">
+          <Button
+            variant="ghost"
+            className={`gap-2 ${location.pathname === '/calendar' ? 'bg-accent' : ''}`}
+          >
+            Calendar
+          </Button>
+        </Link>
+
         {/* Stats Link */}
         <Link to="/stats">
           <Button

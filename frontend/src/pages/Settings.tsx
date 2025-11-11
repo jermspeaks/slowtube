@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { authAPI, videosAPI } from '../services/api'
+import { authAPI, videosAPI, importAPI, tvShowsAPI } from '../services/api'
 import { Button } from '@/components/ui/button'
-import { Upload, Trash2 } from 'lucide-react'
+import { Upload, Trash2, Film } from 'lucide-react'
 
 function Settings() {
   const navigate = useNavigate()
   const [uploading, setUploading] = useState(false)
   const [fetchingDetails, setFetchingDetails] = useState(false)
   const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
+  const [importingTMDB, setImportingTMDB] = useState(false)
+  const [tmdbImportProgress, setTmdbImportProgress] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -113,6 +115,35 @@ function Settings() {
     }
   }
 
+  const handleImportTMDB = async () => {
+    if (!window.confirm('This will import all TV shows and movies from data.json. This may take a while. Continue?')) {
+      return
+    }
+
+    try {
+      setImportingTMDB(true)
+      setTmdbImportProgress('Starting import...')
+      
+      const result = await importAPI.importTMDB()
+      
+      setTmdbImportProgress(null)
+      alert(
+        `Import completed!\n` +
+        `Total: ${result.total}\n` +
+        `Imported: ${result.imported} (${result.tvShows} TV shows, ${result.movies} movies)\n` +
+        `Skipped: ${result.skipped}\n` +
+        `Errors: ${result.errors}`
+      )
+    } catch (error: any) {
+      console.error('Error importing from TMDB:', error)
+      const errorMessage = error.response?.data?.error || 'Failed to import from TMDB'
+      alert(errorMessage)
+      setTmdbImportProgress(null)
+    } finally {
+      setImportingTMDB(false)
+    }
+  }
+
   const handleClearAll = async () => {
     if (!window.confirm('Are you sure you want to delete all videos? This action cannot be undone.')) {
       return
@@ -124,6 +155,21 @@ function Settings() {
     } catch (error: any) {
       console.error('Error clearing videos:', error)
       const errorMessage = error.response?.data?.error || 'Failed to clear videos'
+      alert(errorMessage)
+    }
+  }
+
+  const handleResetTVShows = async () => {
+    if (!window.confirm('Are you sure you want to delete all TV shows, episodes, and movies? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      const result = await tvShowsAPI.deleteAll()
+      alert(`All TV shows, episodes, and movies have been deleted successfully.\nTV Shows: ${result.tvShowsDeleted}\nMovies: ${result.moviesDeleted}`)
+    } catch (error: any) {
+      console.error('Error resetting TV shows:', error)
+      const errorMessage = error.response?.data?.error || 'Failed to reset TV shows'
       alert(errorMessage)
     }
   }
@@ -166,21 +212,62 @@ function Settings() {
               </Button>
             </div>
 
+            {/* Import TMDB Section */}
+            <div className="space-y-4 border-t pt-6">
+              <h2 className="text-xl font-semibold">Import TV Shows & Movies</h2>
+              <p className="text-sm text-muted-foreground">
+                Import TV shows and movies from data.json using TMDB API. This will fetch details for all entries and import episodes for TV shows.
+              </p>
+              
+              {tmdbImportProgress && (
+                <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
+                  {tmdbImportProgress}
+                </div>
+              )}
+              
+              <Button
+                onClick={handleImportTMDB}
+                disabled={importingTMDB}
+                className="gap-2"
+              >
+                <Film className="h-4 w-4" />
+                {importingTMDB ? 'Importing...' : 'Import from TMDB (data.json)'}
+              </Button>
+            </div>
+
             {/* Clear All Section */}
             <div className="space-y-4 border-t pt-6">
               <h2 className="text-xl font-semibold text-destructive">Danger Zone</h2>
-              <p className="text-sm text-muted-foreground">
-                Permanently delete all videos from your database. This action cannot be undone.
-              </p>
               
-              <Button
-                onClick={handleClearAll}
-                variant="destructive"
-                className="gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Clear All Videos
-              </Button>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Permanently delete all videos from your database. This action cannot be undone.
+                  </p>
+                  <Button
+                    onClick={handleClearAll}
+                    variant="destructive"
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Clear All Videos
+                  </Button>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Permanently delete all TV shows, episodes, and movies from your database. This action cannot be undone.
+                  </p>
+                  <Button
+                    onClick={handleResetTVShows}
+                    variant="destructive"
+                    className="gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Reset TV Shows & Movies
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

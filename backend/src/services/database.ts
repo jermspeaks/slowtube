@@ -789,3 +789,330 @@ export const channelQueries = {
   },
 }
 
+// TV Show interfaces
+export interface TVShow {
+  id: number
+  tmdb_id: number
+  title: string
+  overview: string | null
+  poster_path: string | null
+  backdrop_path: string | null
+  first_air_date: string | null
+  last_air_date: string | null
+  status: string | null
+  saved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Movie {
+  id: number
+  tmdb_id: number
+  imdb_id: string | null
+  title: string
+  overview: string | null
+  poster_path: string | null
+  backdrop_path: string | null
+  release_date: string | null
+  saved_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Episode {
+  id: number
+  tv_show_id: number
+  season_number: number
+  episode_number: number
+  name: string | null
+  overview: string | null
+  air_date: string | null
+  runtime: number | null
+  still_path: string | null
+  is_watched: number // 0 or 1 (boolean as integer in SQLite)
+  watched_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface TVShowState {
+  tv_show_id: number
+  is_archived: number // 0 or 1 (boolean as integer in SQLite)
+  archived_at: string | null
+  updated_at: string
+}
+
+// TV Show operations
+export const tvShowQueries = {
+  getAll: (includeArchived: boolean = true) => {
+    if (includeArchived) {
+      return db.prepare('SELECT * FROM tv_shows ORDER BY title ASC').all() as TVShow[]
+    } else {
+      return db.prepare(`
+        SELECT ts.*
+        FROM tv_shows ts
+        LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
+        WHERE tss.is_archived = 0 OR tss.is_archived IS NULL
+        ORDER BY ts.title ASC
+      `).all() as TVShow[]
+    }
+  },
+
+  getById: (id: number) => {
+    return db.prepare('SELECT * FROM tv_shows WHERE id = ?').get(id) as TVShow | undefined
+  },
+
+  getByTmdbId: (tmdbId: number) => {
+    return db.prepare('SELECT * FROM tv_shows WHERE tmdb_id = ?').get(tmdbId) as TVShow | undefined
+  },
+
+  create: (tvShow: Omit<TVShow, 'id' | 'created_at' | 'updated_at'>) => {
+    const stmt = db.prepare(`
+      INSERT INTO tv_shows (tmdb_id, title, overview, poster_path, backdrop_path, first_air_date, last_air_date, status, saved_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    const result = stmt.run(
+      tvShow.tmdb_id,
+      tvShow.title,
+      tvShow.overview,
+      tvShow.poster_path,
+      tvShow.backdrop_path,
+      tvShow.first_air_date,
+      tvShow.last_air_date,
+      tvShow.status,
+      tvShow.saved_at
+    )
+    return result.lastInsertRowid as number
+  },
+
+  update: (id: number, tvShow: Partial<Omit<TVShow, 'id' | 'created_at' | 'updated_at'>>) => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    Object.entries(tvShow).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    })
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(id)
+
+    const stmt = db.prepare(`UPDATE tv_shows SET ${fields.join(', ')} WHERE id = ?`)
+    return stmt.run(...values).changes
+  },
+
+  delete: (id: number) => {
+    return db.prepare('DELETE FROM tv_shows WHERE id = ?').run(id).changes
+  },
+
+  deleteAll: () => {
+    // Delete all TV shows - cascading deletes will handle episodes and tv_show_states
+    return db.prepare('DELETE FROM tv_shows').run().changes
+  },
+}
+
+// Movie operations
+export const movieQueries = {
+  getAll: () => {
+    return db.prepare('SELECT * FROM movies ORDER BY title ASC').all() as Movie[]
+  },
+
+  getById: (id: number) => {
+    return db.prepare('SELECT * FROM movies WHERE id = ?').get(id) as Movie | undefined
+  },
+
+  getByTmdbId: (tmdbId: number) => {
+    return db.prepare('SELECT * FROM movies WHERE tmdb_id = ?').get(tmdbId) as Movie | undefined
+  },
+
+  getByImdbId: (imdbId: string) => {
+    return db.prepare('SELECT * FROM movies WHERE imdb_id = ?').get(imdbId) as Movie | undefined
+  },
+
+  create: (movie: Omit<Movie, 'id' | 'created_at' | 'updated_at'>) => {
+    const stmt = db.prepare(`
+      INSERT INTO movies (tmdb_id, imdb_id, title, overview, poster_path, backdrop_path, release_date, saved_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    const result = stmt.run(
+      movie.tmdb_id,
+      movie.imdb_id,
+      movie.title,
+      movie.overview,
+      movie.poster_path,
+      movie.backdrop_path,
+      movie.release_date,
+      movie.saved_at
+    )
+    return result.lastInsertRowid as number
+  },
+
+  update: (id: number, movie: Partial<Omit<Movie, 'id' | 'created_at' | 'updated_at'>>) => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    Object.entries(movie).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    })
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(id)
+
+    const stmt = db.prepare(`UPDATE movies SET ${fields.join(', ')} WHERE id = ?`)
+    return stmt.run(...values).changes
+  },
+
+  delete: (id: number) => {
+    return db.prepare('DELETE FROM movies WHERE id = ?').run(id).changes
+  },
+
+  deleteAll: () => {
+    return db.prepare('DELETE FROM movies').run().changes
+  },
+}
+
+// Episode operations
+export const episodeQueries = {
+  getByTVShowId: (tvShowId: number) => {
+    return db.prepare(`
+      SELECT * FROM episodes 
+      WHERE tv_show_id = ? 
+      ORDER BY season_number ASC, episode_number ASC
+    `).all(tvShowId) as Episode[]
+  },
+
+  getByTVShowIdAndSeason: (tvShowId: number, seasonNumber: number) => {
+    return db.prepare(`
+      SELECT * FROM episodes 
+      WHERE tv_show_id = ? AND season_number = ?
+      ORDER BY episode_number ASC
+    `).all(tvShowId, seasonNumber) as Episode[]
+  },
+
+  getById: (id: number) => {
+    return db.prepare('SELECT * FROM episodes WHERE id = ?').get(id) as Episode | undefined
+  },
+
+  getByDateRange: (startDate: string, endDate: string, hideArchived: boolean = false) => {
+    if (hideArchived) {
+      return db.prepare(`
+        SELECT e.*, ts.title as tv_show_title, ts.poster_path as tv_show_poster
+        FROM episodes e
+        INNER JOIN tv_shows ts ON e.tv_show_id = ts.id
+        LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
+        WHERE e.air_date >= ? AND e.air_date <= ?
+          AND (tss.is_archived = 0 OR tss.is_archived IS NULL)
+        ORDER BY e.air_date ASC, ts.title ASC, e.season_number ASC, e.episode_number ASC
+      `).all(startDate, endDate) as (Episode & { tv_show_title: string; tv_show_poster: string | null })[]
+    } else {
+      return db.prepare(`
+        SELECT e.*, ts.title as tv_show_title, ts.poster_path as tv_show_poster
+        FROM episodes e
+        INNER JOIN tv_shows ts ON e.tv_show_id = ts.id
+        WHERE e.air_date >= ? AND e.air_date <= ?
+        ORDER BY e.air_date ASC, ts.title ASC, e.season_number ASC, e.episode_number ASC
+      `).all(startDate, endDate) as (Episode & { tv_show_title: string; tv_show_poster: string | null })[]
+    }
+  },
+
+  create: (episode: Omit<Episode, 'id' | 'created_at' | 'updated_at'>) => {
+    const stmt = db.prepare(`
+      INSERT INTO episodes (tv_show_id, season_number, episode_number, name, overview, air_date, runtime, still_path, is_watched, watched_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(tv_show_id, season_number, episode_number) DO UPDATE SET
+        name = excluded.name,
+        overview = excluded.overview,
+        air_date = excluded.air_date,
+        runtime = excluded.runtime,
+        still_path = excluded.still_path,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    const result = stmt.run(
+      episode.tv_show_id,
+      episode.season_number,
+      episode.episode_number,
+      episode.name,
+      episode.overview,
+      episode.air_date,
+      episode.runtime,
+      episode.still_path,
+      episode.is_watched || 0,
+      episode.watched_at
+    )
+    return result.lastInsertRowid as number
+  },
+
+  update: (id: number, episode: Partial<Omit<Episode, 'id' | 'created_at' | 'updated_at'>>) => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    Object.entries(episode).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    })
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(id)
+
+    const stmt = db.prepare(`UPDATE episodes SET ${fields.join(', ')} WHERE id = ?`)
+    return stmt.run(...values).changes
+  },
+
+  markAsWatched: (id: number) => {
+    return db.prepare(`
+      UPDATE episodes 
+      SET is_watched = 1, watched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(id).changes
+  },
+
+  markAllAsWatched: (tvShowId: number) => {
+    return db.prepare(`
+      UPDATE episodes 
+      SET is_watched = 1, watched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE tv_show_id = ?
+    `).run(tvShowId).changes
+  },
+
+  delete: (id: number) => {
+    return db.prepare('DELETE FROM episodes WHERE id = ?').run(id).changes
+  },
+}
+
+// TV Show State operations
+export const tvShowStateQueries = {
+  getByTVShowId: (tvShowId: number) => {
+    return db.prepare('SELECT * FROM tv_show_states WHERE tv_show_id = ?').get(tvShowId) as TVShowState | undefined
+  },
+
+  setArchived: (tvShowId: number, isArchived: boolean) => {
+    const stmt = db.prepare(`
+      INSERT INTO tv_show_states (tv_show_id, is_archived, archived_at, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(tv_show_id) DO UPDATE SET
+        is_archived = excluded.is_archived,
+        archived_at = excluded.archived_at,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    return stmt.run(tvShowId, isArchived ? 1 : 0, isArchived ? new Date().toISOString() : null).changes
+  },
+
+  isArchived: (tvShowId: number): boolean => {
+    const state = db.prepare('SELECT is_archived FROM tv_show_states WHERE tv_show_id = ?').get(tvShowId) as { is_archived: number } | undefined
+    return state?.is_archived === 1
+  },
+}
+

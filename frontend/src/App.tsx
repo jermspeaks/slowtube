@@ -6,6 +6,7 @@ import GroupedView from './pages/GroupedView'
 import Settings from './pages/Settings'
 import ChannelsList from './pages/ChannelsList'
 import ChannelDetail from './pages/ChannelDetail'
+import Calendar from './pages/Calendar'
 import { Navbar } from './components/Navbar'
 
 function AppContent() {
@@ -18,6 +19,7 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar" element={<Calendar />} />
         <Route path="/stats" element={<Stats />} />
         <Route path="/grouped" element={<GroupedView />} />
         <Route path="/settings" element={<Settings />} />

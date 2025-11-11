@@ -145,5 +145,76 @@ export const channelsAPI = {
   },
 }
 
+// TV Shows API
+export const tvShowsAPI = {
+  getAll: async (includeArchived?: boolean) => {
+    const params: Record<string, string> = {}
+    if (includeArchived !== undefined) {
+      params.includeArchived = includeArchived ? 'true' : 'false'
+    }
+    const response = await api.get('/api/tv-shows', { params })
+    return response.data
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/api/tv-shows/${id}`)
+    return response.data
+  },
+  getEpisodes: async (id: number) => {
+    const response = await api.get(`/api/tv-shows/${id}/episodes`)
+    return response.data
+  },
+  archive: async (id: number, isArchived: boolean) => {
+    const response = await api.patch(`/api/tv-shows/${id}/archive`, { isArchived })
+    return response.data
+  },
+  markEpisodeWatched: async (tvShowId: number, episodeId: number) => {
+    const response = await api.post(`/api/tv-shows/${tvShowId}/episodes/${episodeId}/watched`)
+    return response.data
+  },
+  markAllEpisodesWatched: async (id: number) => {
+    const response = await api.post(`/api/tv-shows/${id}/episodes/watched-all`)
+    return response.data
+  },
+  deleteAll: async () => {
+    const response = await api.delete('/api/tv-shows/all')
+    return response.data
+  },
+}
+
+// Movies API
+export const moviesAPI = {
+  getAll: async () => {
+    const response = await api.get('/api/movies')
+    return response.data
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/api/movies/${id}`)
+    return response.data
+  },
+}
+
+// Calendar API
+export const calendarAPI = {
+  getEpisodes: async (startDate: string, endDate: string, hideArchived?: boolean) => {
+    const params: Record<string, string> = {
+      startDate,
+      endDate,
+    }
+    if (hideArchived !== undefined) {
+      params.hideArchived = hideArchived ? 'true' : 'false'
+    }
+    const response = await api.get('/api/calendar/episodes', { params })
+    return response.data
+  },
+}
+
+// Import API
+export const importAPI = {
+  importTMDB: async () => {
+    const response = await api.post('/api/import/tmdb')
+    return response.data
+  },
+}
+
 export default api
 
