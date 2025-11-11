@@ -1,6 +1,7 @@
 import { Episode } from '../types/episode'
 import EpisodeCard from './EpisodeCard'
 import { format, isSameDay, addDays, subDays } from 'date-fns'
+import { useTimezone } from '../hooks/useTimezone'
 
 interface DailyCalendarProps {
   episodes: Episode[]
@@ -10,10 +11,12 @@ interface DailyCalendarProps {
 }
 
 function DailyCalendar({ episodes, currentDate, onDateChange, onUpdate }: DailyCalendarProps) {
+  const { getDateKey } = useTimezone()
   const dateKey = format(currentDate, 'yyyy-MM-dd')
   const dayEpisodes = episodes.filter(episode => {
     if (!episode.air_date) return false
-    const episodeDate = episode.air_date.split('T')[0]
+    // Convert UTC air_date to timezone-aware date key
+    const episodeDate = getDateKey(episode.air_date)
     return episodeDate === dateKey
   })
 

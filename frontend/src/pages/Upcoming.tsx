@@ -6,8 +6,10 @@ import WeeklyCalendar from '../components/WeeklyCalendar'
 import MonthlyCalendar from '../components/MonthlyCalendar'
 import DailyCalendar from '../components/DailyCalendar'
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format, isAfter, startOfToday } from 'date-fns'
+import { useTimezone } from '../hooks/useTimezone'
 
 function Upcoming() {
+  const { utcToZoned } = useTimezone()
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<CalendarView>('weekly')
@@ -75,10 +77,12 @@ function Upcoming() {
       })
 
       // Filter to only show episodes with air_date in the future
+      // Convert UTC air_date to timezone-aware date for comparison
       const upcomingEpisodes = allEpisodes.filter(episode => {
         if (!episode.air_date) return false
-        const airDate = new Date(episode.air_date)
-        return isAfter(airDate, today)
+        const zonedAirDate = utcToZoned(episode.air_date)
+        if (!zonedAirDate) return false
+        return isAfter(zonedAirDate, today)
       })
 
       setEpisodes(upcomingEpisodes)

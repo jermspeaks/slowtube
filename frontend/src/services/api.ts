@@ -259,5 +259,23 @@ export const importAPI = {
   },
 }
 
+// Settings API
+export const settingsAPI = {
+  getTimezone: async (): Promise<string | null> => {
+    try {
+      const response = await api.get('/api/settings/timezone')
+      return response.data.value || null
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  },
+  setTimezone: async (timezone: string): Promise<void> => {
+    await api.post('/api/settings', { key: 'timezone', value: timezone })
+  },
+}
+
 export default api
 

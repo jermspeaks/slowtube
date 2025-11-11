@@ -1,6 +1,7 @@
 import { Episode } from '../types/episode'
 import EpisodeCard from './EpisodeCard'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns'
+import { useTimezone } from '../hooks/useTimezone'
 
 interface MonthlyCalendarProps {
   episodes: Episode[]
@@ -10,6 +11,7 @@ interface MonthlyCalendarProps {
 }
 
 function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: MonthlyCalendarProps) {
+  const { getDateKey } = useTimezone()
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 })
@@ -19,7 +21,8 @@ function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Mont
   const episodesByDate: Record<string, Episode[]> = {}
   episodes.forEach(episode => {
     if (episode.air_date) {
-      const dateKey = episode.air_date.split('T')[0]
+      // Convert UTC air_date to timezone-aware date key
+      const dateKey = getDateKey(episode.air_date)
       if (!episodesByDate[dateKey]) {
         episodesByDate[dateKey] = []
       }

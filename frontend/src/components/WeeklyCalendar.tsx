@@ -1,6 +1,7 @@
 import { Episode } from '../types/episode'
 import EpisodeCard from './EpisodeCard'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks } from 'date-fns'
+import { useTimezone } from '../hooks/useTimezone'
 
 interface WeeklyCalendarProps {
   episodes: Episode[]
@@ -10,6 +11,7 @@ interface WeeklyCalendarProps {
 }
 
 function WeeklyCalendar({ episodes, currentDate, onDateChange, onUpdate }: WeeklyCalendarProps) {
+  const { getDateKey } = useTimezone()
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }) // Sunday
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 })
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
@@ -17,7 +19,8 @@ function WeeklyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Weekl
   const episodesByDate: Record<string, Episode[]> = {}
   episodes.forEach(episode => {
     if (episode.air_date) {
-      const dateKey = episode.air_date.split('T')[0]
+      // Convert UTC air_date to timezone-aware date key
+      const dateKey = getDateKey(episode.air_date)
       if (!episodesByDate[dateKey]) {
         episodesByDate[dateKey] = []
       }

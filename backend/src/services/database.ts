@@ -1252,3 +1252,30 @@ export const tvShowStateQueries = {
   },
 }
 
+// Settings operations
+export interface Setting {
+  id: number
+  key: string
+  value: string
+  created_at: string
+  updated_at: string
+}
+
+export const settingsQueries = {
+  getSetting: (key: string): string | null => {
+    const result = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined
+    return result?.value || null
+  },
+
+  setSetting: (key: string, value: string): void => {
+    const stmt = db.prepare(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    stmt.run(key, value)
+  },
+}
+

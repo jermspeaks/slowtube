@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { videosAPI, importAPI, tvShowsAPI } from '../services/api'
 import { Button } from '@/components/ui/button'
 import { Upload, Trash2, Film } from 'lucide-react'
+import { useTimezone } from '../hooks/useTimezone'
 
 function Settings() {
   const [uploading, setUploading] = useState(false)
@@ -12,7 +13,31 @@ function Settings() {
   const [importingIMDB, setImportingIMDB] = useState(false)
   const [imdbImportProgress, setImdbImportProgress] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { timezone, loading: timezoneLoading, updateTimezone } = useTimezone()
+  const [selectedTimezone, setSelectedTimezone] = useState<string>('')
+  const [savingTimezone, setSavingTimezone] = useState(false)
 
+  useEffect(() => {
+    if (!timezoneLoading && timezone) {
+      setSelectedTimezone(timezone)
+    }
+  }, [timezone, timezoneLoading])
+
+  const handleTimezoneChange = async (newTimezone: string) => {
+    setSelectedTimezone(newTimezone)
+    try {
+      setSavingTimezone(true)
+      await updateTimezone(newTimezone)
+      alert('Timezone preference saved successfully!')
+    } catch (error: any) {
+      console.error('Error saving timezone:', error)
+      alert('Failed to save timezone preference')
+      // Revert to previous timezone
+      setSelectedTimezone(timezone)
+    } finally {
+      setSavingTimezone(false)
+    }
+  }
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -277,6 +302,54 @@ function Settings() {
                   </Button>
                 </div>
               </div>
+            </div>
+
+            {/* Timezone Settings Section */}
+            <div className="space-y-4 border-t pt-6">
+              <h2 className="text-xl font-semibold">Timezone Settings</h2>
+              <p className="text-sm text-muted-foreground">
+                Set your preferred timezone for displaying dates in the calendar views. Dates in the database remain stored as UTC.
+              </p>
+              
+              {timezoneLoading ? (
+                <div className="text-sm text-gray-500">Loading timezone settings...</div>
+              ) : (
+                <div className="space-y-2">
+                  <label htmlFor="timezone-select" className="block text-sm font-medium text-gray-700">
+                    Timezone
+                  </label>
+                  <select
+                    id="timezone-select"
+                    value={selectedTimezone}
+                    onChange={(e) => handleTimezoneChange(e.target.value)}
+                    disabled={savingTimezone}
+                    className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="America/Los_Angeles">Pacific Time (America/Los_Angeles)</option>
+                    <option value="America/Denver">Mountain Time (America/Denver)</option>
+                    <option value="America/Chicago">Central Time (America/Chicago)</option>
+                    <option value="America/New_York">Eastern Time (America/New_York)</option>
+                    <option value="America/Toronto">Toronto (America/Toronto)</option>
+                    <option value="Europe/London">London (Europe/London)</option>
+                    <option value="Europe/Paris">Paris (Europe/Paris)</option>
+                    <option value="Europe/Berlin">Berlin (Europe/Berlin)</option>
+                    <option value="Asia/Tokyo">Tokyo (Asia/Tokyo)</option>
+                    <option value="Asia/Shanghai">Shanghai (Asia/Shanghai)</option>
+                    <option value="Asia/Hong_Kong">Hong Kong (Asia/Hong_Kong)</option>
+                    <option value="Australia/Sydney">Sydney (Australia/Sydney)</option>
+                    <option value="Australia/Melbourne">Melbourne (Australia/Melbourne)</option>
+                    <option value="Pacific/Auckland">Auckland (Pacific/Auckland)</option>
+                  </select>
+                  {savingTimezone && (
+                    <div className="text-sm text-blue-500">Saving timezone preference...</div>
+                  )}
+                  {!savingTimezone && selectedTimezone && (
+                    <div className="text-sm text-gray-500">
+                      Current timezone: {selectedTimezone}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Clear All Section */}
