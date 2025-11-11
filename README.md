@@ -133,6 +133,81 @@ The statistics page provides analytics about your watch later videos:
 
 All time statistics include both interactive bar charts (using recharts) and detailed tables for easy analysis.
 
+## Navigation Design Philosophy
+
+The navigation structure is organized around a deliberate mental model designed to slow down consumption and create intentional decision-making. The three main sections follow a clear workflow: **Discover → Organize → Watch**.
+
+### Core Philosophy: Slowing Down Consumption
+
+The navigation is structured to separate two distinct modes of interaction:
+
+1. **Organize & Discover Mode**: Finding, browsing, and categorizing content
+2. **Decision-Making Mode**: Choosing what to actually consume based on organized preferences
+
+This separation creates intentional friction in the consumption process, encouraging users to be more thoughtful about what they watch rather than mindlessly consuming content.
+
+### The Three-Section Structure
+
+#### Discover
+**Purpose**: "What is possible to watch?"
+
+This section contains all the content available to the user:
+- **Dashboard**: Main view of all videos
+- **Movies**: Movie collection
+- **TV Shows**: TV show collection
+- **Channels**: Subscribed and watch later channels
+- **Upcoming**: Future releases and scheduled content
+
+The "Upcoming" section is intentionally placed here because it helps users discover what's coming that they might want to watch, setting up the data flow correctly: first, see what's possible, then organize it.
+
+#### Organize
+**Purpose**: "I have chosen things I want to watch later, but it depends on different factors."
+
+This section is for categorizing and understanding chosen content:
+- **Grouped View**: Organize content by groups/categories
+- **Stats**: Analytics and insights about your collection
+- **Tags**: Tag management and organization
+
+The "Organize" section allows users to create different groups/buckets based on various factors (mood, genre, time available, etc.). This categorization becomes the foundation for the decision-making process in the "Watch" section.
+
+#### Watch
+**Purpose**: "Based on the preferences I created by grouping and adding my taste preferences, show me what I should watch."
+
+This section is for actual consumption decisions:
+- **Watch Next**: Curated list based on organized preferences
+  - For watch later videos: Shows items in the "inbox" state
+  - For movies/TV shows: Shows starred items (feature pending)
+
+The "Watch" section surfaces content based on the organizational work done in the previous sections, making it easier to decide what to consume next.
+
+### Design Decisions
+
+1. **Icon-Based Navigation**: All navigation items have icons for quick visual recognition and better mobile experience
+2. **Responsive Design**: 
+   - Desktop: Horizontal dropdown menus for efficient navigation
+   - Mobile/Tablet: Hamburger menu with full-screen overlay to accommodate touch interactions
+3. **Future-Proof Structure**: The three-section model easily accommodates new media types (podcasts, music albums, books, etc.) without requiring navigation restructuring
+4. **Settings Placement**: Settings is always visible on the right side, separate from the main workflow, as it's a utility rather than part of the content consumption flow
+
+### Data Flow
+
+The navigation structure creates a natural data flow:
+
+```
+Discover (what's possible) 
+  ↓
+Organize (categorize by factors) 
+  ↓
+Watch (decision-making based on organization)
+```
+
+This flow ensures users:
+1. First explore what's available
+2. Then organize it based on their preferences and factors
+3. Finally make informed decisions about what to consume
+
+By separating these concerns, the application encourages more intentional media consumption rather than passive browsing.
+
 ## Database Migrations
 
 The application includes an automatic database migration system that runs on startup. Migrations are stored in `backend/src/migrations/` and are executed automatically when the backend server starts. The migration system:

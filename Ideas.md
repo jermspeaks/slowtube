@@ -3,6 +3,7 @@
 - [x] Date range filter for dashboard, stats, and group views
 - [x] Pagination! Might be good to only show 100 items at a time?
 - [x] Add a count of videos next to the channel in group view
+- [x] Add import for movies and tv shows from stremio
 - [ ] Subscribed channels view -- import the subscribed channels and see latest videos PER channel
 - [ ] Create lists (segments) of subscribers so I can group WHICH videos I want to see by my grouping
 - [ ] Adding tags to channels so I can easily organize and filter by that
@@ -17,6 +18,9 @@
 - [ ] import liked videos. Allow us to analyze them, see what channels are cool, etc.
 - [ ] Add a download function per video so we can have a local copy to do playback
   - [ ] Add sponsorblock so we can skip past it
+- [ ] We need to add Letterboxd import so we can later export all movies that we can add to a logging website where we can show a full list of all consumed. Idea is we can either export to my current Astro site or setup a lightweight
+- [ ] Star movies and tv shows we want to watch
+- [ ] Dark Mode
 
 ## Questions
 
