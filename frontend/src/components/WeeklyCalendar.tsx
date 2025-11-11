@@ -46,7 +46,7 @@ function WeeklyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Weekl
         <div className="flex items-center gap-4">
           <button
             onClick={goToPreviousWeek}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
           >
             ← Previous
           </button>
@@ -55,14 +55,14 @@ function WeeklyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Weekl
           </h2>
           <button
             onClick={goToNextWeek}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
           >
             Next →
           </button>
         </div>
         <button
           onClick={goToToday}
-          className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+          className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
         >
           Today
         </button>
@@ -77,9 +77,9 @@ function WeeklyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Weekl
           return (
             <div key={dateKey} className="space-y-2">
               <div className={`text-center font-semibold pb-2 border-b ${
-                isToday ? 'text-blue-600 border-blue-600' : 'text-gray-700 border-gray-300'
+                isToday ? 'text-primary border-primary' : 'text-foreground border-border'
               }`}>
-                <div className="text-xs text-gray-500">{format(day, 'EEE')}</div>
+                <div className="text-xs text-muted-foreground">{format(day, 'EEE')}</div>
                 <div className="text-lg">{format(day, 'd')}</div>
               </div>
               <div className="space-y-2 min-h-[200px]">
@@ -91,7 +91,7 @@ function WeeklyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Weekl
                   />
                 ))}
                 {dayEpisodes.length === 0 && (
-                  <div className="text-xs text-gray-400 text-center py-4">
+                  <div className="text-xs text-muted-foreground text-center py-4">
                     No episodes
                   </div>
                 )}

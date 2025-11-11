@@ -74,7 +74,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg max-w-[800px] w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-card rounded-lg max-w-[800px] w-full max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -82,7 +82,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
             <h2 className="m-0 flex-1">{video.title}</h2>
             <button
               onClick={onClose}
-              className="border-none bg-transparent text-2xl cursor-pointer p-0 ml-4 text-gray-500"
+              className="border-none bg-transparent text-2xl cursor-pointer p-0 ml-4 text-muted-foreground hover:text-foreground transition-colors"
             >
               ×
             </button>
@@ -99,10 +99,10 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
                 <button
                   key={state}
                   onClick={() => handleStateChange(state)}
-                  className={`px-4 py-2 border-none rounded cursor-pointer capitalize ${
+                  className={`px-4 py-2 border-none rounded cursor-pointer capitalize transition-colors ${
                     video.state === state
                       ? `${getStateColorClasses(state)} text-white font-bold`
-                      : 'bg-gray-200 text-gray-800'
+                      : 'bg-muted text-foreground hover:bg-accent'
                   }`}
                 >
                   {state}
@@ -114,7 +114,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
           {video.description && (
             <div className="mb-5">
               <h3 className="mb-2 text-sm font-bold">Description</h3>
-              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-foreground whitespace-pre-wrap leading-relaxed">
                 {video.description}
               </p>
             </div>
@@ -139,7 +139,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
             />
           </div>
 
-          <div className="flex gap-4 text-xs text-gray-500 flex-wrap">
+          <div className="flex gap-4 text-xs text-muted-foreground flex-wrap">
             {video.duration && <span>Duration: {video.duration}</span>}
             {video.published_at && (
               <span>Published: {format(new Date(video.published_at), 'MMM d, yyyy')}</span>

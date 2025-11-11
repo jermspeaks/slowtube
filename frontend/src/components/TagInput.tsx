@@ -89,12 +89,12 @@ function TagInput({ videoId, existingTags, onTagAdded, onTagRemoved }: TagInputP
           {existingTags.map(tag => (
             <span
               key={tag.id}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 rounded-full text-sm"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-sm"
             >
               {tag.name}
               <button
                 onClick={() => handleRemoveTag(tag.id)}
-                className="border-none bg-transparent cursor-pointer p-0 ml-1 text-base text-gray-500"
+                className="border-none bg-transparent cursor-pointer p-0 ml-1 text-base text-muted-foreground hover:text-foreground transition-colors"
               >
                 ×
               </button>
@@ -112,18 +112,18 @@ function TagInput({ videoId, existingTags, onTagAdded, onTagRemoved }: TagInputP
               if (suggestions.length > 0) setShowSuggestions(true)
             }}
             placeholder="Add a tag..."
-            className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+            className="w-full px-3 py-2 border border-border rounded text-sm bg-background"
           />
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded mt-1 max-h-[200px] overflow-y-auto z-[1000] shadow-md">
+            <div className="absolute top-full left-0 right-0 bg-card border border-border rounded mt-1 max-h-[200px] overflow-y-auto z-[1000] shadow-md">
               {suggestions.map((suggestion, index) => (
                 <div
                   key={index}
                   onClick={() => {
                     handleAddTag(suggestion)
                   }}
-                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
-                    index < suggestions.length - 1 ? 'border-b border-gray-200' : ''
+                  className={`px-3 py-2 cursor-pointer hover:bg-accent transition-colors ${
+                    index < suggestions.length - 1 ? 'border-b border-border' : ''
                   }`}
                 >
                   {suggestion}

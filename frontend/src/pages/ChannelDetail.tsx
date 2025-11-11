@@ -107,10 +107,10 @@ function ChannelDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-background">
         <main className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-            <div className="text-lg text-gray-500">Loading channel...</div>
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading channel...</div>
           </div>
         </main>
       </div>
@@ -119,13 +119,13 @@ function ChannelDetail() {
 
   if (!channel) {
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-background">
         <main className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-            <p className="text-lg text-gray-500 mb-4">Channel not found</p>
+          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-lg text-muted-foreground mb-4">Channel not found</p>
             <button
               onClick={() => navigate('/channels/watch-later')}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
             >
               Back to Channels
             </button>
@@ -136,10 +136,10 @@ function ChannelDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         {/* Channel Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-start gap-6">
             {channel.thumbnail_url ? (
               <img
@@ -148,32 +148,32 @@ function ChannelDetail() {
                 className="w-24 h-24 rounded-full object-cover flex-shrink-0"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                <span className="text-gray-400 text-2xl">
+              <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <span className="text-muted-foreground text-2xl">
                   {channel.channel_title?.[0]?.toUpperCase() || '?'}
                 </span>
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-foreground mb-2">
                 {channel.channel_title || 'Untitled Channel'}
               </h1>
               {channel.subscriber_count !== null && (
-                <p className="text-gray-600 mb-2">
+                <p className="text-muted-foreground mb-2">
                   {formatSubscriberCount(channel.subscriber_count)} subscribers
                 </p>
               )}
               {channel.description && (
-                <p className="text-gray-600 mb-4 line-clamp-3">
+                <p className="text-muted-foreground mb-4 line-clamp-3">
                   {channel.description}
                 </p>
               )}
               <button
                 onClick={handleSubscribe}
-                className={`px-4 py-2 rounded font-medium ${
+                className={`px-4 py-2 rounded font-medium transition-colors ${
                   channel.is_subscribed
-                    ? 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-muted text-foreground hover:bg-accent'
+                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
                 }`}
               >
                 {channel.is_subscribed ? 'Unsubscribe' : 'Subscribe'}
@@ -183,8 +183,8 @@ function ChannelDetail() {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm mb-6">
-          <div className="border-b border-gray-200">
+        <div className="bg-card rounded-lg shadow-sm mb-6">
+          <div className="border-b border-border">
             <nav className="flex -mb-px">
               {(['watch_later', 'latest', 'liked'] as ChannelVideoType[]).map((tab) => (
                 <button
@@ -194,8 +194,8 @@ function ChannelDetail() {
                     px-6 py-4 text-sm font-medium border-b-2 transition-colors
                     ${
                       activeTab === tab
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                     }
                   `}
                 >
@@ -211,21 +211,21 @@ function ChannelDetail() {
         {/* Videos Content */}
         <div>
           {videosLoading ? (
-            <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-              <div className="text-lg text-gray-500">Loading videos...</div>
+            <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+              <div className="text-lg text-muted-foreground">Loading videos...</div>
             </div>
           ) : activeTab === 'liked' ? (
-            <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-              <p className="text-lg text-gray-500 mb-4">
+            <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+              <p className="text-lg text-muted-foreground mb-4">
                 Coming soon - Liked videos will be imported separately
               </p>
             </div>
           ) : videos.length === 0 ? (
-            <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-              <p className="text-lg text-gray-500 mb-4">
+            <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+              <p className="text-lg text-muted-foreground mb-4">
                 No videos found
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 {activeTab === 'watch_later'
                   ? 'This channel has no videos in your watch later list.'
                   : 'No latest videos available for this channel.'}

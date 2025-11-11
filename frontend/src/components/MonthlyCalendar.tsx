@@ -50,7 +50,7 @@ function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Mont
         <div className="flex items-center gap-4">
           <button
             onClick={goToPreviousMonth}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
           >
             ← Previous
           </button>
@@ -59,14 +59,14 @@ function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Mont
           </h2>
           <button
             onClick={goToNextMonth}
-            className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+            className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
           >
             Next →
           </button>
         </div>
         <button
           onClick={goToToday}
-          className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50"
+          className="px-3 py-1 border border-border rounded hover:bg-accent transition-colors"
         >
           Today
         </button>
@@ -75,7 +75,7 @@ function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Mont
       <div className="grid grid-cols-7 gap-2">
         {/* Week day headers */}
         {weekDays.map(day => (
-          <div key={day} className="text-center font-semibold text-gray-700 py-2">
+          <div key={day} className="text-center font-semibold text-foreground py-2">
             {day}
           </div>
         ))}
@@ -90,12 +90,12 @@ function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Mont
           return (
             <div
               key={dateKey}
-              className={`min-h-[120px] border border-gray-200 rounded p-2 ${
-                !isCurrentMonth ? 'bg-gray-50 opacity-50' : 'bg-white'
-              } ${isToday ? 'ring-2 ring-blue-500' : ''}`}
+              className={`min-h-[120px] border border-border rounded p-2 ${
+                !isCurrentMonth ? 'bg-muted opacity-50' : 'bg-card'
+              } ${isToday ? 'ring-2 ring-primary' : ''}`}
             >
               <div className={`text-sm font-semibold mb-1 ${
-                isToday ? 'text-blue-600' : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                isToday ? 'text-primary' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'
               }`}>
                 {format(day, 'd')}
               </div>
@@ -104,7 +104,7 @@ function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Mont
                   <div
                     key={episode.id}
                     className={`text-xs p-1 rounded truncate ${
-                      episode.is_watched === 1 ? 'bg-gray-200 text-gray-600' : 'bg-blue-100 text-blue-800'
+                      episode.is_watched === 1 ? 'bg-muted text-muted-foreground' : 'bg-primary/20 text-primary'
                     }`}
                     title={`${episode.tv_show_title} - S${episode.season_number}E${episode.episode_number}`}
                   >
@@ -112,7 +112,7 @@ function MonthlyCalendar({ episodes, currentDate, onDateChange, onUpdate }: Mont
                   </div>
                 ))}
                 {dayEpisodes.length > 3 && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-muted-foreground">
                     +{dayEpisodes.length - 3} more
                   </div>
                 )}

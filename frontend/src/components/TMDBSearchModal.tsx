@@ -122,7 +122,7 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg max-w-[800px] w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-card rounded-lg max-w-[800px] w-full max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
@@ -132,7 +132,7 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
             </h2>
             <button
               onClick={onClose}
-              className="border-none bg-transparent text-2xl cursor-pointer p-0 ml-4 text-gray-500 hover:text-gray-700"
+              className="border-none bg-transparent text-2xl cursor-pointer p-0 ml-4 text-muted-foreground hover:text-foreground transition-colors"
             >
               ×
             </button>
@@ -144,25 +144,25 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`Search for a ${type === 'movie' ? 'movie' : 'TV show'}...`}
-              className="w-full px-4 py-2 border border-gray-300 rounded text-base"
+              className="w-full px-4 py-2 border border-border rounded text-base bg-background"
               autoFocus
             />
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <div className="mb-4 p-3 bg-destructive/20 border border-destructive/50 text-destructive rounded">
               {error}
             </div>
           )}
 
           {loading && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               Searching...
             </div>
           )}
 
           {!loading && debouncedQuery && results.length === 0 && !error && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No results found
             </div>
           )}
@@ -177,7 +177,7 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
                 return (
                   <div
                     key={result.tmdb_id}
-                    className="flex gap-4 p-4 border border-gray-200 rounded hover:bg-gray-50"
+                    className="flex gap-4 p-4 border border-border rounded hover:bg-accent transition-colors"
                   >
                     {imageUrl && (
                       <img
@@ -189,12 +189,12 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-lg mb-1">{result.title}</h3>
                       {date && (
-                        <p className="text-sm text-gray-500 mb-2">
+                        <p className="text-sm text-muted-foreground mb-2">
                           {new Date(date).getFullYear()}
                         </p>
                       )}
                       {result.overview && (
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                           {result.overview}
                         </p>
                       )}

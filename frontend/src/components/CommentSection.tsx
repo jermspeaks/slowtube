@@ -78,12 +78,12 @@ function CommentSection({
           onChange={(e) => setNewComment(e.target.value)}
           placeholder="Add a comment..."
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-sans resize-y mb-2"
+          className="w-full px-3 py-2 border border-border rounded text-sm font-sans resize-y mb-2 bg-background"
         />
         <button
           onClick={handleAddComment}
           disabled={!newComment.trim()}
-          className="px-4 py-2 bg-blue-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-primary text-primary-foreground border-none rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Add Comment
         </button>
@@ -91,12 +91,12 @@ function CommentSection({
 
       <div className="flex flex-col gap-3">
         {comments.length === 0 ? (
-          <p className="text-gray-500 italic">No comments yet</p>
+          <p className="text-muted-foreground italic">No comments yet</p>
         ) : (
           comments.map(comment => (
             <div
               key={comment.id}
-              className="p-3 bg-gray-100 rounded border border-gray-200"
+              className="p-3 bg-muted rounded border border-border"
             >
               {editingId === comment.id ? (
                 <div>
@@ -104,13 +104,13 @@ function CommentSection({
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-sans resize-y mb-2"
+                    className="w-full px-3 py-2 border border-border rounded text-sm font-sans resize-y mb-2 bg-background"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleSaveEdit(comment.id)}
                       disabled={!editContent.trim()}
-                      className="px-3 py-1 bg-green-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                      className="px-3 py-1 bg-green-500 text-white border-none rounded disabled:opacity-50 disabled:cursor-not-allowed text-xs transition-colors"
                     >
                       Save
                     </button>
@@ -119,7 +119,7 @@ function CommentSection({
                         setEditingId(null)
                         setEditContent('')
                       }}
-                      className="px-3 py-1 bg-gray-500 text-white border-none rounded cursor-pointer text-xs"
+                      className="px-3 py-1 bg-muted text-foreground border border-border rounded cursor-pointer text-xs hover:bg-accent transition-colors"
                     >
                       Cancel
                     </button>
@@ -129,7 +129,7 @@ function CommentSection({
                 <div>
                   <p className="mb-2 whitespace-pre-wrap">{comment.content}</p>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       {format(new Date(comment.created_at), 'MMM d, yyyy HH:mm')}
                     </span>
                     <div className="flex gap-2">

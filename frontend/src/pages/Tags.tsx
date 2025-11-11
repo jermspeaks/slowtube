@@ -30,7 +30,7 @@ function Tags() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h1 className="text-2xl font-bold">Tags</h1>
@@ -43,30 +43,30 @@ function Tags() {
             placeholder="Search tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full md:w-96 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full md:w-96 px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background"
           />
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-            <div className="text-lg text-gray-500">Loading tags...</div>
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading tags...</div>
           </div>
         ) : filteredTags.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-            <Tag className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg text-gray-500 mb-2">
+          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+            <Tag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-lg text-muted-foreground mb-2">
               {searchQuery ? 'No tags found' : 'No tags yet'}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {searchQuery
                 ? 'Try a different search term'
                 : 'Add tags to videos to organize your content'}
             </p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg p-6">
+          <div className="bg-card rounded-lg p-6">
             <div className="mb-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 {filteredTags.length} {filteredTags.length === 1 ? 'tag' : 'tags'}
               </p>
             </div>
@@ -75,7 +75,7 @@ function Tags() {
                 <Link
                   key={index}
                   to={`/dashboard?tag=${encodeURIComponent(tag)}`}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-muted hover:bg-accent rounded-full text-sm transition-colors"
                 >
                   <Tag className="h-3 w-3" />
                   {tag}

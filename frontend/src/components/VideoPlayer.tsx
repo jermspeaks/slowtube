@@ -9,8 +9,8 @@ function VideoPlayer({ video }: VideoPlayerProps) {
   // Skip player for unavailable or failed videos
   if (video.fetch_status === 'unavailable' || video.fetch_status === 'failed') {
     return (
-      <div className="w-full pt-[56.25%] relative bg-gray-200 rounded flex items-center justify-center">
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+      <div className="w-full pt-[56.25%] relative bg-muted rounded flex items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
           {video.thumbnail_url && (
             <img
               src={video.thumbnail_url}
@@ -31,8 +31,8 @@ function VideoPlayer({ video }: VideoPlayerProps) {
   // Handle missing youtube_id
   if (!video.youtube_id) {
     return (
-      <div className="w-full pt-[56.25%] relative bg-gray-200 rounded flex items-center justify-center">
-        <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+      <div className="w-full pt-[56.25%] relative bg-muted rounded flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
           <p className="text-sm">Video ID not available</p>
         </div>
       </div>

@@ -245,9 +245,9 @@ function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="bg-card rounded-lg shadow-sm p-6">
           <h1 className="text-2xl font-bold mb-6">Settings</h1>
           
           <div className="space-y-8">
@@ -338,10 +338,10 @@ function Settings() {
               </p>
               
               {timezoneLoading ? (
-                <div className="text-sm text-gray-500">Loading timezone settings...</div>
+                <div className="text-sm text-muted-foreground">Loading timezone settings...</div>
               ) : (
                 <div className="space-y-2">
-                  <label htmlFor="timezone-select" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="timezone-select" className="block text-sm font-medium text-foreground">
                     Timezone
                   </label>
                   <select
@@ -349,7 +349,7 @@ function Settings() {
                     value={selectedTimezone}
                     onChange={(e) => handleTimezoneChange(e.target.value)}
                     disabled={savingTimezone}
-                    className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed bg-background"
                   >
                     <option value="America/Los_Angeles">Pacific Time (America/Los_Angeles)</option>
                     <option value="America/Denver">Mountain Time (America/Denver)</option>
@@ -370,7 +370,7 @@ function Settings() {
                     <div className="text-sm text-blue-500">Saving timezone preference...</div>
                   )}
                   {!savingTimezone && selectedTimezone && (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       Current timezone: {selectedTimezone}
                     </div>
                   )}
@@ -386,10 +386,10 @@ function Settings() {
               </p>
               
               {themeLoading ? (
-                <div className="text-sm text-gray-500">Loading theme settings...</div>
+                <div className="text-sm text-muted-foreground">Loading theme settings...</div>
               ) : (
                 <div className="space-y-2">
-                  <label htmlFor="theme-select" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="theme-select" className="block text-sm font-medium text-foreground">
                     Theme
                   </label>
                   <select
@@ -397,7 +397,7 @@ function Settings() {
                     value={selectedTheme}
                     onChange={(e) => handleThemeChange(e.target.value as 'system' | 'light' | 'dark')}
                     disabled={savingTheme}
-                    className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-muted disabled:cursor-not-allowed bg-background"
                   >
                     <option value="system">System</option>
                     <option value="light">Light</option>
@@ -407,7 +407,7 @@ function Settings() {
                     <div className="text-sm text-blue-500">Saving theme preference...</div>
                   )}
                   {!savingTheme && selectedTheme && (
-                    <div className="text-sm text-gray-500">
+                    <div className="text-sm text-muted-foreground">
                       Current theme: {selectedTheme === 'system' ? 'System (follows device)' : selectedTheme.charAt(0).toUpperCase() + selectedTheme.slice(1)}
                     </div>
                   )}

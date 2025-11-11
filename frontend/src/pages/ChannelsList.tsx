@@ -49,13 +49,13 @@ function ChannelsList() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-foreground mb-2">
             {filterType === 'subscribed' ? 'Subscribed Channels' : 'Watch Later Channels'}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {filterType === 'subscribed' 
               ? 'Channels you are subscribed to' 
               : 'Channels with videos in your watch later list'}
@@ -63,15 +63,15 @@ function ChannelsList() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-            <div className="text-lg text-gray-500">Loading channels...</div>
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading channels...</div>
           </div>
         ) : channels.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-            <p className="text-lg text-gray-500 mb-4">
+          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-lg text-muted-foreground mb-4">
               No channels found
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {filterType === 'subscribed' 
                 ? 'Subscribe to channels to see them here.'
                 : 'Channels will appear here once you have videos in your watch later list.'}
@@ -83,7 +83,7 @@ function ChannelsList() {
               <div
                 key={channel.youtube_channel_id}
                 onClick={() => handleChannelClick(channel)}
-                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
               >
                 <div className="p-6">
                   <div className="flex items-start gap-4 mb-4">
@@ -94,18 +94,18 @@ function ChannelsList() {
                         className="w-16 h-16 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                        <span className="text-gray-400 text-xl">
+                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <span className="text-muted-foreground text-xl">
                           {channel.channel_title?.[0]?.toUpperCase() || '?'}
                         </span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg text-gray-900 truncate">
+                      <h3 className="font-semibold text-lg text-foreground truncate">
                         {channel.channel_title || 'Untitled Channel'}
                       </h3>
                       {channel.subscriber_count !== null && (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {formatSubscriberCount(channel.subscriber_count)} subscribers
                         </p>
                       )}
@@ -113,12 +113,12 @@ function ChannelsList() {
                   </div>
                   
                   {channel.description && (
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {channel.description}
                     </p>
                   )}
 
-                  <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-4">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
                     {'watch_later_count' in channel && (
                       <span>
                         {channel.watch_later_count} video{channel.watch_later_count !== 1 ? 's' : ''}

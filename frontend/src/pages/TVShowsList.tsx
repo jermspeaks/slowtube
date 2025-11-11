@@ -107,47 +107,47 @@ function TVShowsList() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
           <h1 className="text-3xl font-bold">TV Shows</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
           >
             Add TV Show
           </button>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm mb-6">
+        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex gap-2 items-center w-full sm:w-auto sm:flex-1 sm:max-w-md">
-              <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Search:</label>
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Search:</label>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by title or overview..."
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white flex-1"
+                className="px-3 py-2 border border-border rounded text-sm bg-background flex-1"
               />
             </div>
             <div className="flex gap-2 items-center">
-              <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Filter:</label>
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
               <select
                 value={includeArchived ? 'all' : 'active'}
                 onChange={(e) => setIncludeArchived(e.target.value === 'all')}
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white"
+                className="px-3 py-2 border border-border rounded text-sm bg-background"
               >
                 <option value="all">All</option>
                 <option value="active">Active Only</option>
               </select>
             </div>
             <div className="flex gap-2 items-center">
-              <label className="font-semibold text-sm text-gray-700 whitespace-nowrap">Sort:</label>
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
               <select
                 value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded text-sm bg-white"
+                className="px-3 py-2 border border-border rounded text-sm bg-background"
               >
                 <option value="none">None</option>
                 <option value="title_asc">Title (A-Z)</option>
@@ -162,21 +162,21 @@ function TVShowsList() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-white rounded-lg">
-            <div className="text-lg text-gray-500">Loading TV shows...</div>
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading TV shows...</div>
           </div>
         ) : tvShows.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-white rounded-lg">
-            <p className="text-lg text-gray-500 mb-4">
+          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-lg text-muted-foreground mb-4">
               No TV shows found
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Click "Add TV Show" to search and add TV shows from TMDB.
             </p>
           </div>
         ) : (
           <>
-            <div className="mb-4 text-sm text-gray-600">
+            <div className="mb-4 text-sm text-muted-foreground">
               Showing {tvShows.length} of {total} TV shows
             </div>
             <TVShowTable tvShows={tvShows} onDelete={handleDelete} />
@@ -185,16 +185,16 @@ function TVShowsList() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-700">Page</span>
+                  <span className="text-sm text-foreground">Page</span>
                   <select
                     value={currentPage}
                     onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-                    className="px-3 py-2 border border-gray-300 rounded text-sm"
+                    className="px-3 py-2 border border-border rounded text-sm bg-background"
                   >
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                       <option key={page} value={page}>
@@ -202,12 +202,12 @@ function TVShowsList() {
                       </option>
                     ))}
                   </select>
-                  <span className="text-sm text-gray-700">of {totalPages}</span>
+                  <span className="text-sm text-foreground">of {totalPages}</span>
                 </div>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded text-sm bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>
