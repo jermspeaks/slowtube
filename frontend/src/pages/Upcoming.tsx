@@ -5,11 +5,9 @@ import { CalendarView } from '../types/calendar'
 import WeeklyCalendar from '../components/WeeklyCalendar'
 import MonthlyCalendar from '../components/MonthlyCalendar'
 import DailyCalendar from '../components/DailyCalendar'
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format, isAfter, startOfToday } from 'date-fns'
-import { useTimezone } from '../hooks/useTimezone'
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format, startOfToday } from 'date-fns'
 
 function Upcoming() {
-  const { utcToZoned } = useTimezone()
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<CalendarView>('weekly')
@@ -70,22 +68,13 @@ function Upcoming() {
         hideArchived
       )
 
-      // Flatten episodes from grouped object and filter to only upcoming items
+      // Flatten episodes from grouped object
       const allEpisodes: Episode[] = []
       Object.values(response.episodes).forEach(dayEpisodes => {
         allEpisodes.push(...dayEpisodes)
       })
 
-      // Filter to only show episodes with air_date in the future
-      // Convert UTC air_date to timezone-aware date for comparison
-      const upcomingEpisodes = allEpisodes.filter(episode => {
-        if (!episode.air_date) return false
-        const zonedAirDate = utcToZoned(episode.air_date)
-        if (!zonedAirDate) return false
-        return isAfter(zonedAirDate, today)
-      })
-
-      setEpisodes(upcomingEpisodes)
+      setEpisodes(allEpisodes)
     } catch (error) {
       console.error('Error loading episodes:', error)
       alert('Failed to load upcoming episodes')
