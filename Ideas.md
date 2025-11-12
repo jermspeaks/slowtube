@@ -4,6 +4,8 @@
 - [x] Pagination! Might be good to only show 100 items at a time?
 - [x] Add a count of videos next to the channel in group view
 - [x] Add import for movies and tv shows from stremio
+- [x] Dark Mode
+- [x] Change over from alerts to shadcn sonner
 - [ ] Subscribed channels view -- import the subscribed channels and see latest videos PER channel
 - [ ] Create lists (segments) of subscribers so I can group WHICH videos I want to see by my grouping
 - [ ] Adding tags to channels so I can easily organize and filter by that
@@ -20,17 +22,26 @@
   - [ ] Add sponsorblock so we can skip past it
 - [ ] We need to add Letterboxd import so we can later export all movies that we can add to a logging website where we can show a full list of all consumed. Idea is we can either export to my current Astro site or setup a lightweight
 - [ ] Star movies and tv shows we want to watch
-- [ ] Dark Mode
+- [ ] Group or Playlist mode that we can organize lists and have them be in the watch page
+    - [ ] Playlists should be universal other media types besides watch later as well
+- [ ] Organize should be more videos in our inbox that we want to view and start to group together. That way, watch is more relevant to top, then other organized lists
+- [ ] We need bulk actions on groups / playlists to move all to a different state (feed, inbox, or archive)
+- [ ] Tag filtering in the discover
+- [ ] Upcoming calendar needs a list and card view as well. We should have a toggle for these as it's easy to show the gaps, but sometimes I don't care about gaps at all. Add a day where it says, "There's nothing here on this day" so we know there's no TV shows for those days
+- [ ] Responsive view per pages. Start with dashboard
+- [ ] Optimistic UI for state transitions of video cards from feed -> inbox or archive so it's not jarring to jump from bottom to top. Revisit how re-renders should work here
 
 ## Questions
 
-- [ ] Do we still need Google OAuth w/ YouTube capabilities?
+- [x] Do we still need Google OAuth w/ YouTube capabilities?
 
 ## Bugs
 
 - [x] Better filters and sort view, since it's starting to clutter terrible. We should have a show more, so only show most prominent items on top. It should all be in a different background color.
 - [x] Group view showing all again
 - [x] Channel filter not filtering by the channel names
+- [x] Upcoming calendar - UTC is being used, not PST/PDT
+- [x] Upcoming calendar - we should see the retroactive view as well. Made a mistake here.
 - [ ] The "Filter with all, feed, inbox, and archive" need to now just be feed, inbox, and archive. No need to have "All" unless we are in group view.
 - [ ] Settings should be moved to the rightmost side, not left at all.
 - [ ] Migrate over to shadcn buttons everywhere
