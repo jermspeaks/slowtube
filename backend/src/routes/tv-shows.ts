@@ -1,6 +1,7 @@
 import express from 'express'
 import { tvShowQueries, episodeQueries, tvShowStateQueries, movieQueries } from '../services/database.js'
 import { searchTVShows, fetchTVShowDetails, fetchTVShowEpisodes } from '../services/tmdb.js'
+import { refreshTVShowEpisodes, refreshAllTVShowEpisodes } from '../services/tv-episode-refresh.js'
 
 const router = express.Router()
 
@@ -86,6 +87,19 @@ router.post('/', async (req, res) => {
   } catch (error: any) {
     console.error('Error creating TV show:', error)
     res.status(500).json({ error: error.message || 'Failed to create TV show' })
+  }
+})
+
+// Refresh episodes for all TV shows
+router.post('/refresh', async (req, res) => {
+  try {
+    const includeArchived = req.body.includeArchived === true || req.body.includeArchived === 'true'
+    
+    const result = await refreshAllTVShowEpisodes(includeArchived)
+    res.json(result)
+  } catch (error: any) {
+    console.error('Error refreshing all TV show episodes:', error)
+    res.status(500).json({ error: error.message || 'Failed to refresh TV show episodes' })
   }
 })
 
@@ -199,6 +213,27 @@ router.get('/:id', (req, res) => {
   } catch (error) {
     console.error('Error fetching TV show:', error)
     res.status(500).json({ error: 'Failed to fetch TV show' })
+  }
+})
+
+// Refresh episodes for a specific TV show
+router.post('/:id/refresh', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid TV show ID' })
+    }
+
+    const tvShow = tvShowQueries.getById(id)
+    if (!tvShow) {
+      return res.status(404).json({ error: 'TV show not found' })
+    }
+
+    const result = await refreshTVShowEpisodes(id)
+    res.json(result)
+  } catch (error: any) {
+    console.error('Error refreshing TV show episodes:', error)
+    res.status(500).json({ error: error.message || 'Failed to refresh TV show episodes' })
   }
 })
 

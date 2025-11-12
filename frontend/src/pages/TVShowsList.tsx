@@ -17,6 +17,7 @@ function TVShowsList() {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -61,6 +62,34 @@ function TVShowsList() {
   const handleAdd = () => {
     // Reload TV shows after adding
     loadTVShows()
+  }
+
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true)
+      const result = await tvShowsAPI.refreshAll(includeArchived)
+      
+      const newEpisodes = result.results.reduce((sum, r) => sum + (r.newEpisodes || 0), 0)
+      const updatedEpisodes = result.results.reduce((sum, r) => sum + (r.updatedEpisodes || 0), 0)
+      
+      if (result.successful > 0) {
+        toast.success(
+          `Refresh complete: ${result.successful} successful, ${result.failed} failed. ${newEpisodes} new episodes, ${updatedEpisodes} updated.`
+        )
+      } else if (result.failed > 0) {
+        toast.error(`Refresh failed for ${result.failed} TV show(s)`)
+      } else {
+        toast.info('No TV shows to refresh')
+      }
+      
+      // Reload TV shows to show any new episodes
+      loadTVShows()
+    } catch (error) {
+      console.error('Error refreshing TV show episodes:', error)
+      toast.error('Failed to refresh TV show episodes')
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   // Debounce search query
@@ -112,12 +141,21 @@ function TVShowsList() {
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
           <h1 className="text-3xl font-bold">TV Shows</h1>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-          >
-            Add TV Show
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="px-4 py-2 border border-border rounded hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh Episodes'}
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+            >
+              Add TV Show
+            </button>
+          </div>
         </div>
 
         <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">

@@ -3,6 +3,7 @@ dotenv.config()
 
 import express from 'express'
 import cors from 'cors'
+import cron from 'node-cron'
 import videoRoutes from './routes/videos.js'
 import channelRoutes from './routes/channels.js'
 import tvShowRoutes from './routes/tv-shows.js'
@@ -10,6 +11,7 @@ import movieRoutes from './routes/movies.js'
 import calendarRoutes from './routes/calendar.js'
 import importRoutes from './routes/import.js'
 import settingsRoutes from './routes/settings.js'
+import { refreshAllTVShowEpisodes } from './services/tv-episode-refresh.js'
 
 // Validate TMDB environment variables (warn but don't exit)
 if (!process.env.TMDB_API_KEY && !process.env.TMDB_READ_ACCESS_TOKEN) {
@@ -69,4 +71,30 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`)
   console.log(`Accessible at http://0.0.0.0:${PORT}`)
 })
+
+// Setup daily TV episode refresh job
+const refreshEnabled = process.env.TV_EPISODE_REFRESH_ENABLED !== 'false' // Default to true
+const refreshCronSchedule = process.env.TV_EPISODE_REFRESH_TIME || '0 0 * * *' // Default: midnight daily
+const includeArchived = process.env.TV_EPISODE_REFRESH_INCLUDE_ARCHIVED === 'true' // Default: false
+
+if (refreshEnabled) {
+  // Validate cron schedule
+  if (cron.validate(refreshCronSchedule)) {
+    console.log(`TV episode refresh scheduled: ${refreshCronSchedule} (includeArchived: ${includeArchived})`)
+    
+    cron.schedule(refreshCronSchedule, async () => {
+      console.log(`[${new Date().toISOString()}] Starting scheduled TV episode refresh...`)
+      try {
+        const result = await refreshAllTVShowEpisodes(includeArchived)
+        console.log(`[${new Date().toISOString()}] TV episode refresh completed: ${result.successful} successful, ${result.failed} failed out of ${result.total} total`)
+      } catch (error: any) {
+        console.error(`[${new Date().toISOString()}] TV episode refresh failed:`, error.message)
+      }
+    })
+  } else {
+    console.warn(`Invalid TV_EPISODE_REFRESH_TIME cron schedule: ${refreshCronSchedule}. TV episode refresh disabled.`)
+  }
+} else {
+  console.log('TV episode refresh is disabled (TV_EPISODE_REFRESH_ENABLED=false)')
+}
 

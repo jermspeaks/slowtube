@@ -194,6 +194,14 @@ export const tvShowsAPI = {
     const response = await api.delete('/api/tv-shows/all')
     return response.data
   },
+  refreshAll: async (includeArchived?: boolean) => {
+    const response = await api.post('/api/tv-shows/refresh', { includeArchived: includeArchived || false })
+    return response.data
+  },
+  refresh: async (id: number) => {
+    const response = await api.post(`/api/tv-shows/${id}/refresh`)
+    return response.data
+  },
 }
 
 // Movies API
