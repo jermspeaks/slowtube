@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { videosAPI } from '../services/api'
+import { toast } from 'sonner'
 
 interface TagInputProps {
   videoId: number
@@ -56,7 +57,7 @@ function TagInput({ videoId, existingTags, onTagAdded, onTagRemoved }: TagInputP
       setShowSuggestions(false)
     } catch (error) {
       console.error('Error adding tag:', error)
-      alert('Failed to add tag. It may already exist.')
+      toast.error('Failed to add tag. It may already exist.')
     }
   }
 
@@ -75,7 +76,7 @@ function TagInput({ videoId, existingTags, onTagAdded, onTagRemoved }: TagInputP
       onTagRemoved(tagId)
     } catch (error) {
       console.error('Error removing tag:', error)
-      alert('Failed to remove tag')
+      toast.error('Failed to remove tag')
     }
   }
 

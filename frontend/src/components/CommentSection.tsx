@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Comment } from '../types/video'
 import { videosAPI } from '../services/api'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 interface CommentSectionProps {
   videoId: number
@@ -32,7 +33,7 @@ function CommentSection({
       setNewComment('')
     } catch (error) {
       console.error('Error adding comment:', error)
-      alert('Failed to add comment')
+      toast.error('Failed to add comment')
     }
   }
 
@@ -52,7 +53,7 @@ function CommentSection({
       setEditContent('')
     } catch (error) {
       console.error('Error updating comment:', error)
-      alert('Failed to update comment')
+      toast.error('Failed to update comment')
     }
   }
 
@@ -64,7 +65,7 @@ function CommentSection({
       onCommentRemoved(commentId)
     } catch (error) {
       console.error('Error deleting comment:', error)
-      alert('Failed to delete comment')
+      toast.error('Failed to delete comment')
     }
   }
 

@@ -3,6 +3,7 @@ import { Movie } from '../types/movie'
 import { moviesAPI } from '../services/api'
 import MovieTable from '../components/MovieTable'
 import TMDBSearchModal from '../components/TMDBSearchModal'
+import { toast } from 'sonner'
 
 function MoviesList() {
   const [movies, setMovies] = useState<Movie[]>([])
@@ -38,7 +39,7 @@ function MoviesList() {
       }
     } catch (error) {
       console.error('Error loading movies:', error)
-      alert('Failed to load movies')
+      toast.error('Failed to load movies')
     } finally {
       setLoading(false)
     }
@@ -51,7 +52,7 @@ function MoviesList() {
       loadMovies()
     } catch (error) {
       console.error('Error deleting movie:', error)
-      alert('Failed to delete movie')
+      toast.error('Failed to delete movie')
     }
   }
 

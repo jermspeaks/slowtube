@@ -5,6 +5,7 @@ import { Video } from '../types/video'
 import { channelsAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoDetailModal from '../components/VideoDetailModal'
+import { toast } from 'sonner'
 
 function ChannelDetail() {
   const navigate = useNavigate()
@@ -40,7 +41,7 @@ function ChannelDetail() {
       setChannel(data)
     } catch (error) {
       console.error('Error loading channel:', error)
-      alert('Failed to load channel')
+      toast.error('Failed to load channel')
       navigate('/channels/watch-later')
     } finally {
       setLoading(false)
@@ -74,7 +75,7 @@ function ChannelDetail() {
       await loadChannel()
     } catch (error) {
       console.error('Error toggling subscription:', error)
-      alert('Failed to update subscription')
+      toast.error('Failed to update subscription')
     }
   }
 

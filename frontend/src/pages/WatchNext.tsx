@@ -5,6 +5,7 @@ import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
 import ViewToggle from '../components/ViewToggle'
+import { toast } from 'sonner'
 
 function WatchNext() {
   const [videos, setVideos] = useState<Video[]>([])
@@ -37,7 +38,7 @@ function WatchNext() {
       }
     } catch (error) {
       console.error('Error loading videos:', error)
-      alert('Failed to load videos')
+      toast.error('Failed to load videos')
     } finally {
       setLoading(false)
     }

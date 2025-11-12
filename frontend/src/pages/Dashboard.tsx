@@ -6,6 +6,7 @@ import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
 import ViewToggle from '../components/ViewToggle'
 import FiltersAndSort from '../components/FiltersAndSort'
+import { toast } from 'sonner'
 
 function Dashboard() {
   const [videos, setVideos] = useState<Video[]>([])
@@ -61,7 +62,7 @@ function Dashboard() {
       }
     } catch (error) {
       console.error('Error loading videos:', error)
-      alert('Failed to load videos')
+      toast.error('Failed to load videos')
     } finally {
       setLoading(false)
     }

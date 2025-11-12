@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { ChevronDown } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface StateSwitchButtonProps {
   video: Video
@@ -23,7 +24,7 @@ function StateSwitchButton({ video, onStateChange }: StateSwitchButtonProps) {
       onStateChange(updatedVideo)
     } catch (error) {
       console.error('Error updating video state:', error)
-      alert('Failed to update video state')
+      toast.error('Failed to update video state')
     }
   }
 

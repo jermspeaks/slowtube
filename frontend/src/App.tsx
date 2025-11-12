@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
 import Stats from './pages/Stats'
 import GroupedView from './pages/GroupedView'
@@ -13,10 +14,23 @@ import WatchNext from './pages/WatchNext'
 import Tags from './pages/Tags'
 import { Navbar } from './components/Navbar'
 import { useTheme } from './hooks/useTheme'
+import { Toaster } from './components/ui/sonner'
 
 function AppContent() {
   // Initialize theme on app load
   useTheme()
+  const [toastPosition, setToastPosition] = useState<'top-center' | 'bottom-right'>('bottom-right')
+
+  useEffect(() => {
+    const updatePosition = () => {
+      // Use md breakpoint (768px) - below is mobile, above is desktop
+      setToastPosition(window.innerWidth >= 768 ? 'bottom-right' : 'top-center')
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    return () => window.removeEventListener('resize', updatePosition)
+  }, [])
 
   return (
     <>
@@ -37,6 +51,7 @@ function AppContent() {
         <Route path="/tags" element={<Tags />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      <Toaster position={toastPosition} />
     </>
   )
 }

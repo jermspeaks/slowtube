@@ -3,6 +3,7 @@ import { TVShow } from '../types/tv-show'
 import { tvShowsAPI } from '../services/api'
 import TVShowTable from '../components/TVShowTable'
 import TMDBSearchModal from '../components/TMDBSearchModal'
+import { toast } from 'sonner'
 
 function TVShowsList() {
   const [tvShows, setTvShows] = useState<TVShow[]>([])
@@ -40,7 +41,7 @@ function TVShowsList() {
       }
     } catch (error) {
       console.error('Error loading TV shows:', error)
-      alert('Failed to load TV shows')
+      toast.error('Failed to load TV shows')
     } finally {
       setLoading(false)
     }
@@ -53,7 +54,7 @@ function TVShowsList() {
       loadTVShows()
     } catch (error) {
       console.error('Error deleting TV show:', error)
-      alert('Failed to delete TV show')
+      toast.error('Failed to delete TV show')
     }
   }
 

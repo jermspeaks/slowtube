@@ -6,6 +6,7 @@ import WeeklyCalendar from '../components/WeeklyCalendar'
 import MonthlyCalendar from '../components/MonthlyCalendar'
 import DailyCalendar from '../components/DailyCalendar'
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format } from 'date-fns'
+import { toast } from 'sonner'
 
 function Calendar() {
   const [episodes, setEpisodes] = useState<Episode[]>([])
@@ -60,7 +61,7 @@ function Calendar() {
       setEpisodes(allEpisodes)
     } catch (error) {
       console.error('Error loading episodes:', error)
-      alert('Failed to load episodes')
+      toast.error('Failed to load episodes')
     } finally {
       setLoading(false)
     }

@@ -2,6 +2,7 @@ import { Episode } from '../types/episode'
 import { Check, Archive } from 'lucide-react'
 import { tvShowsAPI } from '../services/api'
 import { Button } from './ui/button'
+import { toast } from 'sonner'
 
 interface EpisodeCardProps {
   episode: Episode
@@ -24,7 +25,7 @@ function EpisodeCard({ episode, onUpdate }: EpisodeCardProps) {
       }
     } catch (error) {
       console.error('Error marking episode as watched:', error)
-      alert('Failed to mark episode as watched')
+      toast.error('Failed to mark episode as watched')
     }
   }
 
@@ -39,7 +40,7 @@ function EpisodeCard({ episode, onUpdate }: EpisodeCardProps) {
       }
     } catch (error) {
       console.error('Error archiving show:', error)
-      alert('Failed to archive show')
+      toast.error('Failed to archive show')
     }
   }
 

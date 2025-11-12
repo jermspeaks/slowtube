@@ -5,7 +5,8 @@ import { CalendarView } from '../types/calendar'
 import WeeklyCalendar from '../components/WeeklyCalendar'
 import MonthlyCalendar from '../components/MonthlyCalendar'
 import DailyCalendar from '../components/DailyCalendar'
-import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format, startOfToday } from 'date-fns'
+import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfDay, endOfDay, format, startOfToday, subDays, addDays } from 'date-fns'
+import { toast } from 'sonner'
 
 function Upcoming() {
   const [episodes, setEpisodes] = useState<Episode[]>([])
@@ -46,12 +47,9 @@ function Upcoming() {
           endDate = endOfMonth(nextMonth)
         }
       } else { // daily
-        startDate = startOfDay(today)
-        endDate = endOfDay(currentDate)
-        // Ensure we're looking at least one day ahead
-        if (endDate <= today) {
-          endDate = endOfDay(new Date(today.getTime() + 24 * 60 * 60 * 1000))
-        }
+        // Fetch a week range around the current date for smoother navigation
+        startDate = startOfDay(subDays(currentDate, 3))
+        endDate = endOfDay(addDays(currentDate, 3))
       }
 
       // For monthly view, extend range to show full calendar grid
@@ -70,14 +68,14 @@ function Upcoming() {
 
       // Flatten episodes from grouped object
       const allEpisodes: Episode[] = []
-      Object.values(response.episodes).forEach(dayEpisodes => {
+      Object.values(response.episodes as Record<string, Episode[]>).forEach((dayEpisodes) => {
         allEpisodes.push(...dayEpisodes)
       })
 
       setEpisodes(allEpisodes)
     } catch (error) {
       console.error('Error loading episodes:', error)
-      alert('Failed to load upcoming episodes')
+      toast.error('Failed to load upcoming episodes')
     } finally {
       setLoading(false)
     }
@@ -144,10 +142,6 @@ function Upcoming() {
         {loading ? (
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
             <div className="text-lg text-muted-foreground">Loading upcoming episodes...</div>
-          </div>
-        ) : episodes.length === 0 ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">No upcoming episodes found</div>
           </div>
         ) : (
           <>

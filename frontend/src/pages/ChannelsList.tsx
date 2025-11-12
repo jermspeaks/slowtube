@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Channel, ChannelWithCount } from '../types/channel'
 import { channelsAPI } from '../services/api'
+import { toast } from 'sonner'
 
 function ChannelsList() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [channels, setChannels] = useState<ChannelWithCount[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -22,7 +24,7 @@ function ChannelsList() {
       setChannels(data || [])
     } catch (error) {
       console.error('Error loading channels:', error)
-      alert('Failed to load channels')
+      toast.error('Failed to load channels')
     } finally {
       setLoading(false)
     }

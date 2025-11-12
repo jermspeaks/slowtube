@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Upload, Trash2, Film } from 'lucide-react'
 import { useTimezone } from '../hooks/useTimezone'
 import { useTheme } from '../hooks/useTheme'
+import { toast } from 'sonner'
 
 function Settings() {
   const [uploading, setUploading] = useState(false)
@@ -38,10 +39,10 @@ function Settings() {
     try {
       setSavingTimezone(true)
       await updateTimezone(newTimezone)
-      alert('Timezone preference saved successfully!')
+      toast.success('Timezone preference saved successfully!')
     } catch (error: any) {
       console.error('Error saving timezone:', error)
-      alert('Failed to save timezone preference')
+      toast.error('Failed to save timezone preference')
       // Revert to previous timezone
       setSelectedTimezone(timezone)
     } finally {
@@ -54,10 +55,10 @@ function Settings() {
     try {
       setSavingTheme(true)
       await updateTheme(newTheme)
-      alert('Theme preference saved successfully!')
+      toast.success('Theme preference saved successfully!')
     } catch (error: any) {
       console.error('Error saving theme:', error)
-      alert('Failed to save theme preference')
+      toast.error('Failed to save theme preference')
       // Revert to previous theme
       setSelectedTheme(theme)
     } finally {
@@ -74,7 +75,7 @@ function Settings() {
     const isCsv = file.name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/csv'
     
     if (!isJson && !isCsv) {
-      alert('Please upload a JSON or CSV file (Google Takeout watch-history.json or watch-history.csv)')
+      toast.error('Please upload a JSON or CSV file (Google Takeout watch-history.json or watch-history.csv)')
       return
     }
 
@@ -94,7 +95,7 @@ function Settings() {
         // Start fetching details in background
         fetchVideoDetailsInBackground()
       } else {
-        alert(message)
+        toast.success(message)
       }
       
       // Reset file input
@@ -104,7 +105,7 @@ function Settings() {
     } catch (error: any) {
       console.error('Error importing videos:', error)
       const errorMessage = error.response?.data?.error || 'Failed to import videos'
-      alert(errorMessage)
+      toast.error(errorMessage)
       
       // Reset file input
       if (fileInputRef.current) {
@@ -139,7 +140,7 @@ function Settings() {
         if (result.status === 'completed' || result.remaining === 0) {
           // All videos processed
           setFetchingDetails(false)
-          alert(`Video details fetched successfully! ${totalProcessed} processed, ${totalUnavailable} unavailable.`)
+          toast.success(`Video details fetched successfully! ${totalProcessed} processed, ${totalUnavailable} unavailable.`)
           setFetchProgress(null)
           break
         }
@@ -151,7 +152,7 @@ function Settings() {
       console.error('Error fetching video details:', error)
       setFetchingDetails(false)
       const errorMessage = error.response?.data?.error || 'Failed to fetch video details'
-      alert(errorMessage)
+      toast.error(errorMessage)
       setFetchProgress(null)
     }
   }
@@ -168,17 +169,13 @@ function Settings() {
       const result = await importAPI.importTMDB()
       
       setTmdbImportProgress(null)
-      alert(
-        `Import completed!\n` +
-        `Total: ${result.total}\n` +
-        `Imported: ${result.imported} (${result.tvShows} TV shows, ${result.movies} movies)\n` +
-        `Skipped: ${result.skipped}\n` +
-        `Errors: ${result.errors}`
+      toast.success(
+        `Import completed! Total: ${result.total}, Imported: ${result.imported} (${result.tvShows} TV shows, ${result.movies} movies), Skipped: ${result.skipped}, Errors: ${result.errors}`
       )
     } catch (error: any) {
       console.error('Error importing from TMDB:', error)
       const errorMessage = error.response?.data?.error || 'Failed to import from TMDB'
-      alert(errorMessage)
+      toast.error(errorMessage)
       setTmdbImportProgress(null)
     } finally {
       setImportingTMDB(false)
@@ -197,17 +194,13 @@ function Settings() {
       const result = await importAPI.importIMDB()
       
       setImdbImportProgress(null)
-      alert(
-        `Import completed!\n` +
-        `Total: ${result.total}\n` +
-        `Imported: ${result.imported} (${result.tvShows} TV shows, ${result.movies} movies)\n` +
-        `Skipped: ${result.skipped}\n` +
-        `Errors: ${result.errors}`
+      toast.success(
+        `Import completed! Total: ${result.total}, Imported: ${result.imported} (${result.tvShows} TV shows, ${result.movies} movies), Skipped: ${result.skipped}, Errors: ${result.errors}`
       )
     } catch (error: any) {
       console.error('Error importing from IMDb:', error)
       const errorMessage = error.response?.data?.error || 'Failed to import from IMDb'
-      alert(errorMessage)
+      toast.error(errorMessage)
       setImdbImportProgress(null)
     } finally {
       setImportingIMDB(false)
@@ -221,11 +214,11 @@ function Settings() {
 
     try {
       await videosAPI.deleteAll()
-      alert('All videos have been deleted successfully.')
+      toast.success('All videos have been deleted successfully.')
     } catch (error: any) {
       console.error('Error clearing videos:', error)
       const errorMessage = error.response?.data?.error || 'Failed to clear videos'
-      alert(errorMessage)
+      toast.error(errorMessage)
     }
   }
 
@@ -236,11 +229,11 @@ function Settings() {
 
     try {
       const result = await tvShowsAPI.deleteAll()
-      alert(`All TV shows, episodes, and movies have been deleted successfully.\nTV Shows: ${result.tvShowsDeleted}\nMovies: ${result.moviesDeleted}`)
+      toast.success(`All TV shows, episodes, and movies have been deleted successfully. TV Shows: ${result.tvShowsDeleted}, Movies: ${result.moviesDeleted}`)
     } catch (error: any) {
       console.error('Error resetting TV shows:', error)
       const errorMessage = error.response?.data?.error || 'Failed to reset TV shows'
-      alert(errorMessage)
+      toast.error(errorMessage)
     }
   }
 

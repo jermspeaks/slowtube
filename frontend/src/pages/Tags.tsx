@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { videosAPI } from '../services/api'
 import { Tag } from 'lucide-react'
+import { toast } from 'sonner'
 
 function Tags() {
   const [tags, setTags] = useState<string[]>([])
@@ -19,7 +20,7 @@ function Tags() {
       setTags(allTags)
     } catch (error) {
       console.error('Error loading tags:', error)
-      alert('Failed to load tags')
+      toast.error('Failed to load tags')
     } finally {
       setLoading(false)
     }

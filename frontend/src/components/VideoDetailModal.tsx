@@ -4,6 +4,7 @@ import TagInput from './TagInput'
 import CommentSection from './CommentSection'
 import VideoPlayer from './VideoPlayer'
 import { format } from 'date-fns'
+import { toast } from 'sonner'
 
 interface VideoDetailModalProps {
   video: Video | null
@@ -20,7 +21,7 @@ function VideoDetailModal({ video, onClose, onVideoUpdated }: VideoDetailModalPr
       onVideoUpdated({ ...video, state: newState })
     } catch (error) {
       console.error('Error updating state:', error)
-      alert('Failed to update video state')
+      toast.error('Failed to update video state')
     }
   }
 
