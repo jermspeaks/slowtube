@@ -7,7 +7,8 @@ import {
   getMediaType, 
   fetchTVShowDetails, 
   fetchMovieDetails, 
-  fetchTVShowEpisodes 
+  fetchTVShowEpisodes,
+  searchMovies
 } from './tmdb.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -297,5 +298,221 @@ export async function importFromData2Json(): Promise<{
   errors: number
 }> {
   return importFromDataFile('data2.json', 'imdb')
+}
+
+// Letterboxd CSV entry interface
+interface LetterboxdEntry {
+  date: string // ISO date string
+  name: string
+  year: number
+  letterboxdUri: string
+}
+
+// Parse Letterboxd CSV file
+function parseLetterboxdCSV(csvContent: string): LetterboxdEntry[] {
+  const lines = csvContent.split('\n').filter(line => line.trim())
+  
+  if (lines.length < 2) {
+    throw new Error('CSV file must have at least a header row and one data row')
+  }
+
+  // Skip header row
+  const dataLines = lines.slice(1)
+  const entries: LetterboxdEntry[] = []
+
+  for (const line of dataLines) {
+    if (!line.trim()) continue
+
+    // Parse CSV line handling quoted fields
+    const fields: string[] = []
+    let currentField = ''
+    let inQuotes = false
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      const nextChar = line[i + 1]
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          currentField += '"'
+          i++ // Skip next quote
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes
+        }
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        fields.push(currentField.trim())
+        currentField = ''
+      } else {
+        currentField += char
+      }
+    }
+    // Add last field
+    fields.push(currentField.trim())
+
+    if (fields.length < 4) {
+      console.warn(`Skipping invalid CSV line: ${line}`)
+      continue
+    }
+
+    const [dateStr, name, yearStr, letterboxdUri] = fields
+
+    // Convert date to ISO format (YYYY-MM-DD -> ISO string)
+    let dateISO: string
+    try {
+      // Parse date and convert to ISO string
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date format: ${dateStr}, skipping entry`)
+        continue
+      }
+      dateISO = date.toISOString()
+    } catch (error) {
+      console.warn(`Error parsing date ${dateStr}:`, error)
+      continue
+    }
+
+    // Convert year to number
+    const year = parseInt(yearStr, 10)
+    if (isNaN(year)) {
+      console.warn(`Invalid year: ${yearStr}, skipping entry`)
+      continue
+    }
+
+    entries.push({
+      date: dateISO,
+      name: name.trim(),
+      year,
+      letterboxdUri: letterboxdUri.trim(),
+    })
+  }
+
+  return entries
+}
+
+// Find TMDB movie ID by title and year
+async function findMovieByTitleAndYear(title: string, year: number): Promise<number | null> {
+  try {
+    const results = await searchMovies(title)
+    
+    // Filter by exact year match
+    const yearMatch = results.find(movie => {
+      if (!movie.release_date) return false
+      const movieYear = parseInt(movie.release_date.substring(0, 4), 10)
+      return movieYear === year
+    })
+
+    if (yearMatch) {
+      return yearMatch.tmdb_id
+    }
+
+    return null
+  } catch (error: any) {
+    console.error(`Error searching for movie "${title}" (${year}):`, error.message)
+    return null
+  }
+}
+
+// Import from Letterboxd CSV
+export async function importFromLetterboxdCSV(csvContent: string): Promise<{
+  total: number
+  imported: number
+  movies: number
+  skipped: number
+  errors: number
+  notFound: string[]
+}> {
+  console.log('Starting import from Letterboxd CSV...')
+
+  let entries: LetterboxdEntry[]
+  try {
+    entries = parseLetterboxdCSV(csvContent)
+  } catch (error: any) {
+    throw new Error(`Failed to parse CSV: ${error.message}`)
+  }
+
+  console.log(`Found ${entries.length} entries to process`)
+
+  let imported = 0
+  let movies = 0
+  let skipped = 0
+  let errors = 0
+  const notFound: string[] = []
+
+  // Process entries with a delay to avoid rate limiting
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]
+    
+    try {
+      // Search for movie in TMDB
+      const tmdbId = await findMovieByTitleAndYear(entry.name, entry.year)
+      
+      if (!tmdbId) {
+        notFound.push(`${entry.name} (${entry.year})`)
+        skipped++
+        console.log(`Movie not found in TMDB: ${entry.name} (${entry.year})`)
+        continue
+      }
+
+      // Check if movie already exists
+      const existing = movieQueries.getByTmdbId(tmdbId)
+      
+      if (existing) {
+        // Skip if exists (keep existing saved_at)
+        skipped++
+        console.log(`Movie already exists: ${existing.title} (TMDB: ${tmdbId})`)
+        continue
+      }
+
+      // Fetch movie details and import
+      try {
+        const movieData = await fetchMovieDetails(tmdbId)
+        
+        // Create movie with saved_at from CSV
+        const movieId = movieQueries.create({
+          ...movieData,
+          saved_at: entry.date,
+        })
+
+        imported++
+        movies++
+        console.log(`Imported movie: ${movieData.title} (TMDB: ${tmdbId}, DB ID: ${movieId})`)
+      } catch (movieError: any) {
+        console.error(`Error importing movie ${entry.name} (TMDB: ${tmdbId}):`, movieError.message)
+        errors++
+      }
+
+      // Add delay between requests to avoid rate limiting (except for last entry)
+      if (i < entries.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500)) // 500ms delay
+      }
+
+      // Log progress every 10 entries
+      if ((i + 1) % 10 === 0) {
+        console.log(`Progress: ${i + 1}/${entries.length} entries processed`)
+      }
+    } catch (error: any) {
+      console.error(`Error processing entry ${entry.name} (${entry.year}):`, error.message)
+      errors++
+    }
+  }
+
+  console.log('Import completed!')
+  console.log(`  Total: ${entries.length}`)
+  console.log(`  Imported: ${imported} (${movies} movies)`)
+  console.log(`  Skipped: ${skipped}`)
+  console.log(`  Not found: ${notFound.length}`)
+  console.log(`  Errors: ${errors}`)
+
+  return {
+    total: entries.length,
+    imported,
+    movies,
+    skipped,
+    errors,
+    notFound,
+  }
 }
 

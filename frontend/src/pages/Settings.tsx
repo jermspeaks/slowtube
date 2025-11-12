@@ -14,7 +14,10 @@ function Settings() {
   const [tmdbImportProgress, setTmdbImportProgress] = useState<string | null>(null)
   const [importingIMDB, setImportingIMDB] = useState(false)
   const [imdbImportProgress, setImdbImportProgress] = useState<string | null>(null)
+  const [importingLetterboxd, setImportingLetterboxd] = useState(false)
+  const [letterboxdImportProgress, setLetterboxdImportProgress] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const letterboxdFileInputRef = useRef<HTMLInputElement>(null)
   const { timezone, loading: timezoneLoading, updateTimezone } = useTimezone()
   const [selectedTimezone, setSelectedTimezone] = useState<string>('')
   const [savingTimezone, setSavingTimezone] = useState(false)
@@ -207,6 +210,66 @@ function Settings() {
     }
   }
 
+  const handleLetterboxdFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const isCsv = file.name.endsWith('.csv') || file.type === 'text/csv' || file.type === 'application/csv'
+    
+    if (!isCsv) {
+      toast.error('Please upload a CSV file (Letterboxd watchlist export)')
+      return
+    }
+
+    try {
+      setImportingLetterboxd(true)
+      setLetterboxdImportProgress('Starting import...')
+      
+      const result = await importAPI.importLetterboxd(file)
+      
+      setLetterboxdImportProgress(null)
+      
+      let message = `Import completed! Total: ${result.total}, Imported: ${result.imported} movies, Skipped: ${result.skipped}`
+      if (result.errors > 0) {
+        message += `, Errors: ${result.errors}`
+      }
+      if (result.notFound && result.notFound.length > 0) {
+        message += `, Not found: ${result.notFound.length}`
+        // Show not found movies in a separate toast or console
+        console.log('Movies not found in TMDB:', result.notFound)
+        if (result.notFound.length <= 10) {
+          toast.info(`Movies not found: ${result.notFound.join(', ')}`, { duration: 10000 })
+        } else {
+          toast.info(`${result.notFound.length} movies not found. Check console for details.`, { duration: 10000 })
+        }
+      }
+      
+      toast.success(message)
+      
+      // Reset file input
+      if (letterboxdFileInputRef.current) {
+        letterboxdFileInputRef.current.value = ''
+      }
+    } catch (error: any) {
+      console.error('Error importing from Letterboxd:', error)
+      const errorMessage = error.response?.data?.error || 'Failed to import from Letterboxd'
+      toast.error(errorMessage)
+      setLetterboxdImportProgress(null)
+      
+      // Reset file input
+      if (letterboxdFileInputRef.current) {
+        letterboxdFileInputRef.current.value = ''
+      }
+    } finally {
+      setImportingLetterboxd(false)
+    }
+  }
+
+  const handleLetterboxdImportClick = () => {
+    letterboxdFileInputRef.current?.click()
+  }
+
   const handleClearAll = async () => {
     if (!window.confirm('Are you sure you want to delete all videos? This action cannot be undone.')) {
       return
@@ -294,7 +357,7 @@ function Settings() {
                   )}
                   <Button
                     onClick={handleImportTMDB}
-                    disabled={importingTMDB || importingIMDB}
+                    disabled={importingTMDB || importingIMDB || importingLetterboxd}
                     className="gap-2"
                   >
                     <Film className="h-4 w-4" />
@@ -313,11 +376,37 @@ function Settings() {
                   )}
                   <Button
                     onClick={handleImportIMDB}
-                    disabled={importingTMDB || importingIMDB}
+                    disabled={importingTMDB || importingIMDB || importingLetterboxd}
                     className="gap-2"
                   >
                     <Film className="h-4 w-4" />
                     {importingIMDB ? 'Importing...' : 'Import from IMDb (data2.json)'}
+                  </Button>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Import from Letterboxd watchlist CSV export
+                  </p>
+                  <input
+                    ref={letterboxdFileInputRef}
+                    type="file"
+                    accept=".csv,text/csv,application/csv"
+                    onChange={handleLetterboxdFileSelect}
+                    className="hidden"
+                  />
+                  {letterboxdImportProgress && (
+                    <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm mb-2">
+                      {letterboxdImportProgress}
+                    </div>
+                  )}
+                  <Button
+                    onClick={handleLetterboxdImportClick}
+                    disabled={importingTMDB || importingIMDB || importingLetterboxd}
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {importingLetterboxd ? 'Importing...' : 'Import from Letterboxd (CSV)'}
                   </Button>
                 </div>
               </div>

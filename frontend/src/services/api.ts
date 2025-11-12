@@ -265,6 +265,16 @@ export const importAPI = {
     const response = await api.post('/api/import/imdb')
     return response.data
   },
+  importLetterboxd: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await api.post('/api/import/letterboxd', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
 }
 
 // Settings API
