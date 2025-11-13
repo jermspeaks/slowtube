@@ -150,7 +150,8 @@ export const tvShowsAPI = {
     page?: number,
     limit?: number,
     status?: string,
-    archiveFilter?: 'all' | 'archived' | 'unarchived'
+    archiveFilter?: 'all' | 'archived' | 'unarchived',
+    completionFilter?: 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly'
   ) => {
     const params: Record<string, string | number> = {}
     if (includeArchived !== undefined) {
@@ -163,6 +164,7 @@ export const tvShowsAPI = {
     if (limit !== undefined) params.limit = limit
     if (status) params.status = status
     if (archiveFilter) params.archiveFilter = archiveFilter
+    if (completionFilter) params.completionFilter = completionFilter
     const response = await api.get('/api/tv-shows', { params })
     return response.data
   },

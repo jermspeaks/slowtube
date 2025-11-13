@@ -19,6 +19,9 @@ function TVShowsList() {
   )
   const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '')
   const [statuses, setStatuses] = useState<string[]>([])
+  const [completionFilter, setCompletionFilter] = useState<'all' | 'hideCompleted' | 'startedOnly' | 'newOnly'>(
+    (searchParams.get('completionFilter') as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly') || 'hideCompleted'
+  )
   const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | null>(
     (searchParams.get('sortBy') as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date') || 'last_episode_date'
   )
@@ -39,6 +42,7 @@ function TVShowsList() {
     const urlSearch = searchParams.get('search') || ''
     const urlArchive = (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
     const urlStatus = searchParams.get('status') || ''
+    const urlCompletionFilter = (searchParams.get('completionFilter') as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly') || 'hideCompleted'
     const urlSortBy = (searchParams.get('sortBy') as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date') || 'last_episode_date'
     const urlSortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
     const urlPage = parseInt(searchParams.get('page') || '1', 10)
@@ -50,6 +54,8 @@ function TVShowsList() {
       urlArchive !== archiveFilter ||
       // eslint-disable-next-line react-hooks/exhaustive-deps
       urlStatus !== statusFilter ||
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      urlCompletionFilter !== completionFilter ||
       // eslint-disable-next-line react-hooks/exhaustive-deps
       urlSortBy !== sortBy ||
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,6 +81,10 @@ function TVShowsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     if (urlStatus !== statusFilter) {
       setStatusFilter(urlStatus)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (urlCompletionFilter !== completionFilter) {
+      setCompletionFilter(urlCompletionFilter)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     if (urlSortBy !== sortBy) {
@@ -126,7 +136,8 @@ function TVShowsList() {
         currentPage,
         50,
         statusFilter || undefined,
-        archiveFilter
+        archiveFilter,
+        completionFilter
       )
       
       setTvShows(response.tvShows || [])
@@ -225,6 +236,11 @@ function TVShowsList() {
       params.set('status', statusFilter)
     }
     
+    // Only include completionFilter in URL if it's not the default ('hideCompleted')
+    if (completionFilter !== 'hideCompleted') {
+      params.set('completionFilter', completionFilter)
+    }
+    
     if (sortBy && sortBy !== 'last_episode_date') {
       params.set('sortBy', sortBy)
       params.set('sortOrder', sortOrder)
@@ -244,19 +260,19 @@ function TVShowsList() {
     if (currentParams !== newParams) {
       setSearchParams(params, { replace: true })
     }
-  }, [debouncedSearchQuery, archiveFilter, statusFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
+  }, [debouncedSearchQuery, archiveFilter, statusFilter, completionFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
 
   useEffect(() => {
     // Reset to page 1 when filters change, but not when syncing from URL
     if (!isSyncingFromUrlRef.current) {
       setCurrentPage(1)
     }
-  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, statusFilter])
+  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, statusFilter, completionFilter])
 
   useEffect(() => {
     loadTVShows()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, statusFilter])
+  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, statusFilter, completionFilter])
 
   const handleSortChange = (value: string) => {
     if (value === 'none') {
@@ -379,6 +395,55 @@ function TVShowsList() {
                         <option key={status} value={status}>{status}</option>
                       ))}
                     </select>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Completion Status:</label>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="completionFilter"
+                        value="all"
+                        checked={completionFilter === 'all'}
+                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-foreground">All</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="completionFilter"
+                        value="hideCompleted"
+                        checked={completionFilter === 'hideCompleted'}
+                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-foreground">Hide Completed</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="completionFilter"
+                        value="startedOnly"
+                        checked={completionFilter === 'startedOnly'}
+                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-foreground">Started Only</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="completionFilter"
+                        value="newOnly"
+                        checked={completionFilter === 'newOnly'}
+                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-foreground">New Only</span>
+                    </label>
                   </div>
                 </div>
               </div>

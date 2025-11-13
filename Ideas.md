@@ -6,6 +6,8 @@
 - [x] Add import for movies and tv shows from stremio
 - [x] Dark Mode
 - [x] Change over from alerts to shadcn sonner
+- [x] TV Show episodes view for archive
+- [x] TV show filters - need to include filter by status, archived/unarchive, AND sort by title, first air date, next episode date, asc and desc. Actions need to be a dropdown for delete and archive. Delete will need a dialog to confirm we want to delete the tv show. Table needs to include how much we've watched the show (watched complete)
 - [ ] Subscribed channels view -- import the subscribed channels and see latest videos PER channel
 - [ ] Create lists (segments) of subscribers so I can group WHICH videos I want to see by my grouping
 - [ ] Adding tags to channels so I can easily organize and filter by that
@@ -30,8 +32,7 @@
 - [ ] Upcoming calendar needs a list and card view as well. We should have a toggle for these as it's easy to show the gaps, but sometimes I don't care about gaps at all. Add a day where it says, "There's nothing here on this day" so we know there's no TV shows for those days
 - [ ] Responsive view per pages. Start with dashboard
 - [ ] Optimistic UI for state transitions of video cards from feed -> inbox or archive so it's not jarring to jump from bottom to top. Revisit how re-renders should work here
-- [x] TV Show episodes view for archive
-- [x] TV show filters - need to include filter by status, archived/unarchive, AND sort by title, first air date, next episode date, asc and desc. Actions need to be a dropdown for delete and archive. Delete will need a dialog to confirm we want to delete the tv show. Table needs to include how much we've watched the show (watched complete)
+- [ ] TV Show list page needs to have filters cleared button
 
 ## Questions
 

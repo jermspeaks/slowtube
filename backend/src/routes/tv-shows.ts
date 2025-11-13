@@ -123,6 +123,7 @@ router.get('/', (req, res) => {
     const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined
     const status = req.query.status as string | undefined
     const archiveFilter = req.query.archiveFilter as 'all' | 'archived' | 'unarchived' | undefined
+    const completionFilter = (req.query.completionFilter as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly') || 'hideCompleted'
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50
 
@@ -134,8 +135,8 @@ router.get('/', (req, res) => {
     }
 
     const offset = (page - 1) * limit
-    const tvShows = tvShowQueries.getAll(includeArchived, search, sortBy, sortOrder, limit, offset, status, archiveFilter)
-    const total = tvShowQueries.getCount(includeArchived, search, status, archiveFilter)
+    const tvShows = tvShowQueries.getAll(includeArchived, search, sortBy, sortOrder, limit, offset, status, archiveFilter, completionFilter)
+    const total = tvShowQueries.getCount(includeArchived, search, status, archiveFilter, completionFilter)
     const totalPages = Math.ceil(total / limit)
     
     // Add archived status to each TV show

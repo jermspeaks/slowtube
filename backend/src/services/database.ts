@@ -852,7 +852,8 @@ export const tvShowQueries = {
     limit?: number,
     offset?: number,
     statusFilter?: string,
-    archiveFilter?: 'all' | 'archived' | 'unarchived'
+    archiveFilter?: 'all' | 'archived' | 'unarchived',
+    completionFilter?: 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly'
   ) => {
     const conditions: string[] = []
     const params: any[] = []
@@ -879,8 +880,6 @@ export const tvShowQueries = {
       const searchTerm = `%${search.trim().toLowerCase()}%`
       params.push(searchTerm, searchTerm)
     }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     // Build ORDER BY clause
     let orderBy = 'ORDER BY ts.title ASC' // Default sort
@@ -945,6 +944,35 @@ export const tvShowQueries = {
       GROUP BY tv_show_id
     `
 
+    // Completion status filter
+    // Apply filter based on watched progress after the watched progress subquery is joined
+    if (completionFilter && completionFilter !== 'all') {
+      if (completionFilter === 'hideCompleted') {
+        // Hide completed: Exclude shows where watched_count = total_episodes AND total_episodes > 0
+        conditions.push(`(
+          COALESCE(wp.total_episodes, 0) = 0 
+          OR COALESCE(wp.watched_count, 0) < COALESCE(wp.total_episodes, 0)
+          OR wp.total_episodes IS NULL
+        )`)
+      } else if (completionFilter === 'startedOnly') {
+        // Started only: Show only shows where watched_count > 0 AND watched_count < total_episodes
+        conditions.push(`(
+          COALESCE(wp.watched_count, 0) > 0 
+          AND COALESCE(wp.watched_count, 0) < COALESCE(wp.total_episodes, 0)
+          AND COALESCE(wp.total_episodes, 0) > 0
+        )`)
+      } else if (completionFilter === 'newOnly') {
+        // New only: Show only shows where watched_count = 0 OR total_episodes = 0
+        conditions.push(`(
+          COALESCE(wp.watched_count, 0) = 0 
+          OR COALESCE(wp.total_episodes, 0) = 0 
+          OR wp.watched_count IS NULL
+        )`)
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+
     const query = `
       SELECT 
         ts.*,
@@ -979,7 +1007,7 @@ export const tvShowQueries = {
     })) as any[]
   },
 
-  getCount: (includeArchived: boolean = true, search?: string, statusFilter?: string, archiveFilter?: 'all' | 'archived' | 'unarchived') => {
+  getCount: (includeArchived: boolean = true, search?: string, statusFilter?: string, archiveFilter?: 'all' | 'archived' | 'unarchived', completionFilter?: 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly') => {
     const conditions: string[] = []
     const params: any[] = []
 
@@ -1006,12 +1034,50 @@ export const tvShowQueries = {
       params.push(searchTerm, searchTerm)
     }
 
+    // Subquery for watched progress (same as in getAll)
+    const watchedProgressSubquery = `
+      SELECT 
+        tv_show_id,
+        COUNT(*) as total_episodes,
+        SUM(is_watched) as watched_count
+      FROM episodes
+      GROUP BY tv_show_id
+    `
+
+    // Completion status filter
+    // Apply filter based on watched progress after the watched progress subquery is joined
+    if (completionFilter && completionFilter !== 'all') {
+      if (completionFilter === 'hideCompleted') {
+        // Hide completed: Exclude shows where watched_count = total_episodes AND total_episodes > 0
+        conditions.push(`(
+          COALESCE(wp.total_episodes, 0) = 0 
+          OR COALESCE(wp.watched_count, 0) < COALESCE(wp.total_episodes, 0)
+          OR wp.total_episodes IS NULL
+        )`)
+      } else if (completionFilter === 'startedOnly') {
+        // Started only: Show only shows where watched_count > 0 AND watched_count < total_episodes
+        conditions.push(`(
+          COALESCE(wp.watched_count, 0) > 0 
+          AND COALESCE(wp.watched_count, 0) < COALESCE(wp.total_episodes, 0)
+          AND COALESCE(wp.total_episodes, 0) > 0
+        )`)
+      } else if (completionFilter === 'newOnly') {
+        // New only: Show only shows where watched_count = 0 OR total_episodes = 0
+        conditions.push(`(
+          COALESCE(wp.watched_count, 0) = 0 
+          OR COALESCE(wp.total_episodes, 0) = 0 
+          OR wp.watched_count IS NULL
+        )`)
+      }
+    }
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     const query = `
       SELECT COUNT(*) as count
       FROM tv_shows ts
       LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
+      LEFT JOIN (${watchedProgressSubquery}) wp ON ts.id = wp.tv_show_id
       ${whereClause}
     `
     const result = db.prepare(query).get(...params) as { count: number }
