@@ -73,7 +73,7 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
               <th className="p-3 text-left border-b-2 border-border">Overview</th>
               <th className="p-3 text-left border-b-2 border-border">Status</th>
               <th className="p-3 text-left border-b-2 border-border">Watched</th>
-              <th className="p-3 text-left border-b-2 border-border">Next Episode Date</th>
+              <th className="p-3 text-left border-b-2 border-border">Last Aired</th>
               <th className="p-3 text-left border-b-2 border-border">Actions</th>
             </tr>
           </thead>
@@ -131,8 +131,8 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                     {getWatchedProgress(tvShow)}
                   </td>
                   <td className="p-3 text-muted-foreground text-sm">
-                    {tvShow.next_episode_date ? (
-                      format(new Date(tvShow.next_episode_date), 'MMM d, yyyy')
+                    {tvShow.last_episode_date ? (
+                      format(new Date(tvShow.last_episode_date), 'MMM d, yyyy')
                     ) : (
                       '-'
                     )}

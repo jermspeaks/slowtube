@@ -108,7 +108,7 @@ router.get('/', (req, res) => {
   try {
     const includeArchived = req.query.includeArchived === 'true' || req.query.includeArchived === '1'
     const search = req.query.search as string | undefined
-    const sortBy = req.query.sortBy as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | undefined
+    const sortBy = req.query.sortBy as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | undefined
     const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined
     const status = req.query.status as string | undefined
     const archiveFilter = req.query.archiveFilter as 'all' | 'archived' | 'unarchived' | undefined

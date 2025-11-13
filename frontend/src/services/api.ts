@@ -145,7 +145,7 @@ export const tvShowsAPI = {
   getAll: async (
     includeArchived?: boolean,
     search?: string,
-    sortBy?: 'title' | 'first_air_date' | 'created_at' | 'next_episode_date',
+    sortBy?: 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date',
     sortOrder?: 'asc' | 'desc',
     page?: number,
     limit?: number,

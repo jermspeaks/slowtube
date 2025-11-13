@@ -847,7 +847,7 @@ export const tvShowQueries = {
   getAll: (
     includeArchived: boolean = true,
     search?: string,
-    sortBy?: 'title' | 'first_air_date' | 'created_at' | 'next_episode_date',
+    sortBy?: 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date',
     sortOrder?: 'asc' | 'desc',
     limit?: number,
     offset?: number,
@@ -892,6 +892,11 @@ export const tvShowQueries = {
         orderBy = `ORDER BY 
           CASE WHEN next_ep.air_date IS NULL THEN 1 ELSE 0 END,
           next_ep.air_date ${order}`
+      } else if (sortBy === 'last_episode_date') {
+        // Sort by last episode aired date
+        orderBy = `ORDER BY 
+          CASE WHEN last_ep.air_date IS NULL THEN 1 ELSE 0 END,
+          last_ep.air_date ${order}`
       } else if (sortBy === 'title' || sortBy === 'first_air_date' || sortBy === 'created_at') {
         // Handle NULL values - put them at the end
         orderBy = `ORDER BY 
@@ -921,6 +926,15 @@ export const tvShowQueries = {
       GROUP BY e.tv_show_id
     `
 
+    // Subquery for last episode aired date (latest air_date from episodes that have already aired)
+    const lastEpisodeSubquery = `
+      SELECT MAX(e.air_date) as air_date, e.tv_show_id
+      FROM episodes e
+      WHERE e.air_date IS NOT NULL
+        AND e.air_date <= date('now')
+      GROUP BY e.tv_show_id
+    `
+
     // Subqueries for watched progress
     const watchedProgressSubquery = `
       SELECT 
@@ -935,11 +949,13 @@ export const tvShowQueries = {
       SELECT 
         ts.*,
         next_ep.air_date as next_episode_date,
+        last_ep.air_date as last_episode_date,
         COALESCE(wp.watched_count, 0) as watched_count,
         COALESCE(wp.total_episodes, 0) as total_episodes
       FROM tv_shows ts
       LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
       LEFT JOIN (${nextEpisodeSubquery}) next_ep ON ts.id = next_ep.tv_show_id
+      LEFT JOIN (${lastEpisodeSubquery}) last_ep ON ts.id = last_ep.tv_show_id
       LEFT JOIN (${watchedProgressSubquery}) wp ON ts.id = wp.tv_show_id
       ${whereClause}
       ${orderBy}
@@ -948,6 +964,7 @@ export const tvShowQueries = {
 
     const results = db.prepare(query).all(...params) as (TVShow & { 
       next_episode_date: string | null
+      last_episode_date: string | null
       watched_count: number
       total_episodes: number
     })[]
@@ -956,6 +973,7 @@ export const tvShowQueries = {
     return results.map(r => ({
       ...r,
       next_episode_date: r.next_episode_date || null,
+      last_episode_date: r.last_episode_date || null,
       watched_count: r.watched_count || 0,
       total_episodes: r.total_episodes || 0,
     })) as any[]

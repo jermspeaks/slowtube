@@ -15,5 +15,6 @@ export interface TVShow {
   watched_count?: number
   total_episodes?: number
   next_episode_date?: string | null
+  last_episode_date?: string | null
 }
 

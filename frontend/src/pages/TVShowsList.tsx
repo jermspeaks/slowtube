@@ -13,7 +13,7 @@ function TVShowsList() {
   const [archiveFilter, setArchiveFilter] = useState<'all' | 'archived' | 'unarchived'>('unarchived')
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [statuses, setStatuses] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | null>('next_episode_date')
+  const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | null>('last_episode_date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -145,9 +145,9 @@ function TVShowsList() {
     } else {
       const lastUnderscoreIndex = value.lastIndexOf('_')
       if (lastUnderscoreIndex !== -1) {
-        const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date'
+        const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date'
         const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
-        if ((by === 'title' || by === 'first_air_date' || by === 'created_at' || by === 'next_episode_date') && (order === 'asc' || order === 'desc')) {
+        if ((by === 'title' || by === 'first_air_date' || by === 'created_at' || by === 'next_episode_date' || by === 'last_episode_date') && (order === 'asc' || order === 'desc')) {
           setSortBy(by)
           setSortOrder(order)
         }
@@ -228,6 +228,8 @@ function TVShowsList() {
                 <option value="first_air_date_asc">First Air Date (Oldest)</option>
                 <option value="next_episode_date_asc">Next Episode Date (Ascending)</option>
                 <option value="next_episode_date_desc">Next Episode Date (Descending)</option>
+                <option value="last_episode_date_desc">Last Aired (Newest)</option>
+                <option value="last_episode_date_asc">Last Aired (Oldest)</option>
                 <option value="created_at_desc">Created At (Newest)</option>
                 <option value="created_at_asc">Created At (Oldest)</option>
               </select>
