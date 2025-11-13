@@ -128,29 +128,30 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
-          <div className="flex-1 min-w-0">
-            <FiltersAndSort
-              stateFilter={stateFilter}
-              onStateFilterChange={setStateFilter}
-              searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
-              selectedChannels={selectedChannels}
-              onSelectedChannelsChange={setSelectedChannels}
-              availableChannels={availableChannels}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-              sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
-              dateField={dateField}
-              onDateFieldChange={setDateField}
-              startDate={startDate}
-              onStartDateChange={setStartDate}
-              endDate={endDate}
-              onEndDateChange={setEndDate}
-            />
+        <div className="mb-6 space-y-4">
+          <FiltersAndSort
+            stateFilter={stateFilter}
+            onStateFilterChange={setStateFilter}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            selectedChannels={selectedChannels}
+            onSelectedChannelsChange={setSelectedChannels}
+            availableChannels={availableChannels}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            sortOrder={sortOrder}
+            onSortOrderChange={setSortOrder}
+            dateField={dateField}
+            onDateFieldChange={setDateField}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+          />
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-foreground">View As</label>
+            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           </div>
-          <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>
 
         {loading ? (
