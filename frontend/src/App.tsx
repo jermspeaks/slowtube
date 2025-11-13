@@ -12,6 +12,7 @@ import MoviesList from './pages/MoviesList'
 import TVShowsList from './pages/TVShowsList'
 import TVShowDetail from './pages/TVShowDetail'
 import Upcoming from './pages/Upcoming'
+import RecentlyAired from './pages/RecentlyAired'
 import WatchNext from './pages/WatchNext'
 import Tags from './pages/Tags'
 import { Navbar } from './components/Navbar'
@@ -48,9 +49,12 @@ function AppContent() {
         <Route path="/channels/watch-later" element={<ChannelsList />} />
         <Route path="/channels/:channelId" element={<ChannelDetail />} />
         <Route path="/movies" element={<MoviesList />} />
+        <Route path="/tv-shows/upcoming" element={<Upcoming />} />
+        <Route path="/tv-shows/list" element={<TVShowsList />} />
+        <Route path="/tv-shows/recently-aired" element={<RecentlyAired />} />
         <Route path="/tv-shows/:id" element={<TVShowDetail />} />
-        <Route path="/tv-shows" element={<TVShowsList />} />
-        <Route path="/upcoming" element={<Upcoming />} />
+        <Route path="/tv-shows" element={<Navigate to="/tv-shows/list" replace />} />
+        <Route path="/upcoming" element={<Navigate to="/tv-shows/upcoming" replace />} />
         <Route path="/watch-next" element={<WatchNext />} />
         <Route path="/tags" element={<Tags />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

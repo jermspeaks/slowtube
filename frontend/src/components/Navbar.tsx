@@ -33,6 +33,10 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isActive = (path: string) => location.pathname === path
+  
+  const isTVShowsActive = () => {
+    return location.pathname.startsWith('/tv-shows')
+  }
 
   const MobileNavLink = ({ to, icon: Icon, children, onClick }: { to: string; icon: any; children: React.ReactNode; onClick?: () => void }) => (
     <Link
@@ -62,7 +66,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    ['/dashboard', '/movies', '/tv-shows', '/channels', '/youtube', '/upcoming'].some(path =>
+                    ['/dashboard', '/movies', '/tv-shows', '/channels', '/youtube'].some(path =>
                       location.pathname.startsWith(path)
                     )
                       ? 'bg-accent'
@@ -87,12 +91,30 @@ export function Navbar() {
                     Movies
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/tv-shows" className="w-full flex items-center gap-2">
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className={isTVShowsActive() ? 'bg-accent' : ''}>
                     <Tv className="h-4 w-4" />
                     TV Shows
-                  </Link>
-                </DropdownMenuItem>
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem asChild>
+                      <Link to="/tv-shows/upcoming" className="w-full flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Upcoming
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/tv-shows/list" className="w-full">
+                        List
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/tv-shows/recently-aired" className="w-full">
+                        Recently Aired
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Radio className="h-4 w-4" />
@@ -116,12 +138,6 @@ export function Navbar() {
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
-                <DropdownMenuItem asChild>
-                  <Link to="/upcoming" className="w-full flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Upcoming
-                  </Link>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -240,9 +256,23 @@ export function Navbar() {
                     <MobileNavLink to="/movies" icon={Film}>
                       Movies
                     </MobileNavLink>
-                    <MobileNavLink to="/tv-shows" icon={Tv}>
-                      TV Shows
-                    </MobileNavLink>
+                    <div className="px-4 py-2">
+                      <div className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <Tv className="h-4 w-4" />
+                        TV Shows
+                      </div>
+                      <div className="pl-6 space-y-1">
+                        <MobileNavLink to="/tv-shows/upcoming" icon={Clock}>
+                          Upcoming
+                        </MobileNavLink>
+                        <MobileNavLink to="/tv-shows/list" icon={Tv}>
+                          List
+                        </MobileNavLink>
+                        <MobileNavLink to="/tv-shows/recently-aired" icon={Clock}>
+                          Recently Aired
+                        </MobileNavLink>
+                      </div>
+                    </div>
                     <MobileNavLink to="/youtube/watch-later" icon={Radio}>
                       Watch Later
                     </MobileNavLink>
@@ -251,9 +281,6 @@ export function Navbar() {
                     </MobileNavLink>
                     <MobileNavLink to="/channels/watch-later" icon={Radio}>
                       Watch Later Channels
-                    </MobileNavLink>
-                    <MobileNavLink to="/upcoming" icon={Clock}>
-                      Upcoming
                     </MobileNavLink>
                   </div>
                 </div>

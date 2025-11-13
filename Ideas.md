@@ -35,8 +35,9 @@
 - [ ] Responsive view per pages. Start with dashboard
 - [ ] Optimistic UI for state transitions of video cards from feed -> inbox or archive so it's not jarring to jump from bottom to top. Revisit how re-renders should work here
 - [ ] TV Show list page needs to have filters cleared button
-- [ ] TV Shows needs to be grouped in navigation: tv shows -> Upcoming, List, and Recently Aired. We can move the upcoming calendar to there
-
+- [x] TV Shows needs to be grouped in navigation: tv shows -> Upcoming, List, and Recently Aired. We can move the upcoming calendar to there
+- [ ] Add a load more for recently aired
+- [ ] Add icons for recently aired and tv show list in navigation
 
 ## Questions
 
