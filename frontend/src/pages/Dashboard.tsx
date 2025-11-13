@@ -82,7 +82,7 @@ function Dashboard() {
       const response = await tvShowsAPI.getAll(
         undefined,
         undefined,
-        'last_air_date',
+        'last_episode_date',
         'desc',
         1,
         12
