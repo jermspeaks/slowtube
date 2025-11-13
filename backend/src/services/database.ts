@@ -1223,6 +1223,22 @@ export const episodeQueries = {
     `).run(tvShowId).changes
   },
 
+  markAsUnwatched: (id: number) => {
+    return db.prepare(`
+      UPDATE episodes 
+      SET is_watched = 0, watched_at = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(id).changes
+  },
+
+  markSeasonAsWatched: (tvShowId: number, seasonNumber: number) => {
+    return db.prepare(`
+      UPDATE episodes 
+      SET is_watched = 1, watched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE tv_show_id = ? AND season_number = ?
+    `).run(tvShowId, seasonNumber).changes
+  },
+
   delete: (id: number) => {
     return db.prepare('DELETE FROM episodes WHERE id = ?').run(id).changes
   },

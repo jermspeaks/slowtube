@@ -342,5 +342,58 @@ router.post('/:id/episodes/watched-all', (req, res) => {
   }
 })
 
+// Mark episode as unwatched
+router.post('/:id/episodes/:episodeId/unwatched', (req, res) => {
+  try {
+    const tvShowId = parseInt(req.params.id, 10)
+    const episodeId = parseInt(req.params.episodeId, 10)
+    
+    if (isNaN(tvShowId) || isNaN(episodeId)) {
+      return res.status(400).json({ error: 'Invalid TV show ID or episode ID' })
+    }
+
+    const tvShow = tvShowQueries.getById(tvShowId)
+    if (!tvShow) {
+      return res.status(404).json({ error: 'TV show not found' })
+    }
+
+    const episode = episodeQueries.getById(episodeId)
+    if (!episode || episode.tv_show_id !== tvShowId) {
+      return res.status(404).json({ error: 'Episode not found' })
+    }
+
+    episodeQueries.markAsUnwatched(episodeId)
+    const updatedEpisode = episodeQueries.getById(episodeId)
+    
+    res.json(updatedEpisode)
+  } catch (error) {
+    console.error('Error marking episode as unwatched:', error)
+    res.status(500).json({ error: 'Failed to mark episode as unwatched' })
+  }
+})
+
+// Mark all episodes in a season as watched
+router.post('/:id/seasons/:seasonNumber/watched', (req, res) => {
+  try {
+    const tvShowId = parseInt(req.params.id, 10)
+    const seasonNumber = parseInt(req.params.seasonNumber, 10)
+    
+    if (isNaN(tvShowId) || isNaN(seasonNumber)) {
+      return res.status(400).json({ error: 'Invalid TV show ID or season number' })
+    }
+
+    const tvShow = tvShowQueries.getById(tvShowId)
+    if (!tvShow) {
+      return res.status(404).json({ error: 'TV show not found' })
+    }
+
+    const updatedCount = episodeQueries.markSeasonAsWatched(tvShowId, seasonNumber)
+    res.json({ message: `All episodes in season ${seasonNumber} marked as watched`, updatedCount })
+  } catch (error) {
+    console.error('Error marking season episodes as watched:', error)
+    res.status(500).json({ error: 'Failed to mark season episodes as watched' })
+  }
+})
+
 export default router
 

@@ -30,6 +30,7 @@
 - [ ] Upcoming calendar needs a list and card view as well. We should have a toggle for these as it's easy to show the gaps, but sometimes I don't care about gaps at all. Add a day where it says, "There's nothing here on this day" so we know there's no TV shows for those days
 - [ ] Responsive view per pages. Start with dashboard
 - [ ] Optimistic UI for state transitions of video cards from feed -> inbox or archive so it's not jarring to jump from bottom to top. Revisit how re-renders should work here
+- [x] TV Show episodes view for archive
 
 ## Questions
 

@@ -186,8 +186,16 @@ export const tvShowsAPI = {
     const response = await api.post(`/api/tv-shows/${tvShowId}/episodes/${episodeId}/watched`)
     return response.data
   },
+  markEpisodeUnwatched: async (tvShowId: number, episodeId: number) => {
+    const response = await api.post(`/api/tv-shows/${tvShowId}/episodes/${episodeId}/unwatched`)
+    return response.data
+  },
   markAllEpisodesWatched: async (id: number) => {
     const response = await api.post(`/api/tv-shows/${id}/episodes/watched-all`)
+    return response.data
+  },
+  markSeasonWatched: async (tvShowId: number, seasonNumber: number) => {
+    const response = await api.post(`/api/tv-shows/${tvShowId}/seasons/${seasonNumber}/watched`)
     return response.data
   },
   deleteAll: async () => {
