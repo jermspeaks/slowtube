@@ -70,9 +70,9 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
             <tr className="bg-muted">
               <th className="p-3 text-left border-b-2 border-border">Poster</th>
               <th className="p-3 text-left border-b-2 border-border">Title</th>
-              <th className="p-3 text-left border-b-2 border-border">Overview</th>
-              <th className="p-3 text-left border-b-2 border-border">Status</th>
-              <th className="p-3 text-left border-b-2 border-border">Watched</th>
+              <th className="p-3 text-left border-b-2 border-border hidden md:table-cell">Overview</th>
+              <th className="p-3 text-left border-b-2 border-border hidden lg:table-cell">Status</th>
+              <th className="p-3 text-left border-b-2 border-border hidden md:table-cell">Watched</th>
               <th className="p-3 text-left border-b-2 border-border">Last Aired</th>
               <th className="p-3 text-left border-b-2 border-border">Actions</th>
             </tr>
@@ -109,7 +109,7 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                       <div className="text-xs text-muted-foreground">TMDB: {tvShow.tmdb_id}</div>
                     )}
                   </td>
-                  <td className="p-3 max-w-[400px]">
+                  <td className="p-3 max-w-[400px] hidden md:table-cell">
                     {tvShow.overview ? (
                       <div className="text-sm text-muted-foreground line-clamp-3">
                         {tvShow.overview}
@@ -118,7 +118,7 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </td>
-                  <td className="p-3">
+                  <td className="p-3 hidden lg:table-cell">
                     {tvShow.status ? (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
                         {tvShow.status}
@@ -127,7 +127,7 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </td>
-                  <td className="p-3 text-muted-foreground text-sm">
+                  <td className="p-3 text-muted-foreground text-sm hidden md:table-cell">
                     {getWatchedProgress(tvShow)}
                   </td>
                   <td className="p-3 text-muted-foreground text-sm">

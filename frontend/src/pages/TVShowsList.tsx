@@ -14,7 +14,7 @@ function TVShowsList() {
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [statuses, setStatuses] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | null>('last_episode_date')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
