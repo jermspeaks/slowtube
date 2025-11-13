@@ -376,9 +376,37 @@ After importing videos from Google Takeout, the app will automatically fetch det
 - Thumbnail URL
 - YouTube URL
 
-The fetch process runs in the background and shows progress. Videos with a `pending` fetch status will be processed automatically when you click "Import Google Takeout File" or manually trigger a fetch.
+The fetch process runs in the background and shows progress. Videos are processed in batches of 5 at a time to avoid API rate limiting.
 
-**Note**: YouTube OAuth is optional. Without it, videos can still be imported from Google Takeout, but detailed metadata won't be fetched automatically.
+### Fetch Status
+
+Videos have the following fetch statuses:
+- `pending`: Video is queued for metadata fetching
+- `completed`: Video metadata has been successfully fetched
+- `unavailable`: Video metadata could not be fetched (video may be private, deleted, or API error occurred)
+- `failed`: Video metadata fetch failed due to an error
+
+### Automatic Retry
+
+The system automatically includes failed videos (`unavailable` or `failed` status) when fetching metadata. When you trigger a fetch operation, it will:
+1. Process videos with `pending` status
+2. Retry videos with `unavailable` or `failed` status
+3. Skip videos with `completed` status (they already have metadata)
+
+### Manual Retry of Failed Videos
+
+To explicitly retry only failed videos, you can use the API endpoint:
+
+```bash
+curl -X POST http://localhost:3001/api/videos/retry-failed
+```
+
+This endpoint will:
+1. Find all videos with `unavailable` or `failed` status
+2. Reset their status to `pending`
+3. Process them in batches of 5
+
+**Note**: YouTube OAuth is optional. Without it, videos can still be imported from Google Takeout, but detailed metadata won't be fetched automatically. The system uses OAuth authentication when available, and falls back to API key authentication if OAuth is not configured.
 
 ## Settings
 
