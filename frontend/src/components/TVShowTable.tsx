@@ -59,7 +59,7 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
     const total = tvShow.total_episodes || 0
     if (total === 0) return '-'
     const percentage = Math.round((watched / total) * 100)
-    return `${watched}/${total} (${percentage}%)`
+    return `${percentage}%`
   }
 
   return (
@@ -71,11 +71,9 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
               <th className="p-3 text-left border-b-2 border-border">Poster</th>
               <th className="p-3 text-left border-b-2 border-border">Title</th>
               <th className="p-3 text-left border-b-2 border-border">Overview</th>
-              <th className="p-3 text-left border-b-2 border-border">First Air Date</th>
               <th className="p-3 text-left border-b-2 border-border">Status</th>
               <th className="p-3 text-left border-b-2 border-border">Watched</th>
-              <th className="p-3 text-left border-b-2 border-border">Archived</th>
-              <th className="p-3 text-left border-b-2 border-border">Created At</th>
+              <th className="p-3 text-left border-b-2 border-border">Next Episode Date</th>
               <th className="p-3 text-left border-b-2 border-border">Actions</th>
             </tr>
           </thead>
@@ -120,13 +118,6 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </td>
-                  <td className="p-3 text-muted-foreground text-sm">
-                    {tvShow.first_air_date ? (
-                      format(new Date(tvShow.first_air_date), 'MMM d, yyyy')
-                    ) : (
-                      '-'
-                    )}
-                  </td>
                   <td className="p-3">
                     {tvShow.status ? (
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
@@ -139,18 +130,9 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                   <td className="p-3 text-muted-foreground text-sm">
                     {getWatchedProgress(tvShow)}
                   </td>
-                  <td className="p-3">
-                    {tvShow.is_archived ? (
-                      <span className="px-2 py-1 bg-gray-500 text-white rounded text-xs">
-                        Archived
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
-                  </td>
                   <td className="p-3 text-muted-foreground text-sm">
-                    {tvShow.created_at ? (
-                      format(new Date(tvShow.created_at), 'MMM d, yyyy')
+                    {tvShow.next_episode_date ? (
+                      format(new Date(tvShow.next_episode_date), 'MMM d, yyyy')
                     ) : (
                       '-'
                     )}
