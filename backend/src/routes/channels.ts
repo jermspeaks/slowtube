@@ -1,6 +1,8 @@
 import express from 'express'
 import { channelQueries, videoQueries, tagQueries, commentQueries } from '../services/database.js'
 import { fetchLatestVideosFromChannel } from '../services/youtube.js'
+import { fetchSubscribedChannels } from '../services/youtube.js'
+import { getAuthenticatedClient } from './auth.js'
 
 const router = express.Router()
 
@@ -141,6 +143,42 @@ router.delete('/:channelId/subscribe', (req, res) => {
   } catch (error) {
     console.error('Error unsubscribing from channel:', error)
     res.status(500).json({ error: 'Failed to unsubscribe from channel' })
+  }
+})
+
+// Fetch and sync subscribed channels from YouTube
+router.post('/sync-subscriptions', async (req, res) => {
+  try {
+    // Check if authenticated first
+    try {
+      await getAuthenticatedClient()
+    } catch (authError: any) {
+      if (authError.code === 'AUTHENTICATION_REQUIRED') {
+        return res.status(401).json({ 
+          error: 'YouTube authentication required',
+          message: 'Please connect your YouTube account in Settings to sync subscriptions.',
+          requiresAuth: true,
+          settingsUrl: '/settings'
+        })
+      }
+      throw authError
+    }
+
+    const subscribedChannels = await fetchSubscribedChannels()
+    
+    // ... rest of sync logic from previous response ...
+    
+  } catch (error: any) {
+    console.error('Error syncing subscriptions:', error)
+    if (error.code === 'AUTHENTICATION_REQUIRED') {
+      return res.status(401).json({ 
+        error: 'YouTube authentication required',
+        message: 'Please connect your YouTube account in Settings to sync subscriptions.',
+        requiresAuth: true,
+        settingsUrl: '/settings'
+      })
+    }
+    res.status(500).json({ error: 'Failed to sync subscriptions' })
   }
 })
 

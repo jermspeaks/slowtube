@@ -2,9 +2,14 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { TVShow } from '../types/tv-show'
 import { Episode } from '../types/episode'
+import { ViewMode } from '../types/video'
 import { tvShowsAPI } from '../services/api'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
+import EpisodeTable from '../components/EpisodeTable'
+import EpisodeCardGrid from '../components/EpisodeCardGrid'
+import EpisodeDetailModal from '../components/EpisodeDetailModal'
+import ViewToggle from '../components/ViewToggle'
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -15,6 +20,9 @@ function TVShowDetail() {
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [loading, setLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
+  const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -130,23 +138,21 @@ function TVShowDetail() {
       return dateA - dateB
     })[0] || null
 
-  // Group episodes by season
-  const seasonsMap = new Map<number, Episode[]>()
-  episodes.forEach(episode => {
-    const season = episode.season_number
-    if (!seasonsMap.has(season)) {
-      seasonsMap.set(season, [])
+  const handleEpisodeClick = (episode: Episode) => {
+    setSelectedEpisode(episode)
+    setIsModalOpen(true)
+  }
+
+  const handleEpisodeUpdate = () => {
+    loadEpisodes()
+  }
+
+  const handleModalClose = (open: boolean) => {
+    setIsModalOpen(open)
+    if (!open) {
+      setSelectedEpisode(null)
     }
-    seasonsMap.get(season)!.push(episode)
-  })
-  const seasons = Array.from(seasonsMap.entries())
-    .map(([seasonNumber, seasonEpisodes]) => ({
-      seasonNumber,
-      episodes: seasonEpisodes,
-      count: seasonEpisodes.length,
-      watchedCount: seasonEpisodes.filter(e => e.is_watched === 1).length,
-    }))
-    .sort((a, b) => a.seasonNumber - b.seasonNumber)
+  }
 
   const getImageUrl = (path: string | null, size: string = 'w500') => {
     if (!path) return null
@@ -360,33 +366,45 @@ function TVShowDetail() {
           </div>
         </div>
 
-        {/* Seasons Section */}
+        {/* Episodes Section */}
         <div className="bg-card rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-bold mb-4">Seasons</h2>
-          {seasons.length === 0 ? (
-            <p className="text-muted-foreground">No seasons available</p>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold">Episodes</h2>
+            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+          </div>
+          {episodes.length === 0 ? (
+            <p className="text-muted-foreground">No episodes available</p>
           ) : (
-            <div className="space-y-3">
-              {seasons.map(({ seasonNumber, count, watchedCount }) => (
-                <div
-                  key={seasonNumber}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  <div>
-                    <h3 className="font-semibold">Season {seasonNumber}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {watchedCount} / {count} episodes watched
-                    </p>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {count} {count === 1 ? 'episode' : 'episodes'}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <>
+              {viewMode === 'table' ? (
+                <EpisodeTable
+                  episodes={episodes}
+                  tvShowId={tvShow.id}
+                  onUpdate={handleEpisodeUpdate}
+                  onEpisodeClick={handleEpisodeClick}
+                />
+              ) : (
+                <EpisodeCardGrid
+                  episodes={episodes}
+                  tvShowId={tvShow.id}
+                  tvShowPoster={tvShow.poster_path}
+                  onUpdate={handleEpisodeUpdate}
+                  onEpisodeClick={handleEpisodeClick}
+                />
+              )}
+            </>
           )}
         </div>
       </main>
+
+      {/* Episode Detail Modal */}
+      <EpisodeDetailModal
+        episode={selectedEpisode}
+        tvShow={tvShow}
+        open={isModalOpen}
+        onOpenChange={handleModalClose}
+        onUpdate={handleEpisodeUpdate}
+      />
     </div>
   )
 }

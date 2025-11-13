@@ -161,7 +161,10 @@ export async function getAuthenticatedClient() {
   const session = oauthQueries.getLatest()
   
   if (!session || !session.access_token) {
-    throw new Error('No authenticated session found')
+    const error: any = new Error('YouTube authentication required. Please connect your YouTube account in Settings.')
+    error.code = 'AUTHENTICATION_REQUIRED'
+    error.statusCode = 401
+    throw error
   }
 
   // Check if token is expired

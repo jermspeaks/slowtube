@@ -11,6 +11,7 @@ import movieRoutes from './routes/movies.js'
 import calendarRoutes from './routes/calendar.js'
 import importRoutes from './routes/import.js'
 import settingsRoutes from './routes/settings.js'
+import authRoutes from './routes/auth.js'
 import { refreshAllTVShowEpisodes } from './services/tv-episode-refresh.js'
 
 // Validate TMDB environment variables (warn but don't exit)
@@ -62,6 +63,7 @@ app.use('/api/movies', movieRoutes)
 app.use('/api/calendar', calendarRoutes)
 app.use('/api/import', importRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/auth', authRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' })

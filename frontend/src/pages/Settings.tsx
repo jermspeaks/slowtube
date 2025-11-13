@@ -5,6 +5,8 @@ import { Upload, Trash2, Film } from 'lucide-react'
 import { useTimezone } from '../hooks/useTimezone'
 import { useTheme } from '../hooks/useTheme'
 import { toast } from 'sonner'
+import { authAPI } from '../services/api'
+import { CheckCircle2, XCircle, ExternalLink } from 'lucide-react'
 
 function Settings() {
   const [uploading, setUploading] = useState(false)
@@ -24,6 +26,10 @@ function Settings() {
   const { theme, loading: themeLoading, updateTheme } = useTheme()
   const [selectedTheme, setSelectedTheme] = useState<'system' | 'light' | 'dark'>('system')
   const [savingTheme, setSavingTheme] = useState(false)
+  const [youtubeAuthStatus, setYoutubeAuthStatus] = useState<{
+    authenticated: boolean
+    loading: boolean
+  }>({ authenticated: false, loading: true })
 
   useEffect(() => {
     if (!timezoneLoading && timezone) {
@@ -36,6 +42,22 @@ function Settings() {
       setSelectedTheme(theme)
     }
   }, [theme, themeLoading])
+
+  // Check YouTube auth status on mount
+  useEffect(() => {
+    checkYoutubeAuth()
+  }, [])
+
+  const checkYoutubeAuth = async () => {
+    try {
+      setYoutubeAuthStatus({ authenticated: false, loading: true })
+      const data = await authAPI.checkSession()
+      setYoutubeAuthStatus({ authenticated: data.authenticated || false, loading: false })
+    } catch (error) {
+      console.error('Error checking YouTube auth:', error)
+      setYoutubeAuthStatus({ authenticated: false, loading: false })
+    }
+  }
 
   const handleTimezoneChange = async (newTimezone: string) => {
     setSelectedTimezone(newTimezone)
@@ -300,6 +322,11 @@ function Settings() {
     }
   }
 
+  const handleConnectYouTube = () => {
+    const authUrl = authAPI.getAuthUrl()
+    window.location.href = authUrl
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
@@ -307,6 +334,54 @@ function Settings() {
           <h1 className="text-2xl font-bold mb-6">Settings</h1>
           
           <div className="space-y-8">
+            {/* YouTube Authentication Section */}
+            <div className="space-y-4 border-b pb-6">
+              <h2 className="text-xl font-semibold">YouTube Authentication</h2>
+              <p className="text-sm text-muted-foreground">
+                Connect your YouTube account to sync subscribed channels and fetch latest videos. This is optional and only required for subscription features.
+              </p>
+              
+              {youtubeAuthStatus.loading ? (
+                <div className="text-sm text-muted-foreground">Checking authentication status...</div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    {youtubeAuthStatus.authenticated ? (
+                      <>
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <span className="text-sm text-green-600">YouTube account connected</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-5 w-5 text-gray-400" />
+                        <span className="text-sm text-muted-foreground">YouTube account not connected</span>
+                      </>
+                    )}
+                  </div>
+                  
+                  {!youtubeAuthStatus.authenticated && (
+                    <Button
+                      onClick={handleConnectYouTube}
+                      className="gap-2"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Connect YouTube Account
+                    </Button>
+                  )}
+                  
+                  {youtubeAuthStatus.authenticated && (
+                    <Button
+                      onClick={checkYoutubeAuth}
+                      variant="outline"
+                      className="gap-2"
+                    >
+                      Refresh Status
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Import Section */}
             <div className="space-y-4">
               <h2 className="text-xl font-semibold">Import Videos</h2>

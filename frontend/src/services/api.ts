@@ -134,6 +134,10 @@ export const channelsAPI = {
     const response = await api.delete(`/api/channels/${channelId}/subscribe`)
     return response.data
   },
+  syncSubscriptions: async () => {
+    const response = await api.post('/api/channels/sync-subscriptions')
+    return response.data
+  },
 }
 
 // TV Shows API
@@ -314,6 +318,17 @@ export const settingsAPI = {
   },
   setTheme: async (theme: 'system' | 'light' | 'dark'): Promise<void> => {
     await api.post('/api/settings', { key: 'theme', value: theme })
+  },
+}
+
+// Auth API
+export const authAPI = {
+  getAuthUrl: () => {
+    return `${API_BASE_URL}/api/auth/youtube`
+  },
+  checkSession: async () => {
+    const response = await api.get('/api/auth/session')
+    return response.data
   },
 }
 

@@ -1,6 +1,7 @@
 import Papa from 'papaparse'
 import { google } from 'googleapis'
 import { videoQueries, videoStateQueries, channelQueries } from './database.js'
+import { getAuthenticatedClient } from '../routes/auth.js'
 
 // Google Takeout watch history entry format
 export interface GoogleTakeoutWatchHistoryEntry {
@@ -765,5 +766,70 @@ export async function fetchLatestVideosFromChannel(channelId: string, limit: num
   // TODO: Implement fetching latest videos from YouTube API
   // This will use youtube.search.list with channelId filter
   return []
+}
+
+// Fetch subscribed channels from YouTube API
+export async function fetchSubscribedChannels(): Promise<Array<{
+  channelId: string
+  channelTitle: string
+  description: string | null
+  thumbnailUrl: string | null
+  publishedAt: string | null
+}>> {
+  try {
+    // Get authenticated OAuth2 client
+    const authClient = await getAuthenticatedClient()
+    const youtube = google.youtube({ version: 'v3', auth: authClient })
+
+    const subscribedChannels: Array<{
+      channelId: string
+      channelTitle: string
+      description: string | null
+      thumbnailUrl: string | null
+      publishedAt: string | null
+    }> = []
+
+    let nextPageToken: string | undefined = undefined
+
+    do {
+      // Fetch subscriptions (max 50 per page)
+      const response = await youtube.subscriptions.list({
+        part: ['snippet', 'contentDetails'],
+        mine: true,
+        maxResults: 50,
+        pageToken: nextPageToken,
+        order: 'alphabetical',
+      })
+
+      const items = response.data.items || []
+
+      for (const subscription of items) {
+        const snippet = subscription.snippet
+        if (!snippet || !snippet.resourceId?.channelId) continue
+
+        subscribedChannels.push({
+          channelId: snippet.resourceId.channelId,
+          channelTitle: snippet.title || 'Unknown Channel',
+          description: snippet.description || null,
+          thumbnailUrl: snippet.thumbnails?.medium?.url || 
+                        snippet.thumbnails?.default?.url || 
+                        snippet.thumbnails?.high?.url || 
+                        null,
+          publishedAt: snippet.publishedAt || null,
+        })
+      }
+
+      nextPageToken = response.data.nextPageToken || undefined
+    } while (nextPageToken)
+
+    console.log(`Fetched ${subscribedChannels.length} subscribed channels`)
+    return subscribedChannels
+  } catch (error: any) {
+    if (error.code === 'AUTHENTICATION_REQUIRED') {
+      throw error // Re-throw to be handled by route
+    }
+    console.error('Error fetching subscribed channels:', error)
+    throw error
+  }
 }
 
