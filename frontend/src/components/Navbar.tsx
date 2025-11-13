@@ -62,7 +62,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    ['/dashboard', '/movies', '/tv-shows', '/channels', '/upcoming'].some(path =>
+                    ['/dashboard', '/movies', '/tv-shows', '/channels', '/youtube', '/upcoming'].some(path =>
                       location.pathname.startsWith(path)
                     )
                       ? 'bg-accent'
@@ -96,9 +96,14 @@ export function Navbar() {
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <Radio className="h-4 w-4" />
-                    Channels
+                    YouTube
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
+                    <DropdownMenuItem asChild>
+                      <Link to="/youtube/watch-later" className="w-full">
+                        Watch Later
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/channels/subscribed" className="w-full">
                         Subscribed Channels
@@ -237,6 +242,9 @@ export function Navbar() {
                     </MobileNavLink>
                     <MobileNavLink to="/tv-shows" icon={Tv}>
                       TV Shows
+                    </MobileNavLink>
+                    <MobileNavLink to="/youtube/watch-later" icon={Radio}>
+                      Watch Later
                     </MobileNavLink>
                     <MobileNavLink to="/channels/subscribed" icon={Radio}>
                       Subscribed Channels

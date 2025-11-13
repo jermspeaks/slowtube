@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Dashboard from './pages/Dashboard'
+import WatchLater from './pages/WatchLater'
 import Stats from './pages/Stats'
 import GroupedView from './pages/GroupedView'
 import Settings from './pages/Settings'
@@ -38,6 +39,7 @@ function AppContent() {
       <Navbar />
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/youtube/watch-later" element={<WatchLater />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/stats" element={<Stats />} />
         <Route path="/grouped" element={<GroupedView />} />

@@ -14,7 +14,7 @@
 - [ ] Channels view - seeing what channels I've added to watch later
 - [ ] Channel details - fetch the latest channel information
 - [ ] Card and table view should be organized as different pages altogether. They serve different purposes.
-- [ ] Video player - we should add video player capability.
+- [x] Video player - we should add video player capability.
 - [ ] Descriptions should be capped at 3 lines, then a show more button.
 - [ ] Export video information as markdown
 - [ ] Export channel information as markdown
@@ -33,6 +33,8 @@
 - [ ] Responsive view per pages. Start with dashboard
 - [ ] Optimistic UI for state transitions of video cards from feed -> inbox or archive so it's not jarring to jump from bottom to top. Revisit how re-renders should work here
 - [ ] TV Show list page needs to have filters cleared button
+- [x] YouTube section, group watch later
+- [x] Dashboard - updated movies, tv show episodes, and youtube watch later.
 
 ## Questions
 
