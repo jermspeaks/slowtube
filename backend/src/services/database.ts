@@ -1617,3 +1617,210 @@ export const settingsQueries = {
   },
 }
 
+// Movie Playlist interfaces
+export interface MoviePlaylist {
+  id: number
+  name: string
+  description: string | null
+  color: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface MoviePlaylistItem {
+  id: number
+  playlist_id: number
+  movie_id: number
+  position: number
+  added_at: string
+}
+
+export interface MoviePlaylistWithMovies extends MoviePlaylist {
+  movies: (Movie & { position: number; added_at: string })[]
+  movie_count: number
+}
+
+// Movie Playlist operations
+export const moviePlaylistQueries = {
+  create: (name: string, description?: string | null, color?: string | null): number => {
+    const stmt = db.prepare(`
+      INSERT INTO movie_playlists (name, description, color, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `)
+    const result = stmt.run(name, description || null, color || null)
+    return result.lastInsertRowid as number
+  },
+
+  getAll: (): (MoviePlaylist & { movie_count: number })[] => {
+    const query = `
+      SELECT 
+        mp.*,
+        COUNT(mpi.id) as movie_count
+      FROM movie_playlists mp
+      LEFT JOIN movie_playlist_items mpi ON mp.id = mpi.playlist_id
+      GROUP BY mp.id
+      ORDER BY mp.sort_order ASC, mp.created_at ASC
+    `
+    return db.prepare(query).all() as (MoviePlaylist & { movie_count: number })[]
+  },
+
+  getById: (id: number): MoviePlaylistWithMovies | undefined => {
+    const playlist = db.prepare('SELECT * FROM movie_playlists WHERE id = ?').get(id) as MoviePlaylist | undefined
+    if (!playlist) return undefined
+
+    const movies = db.prepare(`
+      SELECT 
+        m.*,
+        mpi.position,
+        mpi.added_at,
+        COALESCE(ms.is_archived, 0) as is_archived,
+        COALESCE(ms.is_starred, 0) as is_starred,
+        COALESCE(ms.is_watched, 0) as is_watched
+      FROM movie_playlist_items mpi
+      INNER JOIN movies m ON mpi.movie_id = m.id
+      LEFT JOIN movie_states ms ON m.id = ms.movie_id
+      WHERE mpi.playlist_id = ?
+      ORDER BY mpi.position ASC, mpi.added_at ASC
+    `).all(id) as (Movie & { position: number; added_at: string; is_archived: number; is_starred: number; is_watched: number })[]
+
+    // Convert to Movie format with boolean fields
+    const moviesWithBooleans = movies.map(m => ({
+      ...m,
+      is_archived: m.is_archived === 1,
+      is_starred: m.is_starred === 1,
+      is_watched: m.is_watched === 1,
+    })) as (Movie & { position: number; added_at: string; is_archived: boolean; is_starred: boolean; is_watched: boolean })[]
+
+    return {
+      ...playlist,
+      movies: moviesWithBooleans,
+      movie_count: movies.length,
+    }
+  },
+
+  update: (id: number, updates: { name?: string; description?: string | null; color?: string | null }): number => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    if (updates.name !== undefined) {
+      fields.push('name = ?')
+      values.push(updates.name)
+    }
+    if (updates.description !== undefined) {
+      fields.push('description = ?')
+      values.push(updates.description)
+    }
+    if (updates.color !== undefined) {
+      fields.push('color = ?')
+      values.push(updates.color)
+    }
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(id)
+
+    const stmt = db.prepare(`UPDATE movie_playlists SET ${fields.join(', ')} WHERE id = ?`)
+    return stmt.run(...values).changes
+  },
+
+  delete: (id: number): number => {
+    return db.prepare('DELETE FROM movie_playlists WHERE id = ?').run(id).changes
+  },
+
+  addMovie: (playlistId: number, movieId: number): number => {
+    // Get the current max position for this playlist
+    const maxPosition = db.prepare(`
+      SELECT COALESCE(MAX(position), -1) as max_pos
+      FROM movie_playlist_items
+      WHERE playlist_id = ?
+    `).get(playlistId) as { max_pos: number } | undefined
+
+    const nextPosition = (maxPosition?.max_pos ?? -1) + 1
+
+    const stmt = db.prepare(`
+      INSERT INTO movie_playlist_items (playlist_id, movie_id, position, added_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(playlist_id, movie_id) DO NOTHING
+    `)
+    const result = stmt.run(playlistId, movieId, nextPosition)
+    return result.lastInsertRowid as number
+  },
+
+  addMovies: (playlistId: number, movieIds: number[]): number => {
+    if (movieIds.length === 0) return 0
+
+    // Get the current max position for this playlist
+    const maxPosition = db.prepare(`
+      SELECT COALESCE(MAX(position), -1) as max_pos
+      FROM movie_playlist_items
+      WHERE playlist_id = ?
+    `).get(playlistId) as { max_pos: number } | undefined
+
+    let currentPosition = (maxPosition?.max_pos ?? -1) + 1
+    let addedCount = 0
+
+    const stmt = db.prepare(`
+      INSERT INTO movie_playlist_items (playlist_id, movie_id, position, added_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(playlist_id, movie_id) DO NOTHING
+    `)
+
+    for (const movieId of movieIds) {
+      const result = stmt.run(playlistId, movieId, currentPosition)
+      if (result.changes > 0) {
+        addedCount++
+        currentPosition++
+      }
+    }
+
+    return addedCount
+  },
+
+  removeMovie: (playlistId: number, movieId: number): number => {
+    const stmt = db.prepare('DELETE FROM movie_playlist_items WHERE playlist_id = ? AND movie_id = ?')
+    return stmt.run(playlistId, movieId).changes
+  },
+
+  removeMovies: (playlistId: number, movieIds: number[]): number => {
+    if (movieIds.length === 0) return 0
+
+    const placeholders = movieIds.map(() => '?').join(',')
+    const stmt = db.prepare(`
+      DELETE FROM movie_playlist_items 
+      WHERE playlist_id = ? AND movie_id IN (${placeholders})
+    `)
+    return stmt.run(playlistId, ...movieIds).changes
+  },
+
+  reorderMovies: (playlistId: number, movieIds: number[]): void => {
+    // Use a transaction to ensure atomicity
+    const transaction = db.transaction((playlistId: number, movieIds: number[]) => {
+      // First, remove all items for this playlist
+      db.prepare('DELETE FROM movie_playlist_items WHERE playlist_id = ?').run(playlistId)
+
+      // Then, re-insert them in the new order
+      const stmt = db.prepare(`
+        INSERT INTO movie_playlist_items (playlist_id, movie_id, position, added_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      `)
+
+      movieIds.forEach((movieId, index) => {
+        stmt.run(playlistId, movieId, index)
+      })
+    })
+
+    transaction(playlistId, movieIds)
+  },
+
+  getMovieCount: (playlistId: number): number => {
+    const result = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM movie_playlist_items
+      WHERE playlist_id = ?
+    `).get(playlistId) as { count: number } | undefined
+    return result?.count ?? 0
+  },
+}
+

@@ -284,6 +284,50 @@ export const moviesAPI = {
   },
 }
 
+// Movie Playlists API
+export const moviePlaylistsAPI = {
+  getAll: async () => {
+    const response = await api.get('/api/movie-playlists')
+    return response.data
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/api/movie-playlists/${id}`)
+    return response.data
+  },
+  create: async (name: string, description?: string | null, color?: string | null) => {
+    const response = await api.post('/api/movie-playlists', { name, description, color })
+    return response.data
+  },
+  update: async (id: number, updates: { name?: string; description?: string | null; color?: string | null }) => {
+    const response = await api.patch(`/api/movie-playlists/${id}`, updates)
+    return response.data
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/api/movie-playlists/${id}`)
+    return response.data
+  },
+  addMovie: async (playlistId: number, movieId: number) => {
+    const response = await api.post(`/api/movie-playlists/${playlistId}/movies`, { movieId })
+    return response.data
+  },
+  addMovies: async (playlistId: number, movieIds: number[]) => {
+    const response = await api.post(`/api/movie-playlists/${playlistId}/movies`, { movieIds })
+    return response.data
+  },
+  removeMovie: async (playlistId: number, movieId: number) => {
+    const response = await api.delete(`/api/movie-playlists/${playlistId}/movies/${movieId}`)
+    return response.data
+  },
+  removeMovies: async (playlistId: number, movieIds: number[]) => {
+    const response = await api.post(`/api/movie-playlists/${playlistId}/movies/bulk-remove`, { movieIds })
+    return response.data
+  },
+  reorderMovies: async (playlistId: number, movieIds: number[]) => {
+    const response = await api.patch(`/api/movie-playlists/${playlistId}/movies/reorder`, { movieIds })
+    return response.data
+  },
+}
+
 // Calendar API
 export const calendarAPI = {
   getEpisodes: async (startDate: string, endDate: string, hideArchived?: boolean) => {

@@ -4,7 +4,10 @@ import { Movie } from '../types/movie'
 import { moviesAPI } from '../services/api'
 import MovieTable from '../components/MovieTable'
 import TMDBSearchModal from '../components/TMDBSearchModal'
+import AddToPlaylistModal from '../components/AddToPlaylistModal'
+import { Button } from '../components/ui/button'
 import { toast } from 'sonner'
+import { ListPlus, X } from 'lucide-react'
 
 function MoviesList() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -33,6 +36,8 @@ function MoviesList() {
   const [total, setTotal] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showMoreFilters, setShowMoreFilters] = useState(false)
+  const [selectedMovieIds, setSelectedMovieIds] = useState<Set<number>>(new Set())
+  const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSyncingFromUrlRef = useRef(false)
 
@@ -164,6 +169,11 @@ function MoviesList() {
 
   const handleAdd = () => {
     // Reload movies after adding
+    loadMovies()
+  }
+
+  const handleAddToPlaylistSuccess = () => {
+    setSelectedMovieIds(new Set())
     loadMovies()
   }
 
@@ -380,6 +390,33 @@ function MoviesList() {
           </div>
         ) : (
           <>
+            {selectedMovieIds.size > 0 && (
+              <div className="mb-4 p-4 bg-card rounded-lg border border-border flex items-center justify-between">
+                <div className="text-sm text-foreground">
+                  {selectedMovieIds.size} {selectedMovieIds.size === 1 ? 'movie' : 'movies'} selected
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAddToPlaylistModalOpen(true)}
+                    className="gap-2"
+                  >
+                    <ListPlus className="h-4 w-4" />
+                    Add to Playlist
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedMovieIds(new Set())}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="mb-4 text-sm text-muted-foreground">
               Showing {movies.length} of {total} movies
             </div>
@@ -389,6 +426,8 @@ function MoviesList() {
               onArchive={handleArchive}
               onStar={handleStar}
               onWatched={handleWatched}
+              selectedMovieIds={selectedMovieIds}
+              onSelectionChange={setSelectedMovieIds}
             />
             {totalPages > 1 && (
               <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
@@ -432,6 +471,13 @@ function MoviesList() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAdd={handleAdd}
+      />
+
+      <AddToPlaylistModal
+        isOpen={isAddToPlaylistModalOpen}
+        onClose={() => setIsAddToPlaylistModalOpen(false)}
+        movieIds={Array.from(selectedMovieIds)}
+        onSuccess={handleAddToPlaylistSuccess}
       />
     </div>
   )

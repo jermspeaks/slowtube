@@ -16,6 +16,8 @@ import Upcoming from './pages/Upcoming'
 import RecentlyAired from './pages/RecentlyAired'
 import WatchNext from './pages/WatchNext'
 import Tags from './pages/Tags'
+import MoviePlaylists from './pages/MoviePlaylists'
+import MoviePlaylistDetail from './pages/MoviePlaylistDetail'
 import { Navbar } from './components/Navbar'
 import { useTheme } from './hooks/useTheme'
 import { Toaster } from './components/ui/sonner'
@@ -59,6 +61,8 @@ function AppContent() {
         <Route path="/upcoming" element={<Navigate to="/tv-shows/upcoming" replace />} />
         <Route path="/watch-next" element={<WatchNext />} />
         <Route path="/tags" element={<Tags />} />
+        <Route path="/playlists" element={<MoviePlaylists />} />
+        <Route path="/playlists/:id" element={<MoviePlaylistDetail />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       <Toaster position={toastPosition} />

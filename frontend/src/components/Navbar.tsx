@@ -16,6 +16,7 @@ import {
   ChevronDown,
   Menu,
   X,
+  List,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -147,7 +148,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    ['/grouped', '/stats', '/tags'].some(path => location.pathname.startsWith(path))
+                    ['/grouped', '/stats', '/tags', '/playlists'].some(path => location.pathname.startsWith(path))
                       ? 'bg-accent'
                       : ''
                   }`}
@@ -158,6 +159,12 @@ export function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
+                <DropdownMenuItem asChild>
+                  <Link to="/playlists" className="w-full flex items-center gap-2">
+                    <List className="h-4 w-4" />
+                    Playlists
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/grouped" className="w-full flex items-center gap-2">
                     <Layers className="h-4 w-4" />
@@ -290,6 +297,9 @@ export function Navbar() {
                     Organize
                   </h3>
                   <div className="space-y-1">
+                    <MobileNavLink to="/playlists" icon={List}>
+                      Playlists
+                    </MobileNavLink>
                     <MobileNavLink to="/grouped" icon={Layers}>
                       Grouped View
                     </MobileNavLink>
