@@ -35,6 +35,7 @@
 - [ ] Responsive view per pages. Start with dashboard
 - [ ] Optimistic UI for state transitions of video cards from feed -> inbox or archive so it's not jarring to jump from bottom to top. Revisit how re-renders should work here
 - [ ] TV Show list page needs to have filters cleared button
+- [ ] TV Shows needs to be grouped in navigation: tv shows -> Upcoming, List, and Recently Aired. We can move the upcoming calendar to there
 
 
 ## Questions
@@ -48,6 +49,7 @@
 - [x] Channel filter not filtering by the channel names
 - [x] Upcoming calendar - UTC is being used, not PST/PDT
 - [x] Upcoming calendar - we should see the retroactive view as well. Made a mistake here.
+- [x] Looks like our tv episode job is fetching all shows, and not filtering the shows that's a returning series. Can we modify this?
 - [ ] The "Filter with all, feed, inbox, and archive" need to now just be feed, inbox, and archive. No need to have "All" unless we are in group view.
 - [ ] Settings should be moved to the rightmost side, not left at all.
 - [ ] Migrate over to shadcn buttons everywhere

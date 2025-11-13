@@ -112,8 +112,35 @@ export async function refreshTVShowEpisodes(tvShowId: number): Promise<RefreshRe
  * @returns Summary of refresh results
  */
 export async function refreshAllTVShowEpisodes(includeArchived: boolean = false): Promise<RefreshAllResult> {
-  // Get all TV shows (optionally excluding archived)
-  const tvShows = tvShowQueries.getAll(includeArchived)
+  // Get all TV shows, explicitly excluding archived shows
+  const allTVShows = tvShowQueries.getAll(
+    includeArchived,
+    undefined, // search
+    undefined, // sortBy
+    undefined, // sortOrder
+    undefined, // limit
+    undefined, // offset
+    undefined, // statusFilter
+    includeArchived ? 'all' : 'unarchived' // archiveFilter - explicitly exclude archived
+  )
+  
+  // Filter out shows that have ended or been canceled (only process returning series)
+  const tvShows = allTVShows.filter(show => {
+    const status = show.status?.toLowerCase()
+    return status === 'returning series'
+  })
+  
+  const skippedCount = allTVShows.length - tvShows.length
+  if (skippedCount > 0) {
+    const skippedStatuses = allTVShows
+      .filter(show => {
+        const status = show.status?.toLowerCase()
+        return status !== 'returning series'
+      })
+      .map(show => show.status)
+      .filter((status, index, arr) => arr.indexOf(status) === index) // unique statuses
+    console.log(`Skipping ${skippedCount} show(s) (statuses: ${skippedStatuses.join(', ')})`)
+  }
   
   const results: RefreshResult[] = []
   let successful = 0
