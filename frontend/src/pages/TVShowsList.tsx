@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { TVShow } from '../types/tv-show'
 import { tvShowsAPI } from '../services/api'
 import TVShowTable from '../components/TVShowTable'
@@ -6,22 +7,96 @@ import TMDBSearchModal from '../components/TMDBSearchModal'
 import { toast } from 'sonner'
 
 function TVShowsList() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  
+  // Initialize state from URL params or defaults
   const [tvShows, setTvShows] = useState<TVShow[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
-  const [archiveFilter, setArchiveFilter] = useState<'all' | 'archived' | 'unarchived'>('unarchived')
-  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchParams.get('search') || '')
+  const [archiveFilter, setArchiveFilter] = useState<'all' | 'archived' | 'unarchived'>(
+    (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
+  )
+  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '')
   const [statuses, setStatuses] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | null>('last_episode_date')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | null>(
+    (searchParams.get('sortBy') as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date') || 'last_episode_date'
+  )
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
+    (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
+  )
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10))
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isSyncingFromUrlRef = useRef(false)
+
+  // Sync state from URL params when they change (e.g., browser back/forward)
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || ''
+    const urlArchive = (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
+    const urlStatus = searchParams.get('status') || ''
+    const urlSortBy = (searchParams.get('sortBy') as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date') || 'last_episode_date'
+    const urlSortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
+    const urlPage = parseInt(searchParams.get('page') || '1', 10)
+
+    // Check if any values need updating
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const needsUpdate = urlSearch !== debouncedSearchQuery ||
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      urlArchive !== archiveFilter ||
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      urlStatus !== statusFilter ||
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      urlSortBy !== sortBy ||
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      urlSortOrder !== sortOrder ||
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      urlPage !== currentPage
+
+    // Set flag BEFORE updating state to prevent other effects from running
+    if (needsUpdate) {
+      isSyncingFromUrlRef.current = true
+    }
+
+    // Only update state if URL params differ from current state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (urlSearch !== debouncedSearchQuery) {
+      setSearchQuery(urlSearch)
+      setDebouncedSearchQuery(urlSearch)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (urlArchive !== archiveFilter) {
+      setArchiveFilter(urlArchive)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (urlStatus !== statusFilter) {
+      setStatusFilter(urlStatus)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (urlSortBy !== sortBy) {
+      setSortBy(urlSortBy)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (urlSortOrder !== sortOrder) {
+      setSortOrder(urlSortOrder)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (urlPage !== currentPage) {
+      setCurrentPage(urlPage)
+    }
+    
+    // Reset the flag after state updates and effects complete
+    if (needsUpdate) {
+      // Use a small delay to ensure all effects have run
+      setTimeout(() => {
+        isSyncingFromUrlRef.current = false
+      }, 100)
+    }
+  }, [searchParams]) // Only depend on searchParams, not the state values
 
   useEffect(() => {
     loadStatuses()
@@ -129,9 +204,53 @@ function TVShowsList() {
     }
   }, [searchQuery])
 
+  // Update URL params when state changes
   useEffect(() => {
-    // Reset to page 1 when filters change
-    setCurrentPage(1)
+    // Don't update URL if we're currently syncing from URL
+    if (isSyncingFromUrlRef.current) {
+      return
+    }
+    
+    const params = new URLSearchParams()
+    
+    if (debouncedSearchQuery) {
+      params.set('search', debouncedSearchQuery)
+    }
+    
+    if (archiveFilter !== 'unarchived') {
+      params.set('archive', archiveFilter)
+    }
+    
+    if (statusFilter) {
+      params.set('status', statusFilter)
+    }
+    
+    if (sortBy && sortBy !== 'last_episode_date') {
+      params.set('sortBy', sortBy)
+      params.set('sortOrder', sortOrder)
+    } else if (sortBy === 'last_episode_date' && sortOrder !== 'desc') {
+      params.set('sortBy', sortBy)
+      params.set('sortOrder', sortOrder)
+    }
+    
+    if (currentPage > 1) {
+      params.set('page', currentPage.toString())
+    }
+    
+    // Only update if params actually changed to avoid infinite loops
+    const currentParams = searchParams.toString()
+    const newParams = params.toString()
+    
+    if (currentParams !== newParams) {
+      setSearchParams(params, { replace: true })
+    }
+  }, [debouncedSearchQuery, archiveFilter, statusFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
+
+  useEffect(() => {
+    // Reset to page 1 when filters change, but not when syncing from URL
+    if (!isSyncingFromUrlRef.current) {
+      setCurrentPage(1)
+    }
   }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, statusFilter])
 
   useEffect(() => {
