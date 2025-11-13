@@ -334,8 +334,8 @@ router.post('/import', upload.single('file'), async (req, res) => {
 // Fetch video details from YouTube API (background job)
 router.post('/fetch-details', async (req, res) => {
   try {
-    // Process a batch of videos
-    const batchResult = await processBatchVideoFetch(50)
+    // Process a batch of videos (now includes pending, unavailable, and failed videos)
+    const batchResult = await processBatchVideoFetch(5)
     
     // Count remaining videos that need fetching
     const remaining = videoQueries.countPendingFetch()
@@ -349,6 +349,60 @@ router.post('/fetch-details', async (req, res) => {
   } catch (error: any) {
     console.error('Error fetching video details:', error)
     res.status(500).json({ error: error.message || 'Failed to fetch video details' })
+  }
+})
+
+// Retry fetching metadata for failed videos (unavailable or failed status)
+router.post('/retry-failed', async (req, res) => {
+  try {
+    // Get videos that failed before (unavailable or failed status)
+    const failedVideos = videoQueries.getAll(
+      undefined, // state
+      undefined, // search
+      undefined, // sortBy
+      undefined, // sortOrder
+      undefined, // channels
+      1000, // limit - get a large batch
+      0, // offset
+      undefined, // dateField
+      undefined, // startDate
+      undefined // endDate
+    ).filter(v => v.fetch_status === 'unavailable' || v.fetch_status === 'failed')
+    
+    if (failedVideos.length === 0) {
+      return res.json({
+        processed: 0,
+        unavailable: 0,
+        remaining: 0,
+        status: 'completed',
+        message: 'No failed videos to retry'
+      })
+    }
+
+    // Reset their status to pending so they can be fetched
+    let resetCount = 0
+    for (const video of failedVideos) {
+      videoQueries.update(video.id, { fetch_status: 'pending' })
+      resetCount++
+    }
+
+    console.log(`Reset ${resetCount} failed videos to pending status for retry`)
+
+    // Now process them in batches
+    const batchResult = await processBatchVideoFetch(5)
+    const remaining = videoQueries.countPendingFetch()
+    
+    res.json({
+      processed: batchResult.processed,
+      unavailable: batchResult.unavailable,
+      remaining,
+      status: remaining > 0 ? 'pending' : 'completed',
+      resetCount,
+      message: `Reset ${resetCount} failed videos and processed batch`
+    })
+  } catch (error: any) {
+    console.error('Error retrying failed videos:', error)
+    res.status(500).json({ error: error.message || 'Failed to retry failed videos' })
   }
 })
 
@@ -372,10 +426,10 @@ router.post('/backfill-channel-ids', async (req, res) => {
     // Get batch size from query params or use default
     const batchSize = req.query.batchSize 
       ? parseInt(String(req.query.batchSize), 10) 
-      : 50
+      : 5
 
-    if (isNaN(batchSize) || batchSize < 1 || batchSize > 50) {
-      return res.status(400).json({ error: 'Invalid batch size. Must be between 1 and 50.' })
+    if (isNaN(batchSize) || batchSize < 1 || batchSize > 5) {
+      return res.status(400).json({ error: 'Invalid batch size. Must be between 1 and 5.' })
     }
 
     // Get delay between batches (in milliseconds) or use default

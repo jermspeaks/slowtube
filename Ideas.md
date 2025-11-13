@@ -55,3 +55,4 @@
 - [ ] Settings should be moved to the rightmost side, not left at all.
 - [ ] Migrate over to shadcn buttons everywhere
 - [ ] Looks like the page is acting slow because it's loading a ton of videos at once. What other tactics to improve performance
+- [ ] YouTube watch later no longer fetching metadata, need to modify

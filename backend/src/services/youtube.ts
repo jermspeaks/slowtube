@@ -198,6 +198,7 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
         added_to_playlist_at: video.watchedAt, // Store CSV timestamp here
         fetch_status: 'pending' as const, // Mark as pending for YouTube API fetch
         channel_title: null, // Will be updated by YouTube API fetch
+        youtube_channel_id: null, // Will be updated by YouTube API fetch
         youtube_url: `https://www.youtube.com/watch?v=${video.id}`, // Construct URL from video ID
       }
 
@@ -273,19 +274,26 @@ function getYouTubeApiKey(): string | null {
   return process.env.YOUTUBE_API_KEY || null
 }
 
-// Get YouTube API client (using API key if available, otherwise returns null)
-function getYouTubeClient() {
+// Get YouTube API client (OAuth-first with API key fallback)
+// If oauthClient is provided, use it; otherwise fallback to API key
+function getYouTubeClient(oauthClient?: any) {
+  // If OAuth client is provided, use it
+  if (oauthClient) {
+    return google.youtube({ version: 'v3', auth: oauthClient })
+  }
+  
+  // Otherwise, try API key
   const apiKey = getYouTubeApiKey()
   if (!apiKey) {
     return null
   }
-  // For API key authentication with googleapis, we create a client
-  // and pass the key in each request's params
-  return google.youtube({ version: 'v3' })
+  
+  // Pass API key when creating client for better compatibility
+  return google.youtube({ version: 'v3', auth: apiKey })
 }
 
 // Fetch video details from YouTube API in batches
-export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<Map<string, YouTubeVideoDetails | null>> {
+export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClient?: any): Promise<Map<string, YouTubeVideoDetails | null>> {
   if (videoIds.length === 0) {
     return new Map()
   }
@@ -294,9 +302,10 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<
     throw new Error('Cannot fetch more than 50 videos at once')
   }
 
-  const youtube = getYouTubeClient()
+  const youtube = getYouTubeClient(oauthClient)
   if (!youtube) {
-    console.warn('YOUTUBE_API_KEY not set. Cannot fetch video details from YouTube API.')
+    const authMethod = oauthClient ? 'OAuth' : 'API key'
+    console.warn(`Cannot fetch video details from YouTube API. ${authMethod} authentication not available.`)
     // Return empty map with all videos marked as null
     const result = new Map<string, YouTubeVideoDetails | null>()
     for (const videoId of videoIds) {
@@ -306,16 +315,10 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<
   }
 
   try {
-    const apiKey = getYouTubeApiKey()
-    if (!apiKey) {
-      throw new Error('YOUTUBE_API_KEY not set')
-    }
-
-    // Fetch video details
+    // Fetch video details - auth is now in the client, no need to pass key
     const videosResponse = await youtube.videos.list({
       part: ['snippet', 'contentDetails'],
       id: videoIds,
-      key: apiKey,
     })
 
     const result = new Map<string, YouTubeVideoDetails | null>()
@@ -350,8 +353,33 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[]): Promise<
 
     console.log(`Fetched details for ${videos.length} out of ${videoIds.length} videos`)
     return result
-  } catch (error) {
+  } catch (error: any) {
+    // Enhanced error logging
     console.error('Error fetching video details from YouTube:', error)
+    
+    // Log detailed error information if available
+    if (error.response?.data) {
+      console.error('YouTube API Error Response:', JSON.stringify(error.response.data, null, 2))
+    }
+    if (error.code) {
+      console.error('Error Code:', error.code)
+    }
+    if (error.message) {
+      console.error('Error Message:', error.message)
+    }
+    
+    // Check for specific error types and provide helpful messages
+    if (error.code === 403) {
+      const errorMessage = error.response?.data?.error?.message || error.message
+      throw new Error(`YouTube API access denied (403). Check your API key and quota. Details: ${errorMessage}`)
+    } else if (error.code === 400) {
+      const errorMessage = error.response?.data?.error?.message || error.message
+      throw new Error(`YouTube API bad request (400). ${errorMessage}`)
+    } else if (error.code === 401) {
+      const errorMessage = error.response?.data?.error?.message || error.message
+      throw new Error(`YouTube API unauthorized (401). Authentication failed. Details: ${errorMessage}`)
+    }
+    
     throw error
   }
 }
@@ -374,7 +402,7 @@ function parseDuration(duration: string): string {
 }
 
 // Fetch channel details from YouTube API
-async function fetchChannelDetailsFromYouTube(channelIds: string[]): Promise<Map<string, {
+async function fetchChannelDetailsFromYouTube(channelIds: string[], oauthClient?: any): Promise<Map<string, {
   id: string
   title: string | null
   description: string | null
@@ -389,9 +417,10 @@ async function fetchChannelDetailsFromYouTube(channelIds: string[]): Promise<Map
     throw new Error('Cannot fetch more than 50 channels at once')
   }
 
-  const youtube = getYouTubeClient()
+  const youtube = getYouTubeClient(oauthClient)
   if (!youtube) {
-    console.warn('YOUTUBE_API_KEY not set. Cannot fetch channel details from YouTube API.')
+    const authMethod = oauthClient ? 'OAuth' : 'API key'
+    console.warn(`Cannot fetch channel details from YouTube API. ${authMethod} authentication not available.`)
     // Return empty map with all channels marked as null
     const result = new Map<string, {
       id: string
@@ -407,16 +436,10 @@ async function fetchChannelDetailsFromYouTube(channelIds: string[]): Promise<Map
   }
 
   try {
-    const apiKey = getYouTubeApiKey()
-    if (!apiKey) {
-      throw new Error('YOUTUBE_API_KEY not set')
-    }
-
-    // Fetch channel details
+    // Fetch channel details - auth is now in the client, no need to pass key
     const channelsResponse = await youtube.channels.list({
       part: ['snippet', 'statistics'],
       id: channelIds,
-      key: apiKey,
     })
 
     const result = new Map<string, {
@@ -452,14 +475,39 @@ async function fetchChannelDetailsFromYouTube(channelIds: string[]): Promise<Map
 
     console.log(`Fetched details for ${channels.length} out of ${channelIds.length} channels`)
     return result
-  } catch (error) {
+  } catch (error: any) {
+    // Enhanced error logging
     console.error('Error fetching channel details from YouTube:', error)
+    
+    // Log detailed error information if available
+    if (error.response?.data) {
+      console.error('YouTube API Error Response:', JSON.stringify(error.response.data, null, 2))
+    }
+    if (error.code) {
+      console.error('Error Code:', error.code)
+    }
+    if (error.message) {
+      console.error('Error Message:', error.message)
+    }
+    
+    // Check for specific error types and provide helpful messages
+    if (error.code === 403) {
+      const errorMessage = error.response?.data?.error?.message || error.message
+      throw new Error(`YouTube API access denied (403). Check your API key and quota. Details: ${errorMessage}`)
+    } else if (error.code === 400) {
+      const errorMessage = error.response?.data?.error?.message || error.message
+      throw new Error(`YouTube API bad request (400). ${errorMessage}`)
+    } else if (error.code === 401) {
+      const errorMessage = error.response?.data?.error?.message || error.message
+      throw new Error(`YouTube API unauthorized (401). Authentication failed. Details: ${errorMessage}`)
+    }
+    
     throw error
   }
 }
 
 // Process a batch of videos to fetch details from YouTube API
-export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ processed: number; unavailable: number }> {
+export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ processed: number; unavailable: number }> {
   try {
     // Get batch of videos that need fetching
     const videos = videoQueries.getVideosNeedingFetch(batchSize)
@@ -471,8 +519,22 @@ export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ 
     const videoIds = videos.map(v => v.youtube_id)
     console.log(`Processing batch of ${videoIds.length} videos`)
 
-    // Fetch details from YouTube API
-    const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds)
+    // Try to get authenticated OAuth client first, fallback to API key
+    let oauthClient: any = null
+    try {
+      oauthClient = await getAuthenticatedClient()
+      console.log('Using OAuth authentication for YouTube API')
+    } catch (oauthError: any) {
+      if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
+        console.log('OAuth not available, falling back to API key authentication')
+      } else {
+        console.warn('Error getting OAuth client, falling back to API key:', oauthError.message)
+      }
+      // Continue with API key fallback
+    }
+
+    // Fetch details from YouTube API (will use OAuth if available, otherwise API key)
+    const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds, oauthClient)
 
     // Collect unique channel IDs
     const channelIdsSet = new Set<string>()
@@ -494,7 +556,7 @@ export async function processBatchVideoFetch(batchSize: number = 50): Promise<{ 
 
     if (channelIds.length > 0) {
       console.log(`Fetching details for ${channelIds.length} unique channels`)
-      channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds)
+      channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds, oauthClient)
     }
 
     let processed = 0
@@ -604,8 +666,22 @@ async function processBackfillBatch(batchSize: number): Promise<{ processed: num
   const videoIds = videos.map(v => v.youtube_id)
   console.log(`Backfilling channel IDs for ${videoIds.length} videos`)
 
-  // Fetch details from YouTube API
-  const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds)
+  // Try to get authenticated OAuth client first, fallback to API key
+  let oauthClient: any = null
+  try {
+    oauthClient = await getAuthenticatedClient()
+    console.log('Using OAuth authentication for YouTube API (backfill)')
+  } catch (oauthError: any) {
+    if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
+      console.log('OAuth not available, falling back to API key authentication (backfill)')
+    } else {
+      console.warn('Error getting OAuth client, falling back to API key (backfill):', oauthError.message)
+    }
+    // Continue with API key fallback
+  }
+
+  // Fetch details from YouTube API (will use OAuth if available, otherwise API key)
+  const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds, oauthClient)
 
   // Collect unique channel IDs
   const channelIdsSet = new Set<string>()
@@ -627,7 +703,7 @@ async function processBackfillBatch(batchSize: number): Promise<{ processed: num
 
   if (channelIds.length > 0) {
     console.log(`Fetching details for ${channelIds.length} unique channels`)
-    channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds)
+    channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds, oauthClient)
   }
 
   let processed = 0
@@ -706,7 +782,7 @@ function delay(ms: number): Promise<void> {
 }
 
 // Backfill youtube_channel_id for existing videos continuously in batches
-export async function backfillChannelIds(batchSize: number = 50, delayBetweenBatches: number = 1000): Promise<{
+export async function backfillChannelIds(batchSize: number = 5, delayBetweenBatches: number = 1000): Promise<{
   totalProcessed: number
   totalUnavailable: number
   batchesProcessed: number
@@ -793,7 +869,7 @@ export async function fetchSubscribedChannels(): Promise<Array<{
 
     do {
       // Fetch subscriptions (max 50 per page)
-      const response = await youtube.subscriptions.list({
+      const response: any = await youtube.subscriptions.list({
         part: ['snippet', 'contentDetails'],
         mine: true,
         maxResults: 50,

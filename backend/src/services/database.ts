@@ -282,10 +282,11 @@ export const videoQueries = {
     `).all(limit) as Video[]
   },
 
-  getVideosNeedingFetch: (limit: number = 50) => {
+  getVideosNeedingFetch: (limit: number = 5) => {
     return db.prepare(`
       SELECT * FROM videos 
-      WHERE fetch_status = 'pending' OR fetch_status IS NULL
+      WHERE (fetch_status = 'pending' OR fetch_status IS NULL OR fetch_status = 'unavailable' OR fetch_status = 'failed')
+        AND fetch_status != 'completed'
       ORDER BY created_at ASC
       LIMIT ?
     `).all(limit) as Video[]
@@ -294,7 +295,8 @@ export const videoQueries = {
   countPendingFetch: () => {
     const result = db.prepare(`
       SELECT COUNT(*) as count FROM videos 
-      WHERE fetch_status = 'pending' OR fetch_status IS NULL
+      WHERE (fetch_status = 'pending' OR fetch_status IS NULL OR fetch_status = 'unavailable' OR fetch_status = 'failed')
+        AND fetch_status != 'completed'
     `).get() as { count: number }
     return result.count
   },
