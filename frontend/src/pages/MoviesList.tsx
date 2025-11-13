@@ -19,6 +19,9 @@ function MoviesList() {
   const [starredFilter, setStarredFilter] = useState<'all' | 'starred' | 'unstarred'>(
     (searchParams.get('starred') as 'all' | 'starred' | 'unstarred') || 'all'
   )
+  const [watchedFilter, setWatchedFilter] = useState<'all' | 'watched' | 'unwatched'>(
+    (searchParams.get('watched') as 'all' | 'watched' | 'unwatched') || 'unwatched'
+  )
   const [sortBy, setSortBy] = useState<'title' | 'release_date' | 'created_at' | null>(
     (searchParams.get('sortBy') as 'title' | 'release_date' | 'created_at') || 'title'
   )
@@ -38,6 +41,7 @@ function MoviesList() {
     const urlSearch = searchParams.get('search') || ''
     const urlArchive = (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
     const urlStarred = (searchParams.get('starred') as 'all' | 'starred' | 'unstarred') || 'all'
+    const urlWatched = (searchParams.get('watched') as 'all' | 'watched' | 'unwatched') || 'unwatched'
     const urlSortBy = (searchParams.get('sortBy') as 'title' | 'release_date' | 'created_at') || 'title'
     const urlSortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc'
     const urlPage = parseInt(searchParams.get('page') || '1', 10)
@@ -45,6 +49,7 @@ function MoviesList() {
     const needsUpdate = urlSearch !== debouncedSearchQuery ||
       urlArchive !== archiveFilter ||
       urlStarred !== starredFilter ||
+      urlWatched !== watchedFilter ||
       urlSortBy !== sortBy ||
       urlSortOrder !== sortOrder ||
       urlPage !== currentPage
@@ -62,6 +67,9 @@ function MoviesList() {
     }
     if (urlStarred !== starredFilter) {
       setStarredFilter(urlStarred)
+    }
+    if (urlWatched !== watchedFilter) {
+      setWatchedFilter(urlWatched)
     }
     if (urlSortBy !== sortBy) {
       setSortBy(urlSortBy)
@@ -94,7 +102,8 @@ function MoviesList() {
         currentPage,
         50,
         archiveFilter !== 'all' ? archiveFilter : undefined,
-        starredFilter !== 'all' ? starredFilter : undefined
+        starredFilter !== 'all' ? starredFilter : undefined,
+        watchedFilter !== 'all' ? watchedFilter : undefined
       )
       setMovies(response.movies || [])
       if (response.pagination) {
@@ -195,6 +204,10 @@ function MoviesList() {
       params.set('starred', starredFilter)
     }
     
+    if (watchedFilter !== 'unwatched') {
+      params.set('watched', watchedFilter)
+    }
+    
     if (sortBy && sortBy !== 'title') {
       params.set('sortBy', sortBy)
       params.set('sortOrder', sortOrder)
@@ -213,18 +226,18 @@ function MoviesList() {
     if (currentParams !== newParams) {
       setSearchParams(params, { replace: true })
     }
-  }, [debouncedSearchQuery, archiveFilter, starredFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
+  }, [debouncedSearchQuery, archiveFilter, starredFilter, watchedFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
 
   useEffect(() => {
     if (!isSyncingFromUrlRef.current) {
       setCurrentPage(1)
     }
-  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, starredFilter])
+  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, starredFilter, watchedFilter])
 
   useEffect(() => {
     loadMovies()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, starredFilter])
+  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, starredFilter, watchedFilter])
 
   const handleSortChange = (value: string) => {
     if (value === 'none') {
@@ -332,6 +345,18 @@ function MoviesList() {
                       <option value="all">All</option>
                       <option value="starred">Starred</option>
                       <option value="unstarred">Unstarred</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Watched:</label>
+                    <select
+                      value={watchedFilter}
+                      onChange={(e) => setWatchedFilter(e.target.value as 'all' | 'watched' | 'unwatched')}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background"
+                    >
+                      <option value="all">All</option>
+                      <option value="watched">Watched</option>
+                      <option value="unwatched">Unwatched</option>
                     </select>
                   </div>
                 </div>

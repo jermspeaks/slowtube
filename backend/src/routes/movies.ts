@@ -61,6 +61,7 @@ router.get('/', (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50
     const archiveFilter = req.query.archiveFilter as 'all' | 'archived' | 'unarchived' | undefined
     const starredFilter = req.query.starredFilter as 'all' | 'starred' | 'unstarred' | undefined
+    const watchedFilter = req.query.watchedFilter as 'all' | 'watched' | 'unwatched' | undefined
 
     if (isNaN(page) || page < 1) {
       return res.status(400).json({ error: 'Invalid page number' })
@@ -70,8 +71,8 @@ router.get('/', (req, res) => {
     }
 
     const offset = (page - 1) * limit
-    const movies = movieQueries.getAll(search, sortBy, sortOrder, limit, offset, archiveFilter, starredFilter)
-    const total = movieQueries.getCount(search, archiveFilter, starredFilter)
+    const movies = movieQueries.getAll(search, sortBy, sortOrder, limit, offset, archiveFilter, starredFilter, watchedFilter)
+    const total = movieQueries.getCount(search, archiveFilter, starredFilter, watchedFilter)
     const totalPages = Math.ceil(total / limit)
 
     res.json({

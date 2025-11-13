@@ -1172,7 +1172,8 @@ export const movieQueries = {
     limit?: number,
     offset?: number,
     archiveFilter?: 'all' | 'archived' | 'unarchived',
-    starredFilter?: 'all' | 'starred' | 'unstarred'
+    starredFilter?: 'all' | 'starred' | 'unstarred',
+    watchedFilter?: 'all' | 'watched' | 'unwatched'
   ) => {
     const conditions: string[] = []
     const params: any[] = []
@@ -1189,6 +1190,13 @@ export const movieQueries = {
       conditions.push('ms.is_starred = 1')
     } else if (starredFilter === 'unstarred') {
       conditions.push('(ms.is_starred = 0 OR ms.is_starred IS NULL)')
+    }
+
+    // Watched filter
+    if (watchedFilter === 'watched') {
+      conditions.push('ms.is_watched = 1')
+    } else if (watchedFilter === 'unwatched') {
+      conditions.push('(ms.is_watched = 0 OR ms.is_watched IS NULL)')
     }
 
     // Search filter (case-insensitive search on title and overview)
@@ -1252,7 +1260,8 @@ export const movieQueries = {
   getCount: (
     search?: string,
     archiveFilter?: 'all' | 'archived' | 'unarchived',
-    starredFilter?: 'all' | 'starred' | 'unstarred'
+    starredFilter?: 'all' | 'starred' | 'unstarred',
+    watchedFilter?: 'all' | 'watched' | 'unwatched'
   ) => {
     const conditions: string[] = []
     const params: any[] = []
@@ -1269,6 +1278,13 @@ export const movieQueries = {
       conditions.push('ms.is_starred = 1')
     } else if (starredFilter === 'unstarred') {
       conditions.push('(ms.is_starred = 0 OR ms.is_starred IS NULL)')
+    }
+
+    // Watched filter
+    if (watchedFilter === 'watched') {
+      conditions.push('ms.is_watched = 1')
+    } else if (watchedFilter === 'unwatched') {
+      conditions.push('(ms.is_watched = 0 OR ms.is_watched IS NULL)')
     }
 
     // Search filter (case-insensitive search on title and overview)
