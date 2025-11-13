@@ -219,5 +219,57 @@ router.patch('/:id/watched', (req, res) => {
   }
 })
 
+// Bulk mark movies as watched/unwatched
+router.post('/bulk-watched', (req, res) => {
+  try {
+    const { movieIds, isWatched } = req.body
+
+    if (!Array.isArray(movieIds) || movieIds.length === 0) {
+      return res.status(400).json({ error: 'movieIds must be a non-empty array' })
+    }
+
+    if (!movieIds.every(id => typeof id === 'number')) {
+      return res.status(400).json({ error: 'All movieIds must be numbers' })
+    }
+
+    if (typeof isWatched !== 'boolean') {
+      return res.status(400).json({ error: 'isWatched must be a boolean' })
+    }
+
+    // Filter movieIds to only include movies that need state changes
+    const moviesToUpdate: number[] = []
+    for (const movieId of movieIds) {
+      const movie = movieQueries.getById(movieId)
+      if (!movie) {
+        continue // Skip invalid movie IDs
+      }
+
+      // For isWatched: true, only include movies that are not watched (false or null)
+      // For isWatched: false, only include movies that are watched (true)
+      if (isWatched && !movie.is_watched) {
+        moviesToUpdate.push(movieId)
+      } else if (!isWatched && movie.is_watched) {
+        moviesToUpdate.push(movieId)
+      }
+    }
+
+    // Update only the movies that need state changes
+    let updatedCount = 0
+    for (const movieId of moviesToUpdate) {
+      movieStateQueries.setWatched(movieId, isWatched)
+      updatedCount++
+    }
+
+    res.json({
+      message: `${updatedCount} movie(s) marked as ${isWatched ? 'watched' : 'unwatched'} successfully`,
+      updatedCount,
+      totalRequested: movieIds.length,
+    })
+  } catch (error) {
+    console.error('Error bulk marking movies as watched:', error)
+    res.status(500).json({ error: 'Failed to bulk mark movies as watched' })
+  }
+})
+
 export default router
 

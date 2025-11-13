@@ -282,6 +282,10 @@ export const moviesAPI = {
     const response = await api.patch(`/api/movies/${id}/watched`, { isWatched })
     return response.data
   },
+  bulkWatched: async (movieIds: number[], isWatched: boolean) => {
+    const response = await api.post('/api/movies/bulk-watched', { movieIds, isWatched })
+    return response.data
+  },
 }
 
 // Movie Playlists API

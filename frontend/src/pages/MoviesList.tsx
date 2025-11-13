@@ -7,7 +7,7 @@ import TMDBSearchModal from '../components/TMDBSearchModal'
 import AddToPlaylistModal from '../components/AddToPlaylistModal'
 import { Button } from '../components/ui/button'
 import { toast } from 'sonner'
-import { ListPlus, X } from 'lucide-react'
+import { ListPlus, X, Check } from 'lucide-react'
 
 function MoviesList() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -164,6 +164,40 @@ function MoviesList() {
     } catch (error) {
       console.error('Error marking movie as watched:', error)
       toast.error('Failed to mark movie as watched')
+    }
+  }
+
+  const handleBulkWatched = async (isWatched: boolean) => {
+    if (selectedMovieIds.size === 0) return
+
+    try {
+      // Filter selected movies to only include those that need state changes
+      const moviesToUpdate = movies.filter(movie => {
+        if (!selectedMovieIds.has(movie.id)) return false
+        // For isWatched: true, only include unwatched movies
+        // For isWatched: false, only include watched movies
+        return isWatched ? !movie.is_watched : movie.is_watched
+      })
+
+      if (moviesToUpdate.length === 0) {
+        toast.info(`No movies need to be marked as ${isWatched ? 'watched' : 'unwatched'}`)
+        return
+      }
+
+      const movieIds = moviesToUpdate.map(m => m.id)
+      const response = await moviesAPI.bulkWatched(movieIds, isWatched)
+      
+      loadMovies()
+      setSelectedMovieIds(new Set())
+      
+      if (response.updatedCount > 0) {
+        toast.success(response.message || `${response.updatedCount} movie(s) marked as ${isWatched ? 'watched' : 'unwatched'} successfully`)
+      } else {
+        toast.info(`No movies needed updating`)
+      }
+    } catch (error) {
+      console.error('Error bulk marking movies as watched:', error)
+      toast.error('Failed to bulk mark movies as watched')
     }
   }
 
@@ -390,33 +424,60 @@ function MoviesList() {
           </div>
         ) : (
           <>
-            {selectedMovieIds.size > 0 && (
-              <div className="mb-4 p-4 bg-card rounded-lg border border-border flex items-center justify-between">
-                <div className="text-sm text-foreground">
-                  {selectedMovieIds.size} {selectedMovieIds.size === 1 ? 'movie' : 'movies'} selected
+            {selectedMovieIds.size > 0 && (() => {
+              // Calculate which movies need state changes
+              const selectedMovies = movies.filter(m => selectedMovieIds.has(m.id))
+              const hasUnwatched = selectedMovies.some(m => !m.is_watched)
+              const hasWatched = selectedMovies.some(m => m.is_watched)
+              
+              return (
+                <div className="mb-4 p-4 bg-card rounded-lg border border-border flex items-center justify-between">
+                  <div className="text-sm text-foreground">
+                    {selectedMovieIds.size} {selectedMovieIds.size === 1 ? 'movie' : 'movies'} selected
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkWatched(true)}
+                      disabled={!hasUnwatched}
+                      className="gap-2"
+                    >
+                      <Check className="h-4 w-4" />
+                      Mark as Watched
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkWatched(false)}
+                      disabled={!hasWatched}
+                      className="gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Mark as Unwatched
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAddToPlaylistModalOpen(true)}
+                      className="gap-2"
+                    >
+                      <ListPlus className="h-4 w-4" />
+                      Add to Playlist
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedMovieIds(new Set())}
+                      className="gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Clear
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsAddToPlaylistModalOpen(true)}
-                    className="gap-2"
-                  >
-                    <ListPlus className="h-4 w-4" />
-                    Add to Playlist
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedMovieIds(new Set())}
-                    className="gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Clear
-                  </Button>
-                </div>
-              </div>
-            )}
+              )
+            })()}
             <div className="mb-4 text-sm text-muted-foreground">
               Showing {movies.length} of {total} movies
             </div>
