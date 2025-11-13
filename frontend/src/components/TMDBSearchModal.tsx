@@ -22,8 +22,10 @@ interface TMDBSearchModalProps {
 }
 
 function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps) {
+  const [mode, setMode] = useState<'search' | 'id'>('search')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [tmdbIdInput, setTmdbIdInput] = useState('')
   const [results, setResults] = useState<TMDBSearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -50,8 +52,10 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
     if (!isOpen) {
       setSearchQuery('')
       setDebouncedQuery('')
+      setTmdbIdInput('')
       setResults([])
       setError(null)
+      setMode('search')
       return
     }
   }, [isOpen])
@@ -105,6 +109,16 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
     }
   }
 
+  const handleAddById = async () => {
+    const id = parseInt(tmdbIdInput.trim(), 10)
+    if (isNaN(id) || id <= 0) {
+      setError('Please enter a valid TMDB ID (positive number)')
+      return
+    }
+
+    await handleAdd(id)
+  }
+
   const getImageUrl = (path: string | null) => {
     if (!path) return null
     return `${TMDB_IMAGE_BASE}/w185${path}`
@@ -138,16 +152,80 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
             </button>
           </div>
 
-          <div className="mb-5">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search for a ${type === 'movie' ? 'movie' : 'TV show'}...`}
-              className="w-full px-4 py-2 border border-border rounded text-base bg-background"
-              autoFocus
-            />
+          {/* Mode Toggle */}
+          <div className="mb-5 flex gap-2 border-b border-border">
+            <button
+              onClick={() => {
+                setMode('search')
+                setError(null)
+              }}
+              className={`px-4 py-2 font-medium transition-colors ${
+                mode === 'search'
+                  ? 'border-b-2 border-primary text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Search by Title
+            </button>
+            <button
+              onClick={() => {
+                setMode('id')
+                setError(null)
+              }}
+              className={`px-4 py-2 font-medium transition-colors ${
+                mode === 'id'
+                  ? 'border-b-2 border-primary text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Add by TMDB ID
+            </button>
           </div>
+
+          {/* Search Mode */}
+          {mode === 'search' && (
+            <div className="mb-5">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search for a ${type === 'movie' ? 'movie' : 'TV show'}...`}
+                className="w-full px-4 py-2 border border-border rounded text-base bg-background"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {/* ID Mode */}
+          {mode === 'id' && (
+            <div className="mb-5">
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={tmdbIdInput}
+                  onChange={(e) => setTmdbIdInput(e.target.value)}
+                  placeholder="Enter TMDB ID (e.g., 550)"
+                  className="flex-1 px-4 py-2 border border-border rounded text-base bg-background"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddById()
+                    }
+                  }}
+                />
+                <button
+                  onClick={handleAddById}
+                  disabled={!tmdbIdInput.trim() || addingId !== null}
+                  className="px-6 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {addingId ? 'Adding...' : 'Add'}
+                </button>
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                You can find the TMDB ID in the URL of a movie or TV show page on themoviedb.org
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-destructive/20 border border-destructive/50 text-destructive rounded">
@@ -155,19 +233,19 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
             </div>
           )}
 
-          {loading && (
+          {mode === 'search' && loading && (
             <div className="text-center py-8 text-muted-foreground">
               Searching...
             </div>
           )}
 
-          {!loading && debouncedQuery && results.length === 0 && !error && (
+          {mode === 'search' && !loading && debouncedQuery && results.length === 0 && !error && (
             <div className="text-center py-8 text-muted-foreground">
               No results found
             </div>
           )}
 
-          {!loading && results.length > 0 && (
+          {mode === 'search' && !loading && results.length > 0 && (
             <div className="space-y-3">
               {results.map((result) => {
                 const imageUrl = getImageUrl(result.poster_path)

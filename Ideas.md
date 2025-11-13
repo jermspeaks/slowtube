@@ -51,8 +51,8 @@
 - [x] Upcoming calendar - UTC is being used, not PST/PDT
 - [x] Upcoming calendar - we should see the retroactive view as well. Made a mistake here.
 - [x] Looks like our tv episode job is fetching all shows, and not filtering the shows that's a returning series. Can we modify this?
+- [x] YouTube watch later no longer fetching metadata, need to modify
 - [ ] The "Filter with all, feed, inbox, and archive" need to now just be feed, inbox, and archive. No need to have "All" unless we are in group view.
 - [ ] Settings should be moved to the rightmost side, not left at all.
 - [ ] Migrate over to shadcn buttons everywhere
 - [ ] Looks like the page is acting slow because it's loading a ton of videos at once. What other tactics to improve performance
-- [ ] YouTube watch later no longer fetching metadata, need to modify
