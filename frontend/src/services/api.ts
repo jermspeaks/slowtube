@@ -237,7 +237,9 @@ export const moviesAPI = {
     sortBy?: 'title' | 'release_date' | 'created_at',
     sortOrder?: 'asc' | 'desc',
     page?: number,
-    limit?: number
+    limit?: number,
+    archiveFilter?: 'all' | 'archived' | 'unarchived',
+    starredFilter?: 'all' | 'starred' | 'unstarred'
   ) => {
     const params: Record<string, string | number> = {}
     if (search) params.search = search
@@ -245,6 +247,8 @@ export const moviesAPI = {
     if (sortOrder) params.sortOrder = sortOrder
     if (page !== undefined) params.page = page
     if (limit !== undefined) params.limit = limit
+    if (archiveFilter) params.archiveFilter = archiveFilter
+    if (starredFilter) params.starredFilter = starredFilter
     const response = await api.get('/api/movies', { params })
     return response.data
   },
@@ -262,6 +266,14 @@ export const moviesAPI = {
   },
   getById: async (id: number) => {
     const response = await api.get(`/api/movies/${id}`)
+    return response.data
+  },
+  archive: async (id: number, isArchived: boolean) => {
+    const response = await api.patch(`/api/movies/${id}/archive`, { isArchived })
+    return response.data
+  },
+  star: async (id: number, isStarred: boolean) => {
+    const response = await api.patch(`/api/movies/${id}/star`, { isStarred })
     return response.data
   },
 }

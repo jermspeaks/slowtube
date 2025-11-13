@@ -25,7 +25,9 @@
 - [ ] Add a download function per video so we can have a local copy to do playback
   - [ ] Add sponsorblock so we can skip past it
 - [ ] We need to add Letterboxd import so we can later export all movies that we can add to a logging website where we can show a full list of all consumed. Idea is we can either export to my current Astro site or setup a lightweight
-- [ ] Star movies and tv shows we want to watch
+- [x] Star movies
+- [ ] Where to stream/watch the movies
+- [ ] Start TV shows we want to watch
 - [ ] Group or Playlist mode that we can organize lists and have them be in the watch page
     - [ ] Playlists should be universal other media types besides watch later as well
 - [ ] Organize should be more videos in our inbox that we want to view and start to group together. That way, watch is more relevant to top, then other organized lists

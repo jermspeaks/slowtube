@@ -844,6 +844,15 @@ export interface TVShowState {
   updated_at: string
 }
 
+export interface MovieState {
+  movie_id: number
+  is_archived: number // 0 or 1 (boolean as integer in SQLite)
+  is_starred: number // 0 or 1 (boolean as integer in SQLite)
+  archived_at: string | null
+  starred_at: string | null
+  updated_at: string
+}
+
 // TV Show operations
 export const tvShowQueries = {
   getAll: (
@@ -1159,14 +1168,30 @@ export const movieQueries = {
     sortBy?: 'title' | 'release_date' | 'created_at',
     sortOrder?: 'asc' | 'desc',
     limit?: number,
-    offset?: number
+    offset?: number,
+    archiveFilter?: 'all' | 'archived' | 'unarchived',
+    starredFilter?: 'all' | 'starred' | 'unstarred'
   ) => {
     const conditions: string[] = []
     const params: any[] = []
 
+    // Archived filter
+    if (archiveFilter === 'archived') {
+      conditions.push('ms.is_archived = 1')
+    } else if (archiveFilter === 'unarchived') {
+      conditions.push('(ms.is_archived = 0 OR ms.is_archived IS NULL)')
+    }
+
+    // Starred filter
+    if (starredFilter === 'starred') {
+      conditions.push('ms.is_starred = 1')
+    } else if (starredFilter === 'unstarred') {
+      conditions.push('(ms.is_starred = 0 OR ms.is_starred IS NULL)')
+    }
+
     // Search filter (case-insensitive search on title and overview)
     if (search && search.trim()) {
-      conditions.push('(LOWER(title) LIKE ? OR LOWER(overview) LIKE ?)')
+      conditions.push('(LOWER(m.title) LIKE ? OR LOWER(m.overview) LIKE ?)')
       const searchTerm = `%${search.trim().toLowerCase()}%`
       params.push(searchTerm, searchTerm)
     }
@@ -1174,13 +1199,13 @@ export const movieQueries = {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
     // Build ORDER BY clause
-    let orderBy = 'ORDER BY title ASC' // Default sort
+    let orderBy = 'ORDER BY m.title ASC' // Default sort
     if (sortBy && (sortBy === 'title' || sortBy === 'release_date' || sortBy === 'created_at')) {
       const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
       // Handle NULL values - put them at the end
       orderBy = `ORDER BY 
-        CASE WHEN ${sortBy} IS NULL THEN 1 ELSE 0 END,
-        ${sortBy} ${order}`
+        CASE WHEN m.${sortBy} IS NULL THEN 1 ELSE 0 END,
+        m.${sortBy} ${order}`
     }
 
     // Build LIMIT and OFFSET clauses
@@ -1195,35 +1220,92 @@ export const movieQueries = {
     }
 
     const query = `
-      SELECT * FROM movies
+      SELECT 
+        m.*,
+        COALESCE(ms.is_archived, 0) as is_archived,
+        COALESCE(ms.is_starred, 0) as is_starred
+      FROM movies m
+      LEFT JOIN movie_states ms ON m.id = ms.movie_id
       ${whereClause}
       ${orderBy}
       ${limitClause}
     `
 
-    return db.prepare(query).all(...params) as Movie[]
+    const results = db.prepare(query).all(...params) as (Movie & {
+      is_archived: number
+      is_starred: number
+    })[]
+
+    // Convert to Movie format with boolean fields
+    return results.map(r => ({
+      ...r,
+      is_archived: r.is_archived === 1,
+      is_starred: r.is_starred === 1,
+    })) as any[]
   },
 
-  getCount: (search?: string) => {
+  getCount: (
+    search?: string,
+    archiveFilter?: 'all' | 'archived' | 'unarchived',
+    starredFilter?: 'all' | 'starred' | 'unstarred'
+  ) => {
     const conditions: string[] = []
     const params: any[] = []
 
+    // Archived filter
+    if (archiveFilter === 'archived') {
+      conditions.push('ms.is_archived = 1')
+    } else if (archiveFilter === 'unarchived') {
+      conditions.push('(ms.is_archived = 0 OR ms.is_archived IS NULL)')
+    }
+
+    // Starred filter
+    if (starredFilter === 'starred') {
+      conditions.push('ms.is_starred = 1')
+    } else if (starredFilter === 'unstarred') {
+      conditions.push('(ms.is_starred = 0 OR ms.is_starred IS NULL)')
+    }
+
     // Search filter (case-insensitive search on title and overview)
     if (search && search.trim()) {
-      conditions.push('(LOWER(title) LIKE ? OR LOWER(overview) LIKE ?)')
+      conditions.push('(LOWER(m.title) LIKE ? OR LOWER(m.overview) LIKE ?)')
       const searchTerm = `%${search.trim().toLowerCase()}%`
       params.push(searchTerm, searchTerm)
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
-    const query = `SELECT COUNT(*) as count FROM movies ${whereClause}`
+    const query = `
+      SELECT COUNT(*) as count 
+      FROM movies m
+      LEFT JOIN movie_states ms ON m.id = ms.movie_id
+      ${whereClause}
+    `
     const result = db.prepare(query).get(...params) as { count: number }
     return result.count
   },
 
   getById: (id: number) => {
-    return db.prepare('SELECT * FROM movies WHERE id = ?').get(id) as Movie | undefined
+    const result = db.prepare(`
+      SELECT 
+        m.*,
+        COALESCE(ms.is_archived, 0) as is_archived,
+        COALESCE(ms.is_starred, 0) as is_starred
+      FROM movies m
+      LEFT JOIN movie_states ms ON m.id = ms.movie_id
+      WHERE m.id = ?
+    `).get(id) as (Movie & {
+      is_archived: number
+      is_starred: number
+    }) | undefined
+
+    if (!result) return undefined
+
+    return {
+      ...result,
+      is_archived: result.is_archived === 1,
+      is_starred: result.is_starred === 1,
+    } as any
   },
 
   getByTmdbId: (tmdbId: number) => {
@@ -1278,6 +1360,37 @@ export const movieQueries = {
 
   deleteAll: () => {
     return db.prepare('DELETE FROM movies').run().changes
+  },
+}
+
+// Movie State operations
+export const movieStateQueries = {
+  getState: (movieId: number) => {
+    return db.prepare('SELECT * FROM movie_states WHERE movie_id = ?').get(movieId) as MovieState | undefined
+  },
+
+  setArchived: (movieId: number, isArchived: boolean) => {
+    const stmt = db.prepare(`
+      INSERT INTO movie_states (movie_id, is_archived, archived_at, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(movie_id) DO UPDATE SET
+        is_archived = excluded.is_archived,
+        archived_at = excluded.archived_at,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    return stmt.run(movieId, isArchived ? 1 : 0, isArchived ? new Date().toISOString() : null).changes
+  },
+
+  setStarred: (movieId: number, isStarred: boolean) => {
+    const stmt = db.prepare(`
+      INSERT INTO movie_states (movie_id, is_starred, starred_at, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(movie_id) DO UPDATE SET
+        is_starred = excluded.is_starred,
+        starred_at = excluded.starred_at,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    return stmt.run(movieId, isStarred ? 1 : 0, isStarred ? new Date().toISOString() : null).changes
   },
 }
 

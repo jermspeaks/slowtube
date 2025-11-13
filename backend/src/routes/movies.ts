@@ -1,5 +1,5 @@
 import express from 'express'
-import { movieQueries } from '../services/database.js'
+import { movieQueries, movieStateQueries } from '../services/database.js'
 import { searchMovies, fetchMovieDetails } from '../services/tmdb.js'
 
 const router = express.Router()
@@ -59,6 +59,8 @@ router.get('/', (req, res) => {
     const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50
+    const archiveFilter = req.query.archiveFilter as 'all' | 'archived' | 'unarchived' | undefined
+    const starredFilter = req.query.starredFilter as 'all' | 'starred' | 'unstarred' | undefined
 
     if (isNaN(page) || page < 1) {
       return res.status(400).json({ error: 'Invalid page number' })
@@ -68,8 +70,8 @@ router.get('/', (req, res) => {
     }
 
     const offset = (page - 1) * limit
-    const movies = movieQueries.getAll(search, sortBy, sortOrder, limit, offset)
-    const total = movieQueries.getCount(search)
+    const movies = movieQueries.getAll(search, sortBy, sortOrder, limit, offset, archiveFilter, starredFilter)
+    const total = movieQueries.getCount(search, archiveFilter, starredFilter)
     const totalPages = Math.ceil(total / limit)
 
     res.json({
@@ -129,6 +131,62 @@ router.get('/:id', (req, res) => {
   } catch (error) {
     console.error('Error fetching movie:', error)
     res.status(500).json({ error: 'Failed to fetch movie' })
+  }
+})
+
+// Archive/unarchive movie
+router.patch('/:id/archive', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid movie ID' })
+    }
+
+    const movie = movieQueries.getById(id)
+    if (!movie) {
+      return res.status(404).json({ error: 'Movie not found' })
+    }
+
+    const { isArchived } = req.body
+    if (typeof isArchived !== 'boolean') {
+      return res.status(400).json({ error: 'isArchived must be a boolean' })
+    }
+
+    // Set archived state
+    movieStateQueries.setArchived(id, isArchived)
+
+    res.json({ message: `Movie ${isArchived ? 'archived' : 'unarchived'} successfully`, isArchived })
+  } catch (error) {
+    console.error('Error archiving movie:', error)
+    res.status(500).json({ error: 'Failed to archive movie' })
+  }
+})
+
+// Star/unstar movie
+router.patch('/:id/star', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid movie ID' })
+    }
+
+    const movie = movieQueries.getById(id)
+    if (!movie) {
+      return res.status(404).json({ error: 'Movie not found' })
+    }
+
+    const { isStarred } = req.body
+    if (typeof isStarred !== 'boolean') {
+      return res.status(400).json({ error: 'isStarred must be a boolean' })
+    }
+
+    // Set starred state
+    movieStateQueries.setStarred(id, isStarred)
+
+    res.json({ message: `Movie ${isStarred ? 'starred' : 'unstarred'} successfully`, isStarred })
+  } catch (error) {
+    console.error('Error starring movie:', error)
+    res.status(500).json({ error: 'Failed to star movie' })
   }
 })
 

@@ -10,5 +10,7 @@ export interface Movie {
   saved_at: string | null
   created_at: string
   updated_at: string
+  is_archived: boolean
+  is_starred: boolean
 }
 
