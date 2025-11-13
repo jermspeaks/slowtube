@@ -10,8 +10,10 @@ function TVShowsList() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
-  const [includeArchived, setIncludeArchived] = useState<boolean>(true)
-  const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | null>('title')
+  const [archiveFilter, setArchiveFilter] = useState<'all' | 'archived' | 'unarchived'>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('')
+  const [statuses, setStatuses] = useState<string[]>([])
+  const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | null>('title')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -21,20 +23,36 @@ function TVShowsList() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    loadStatuses()
     loadTVShows()
   }, [])
+
+  const loadStatuses = async () => {
+    try {
+      const statusList = await tvShowsAPI.getStatuses()
+      setStatuses(statusList || [])
+    } catch (error) {
+      console.error('Error loading statuses:', error)
+    }
+  }
 
   const loadTVShows = async () => {
     try {
       setLoading(true)
+      // Convert archiveFilter to includeArchived boolean for backward compatibility
+      const includeArchived = archiveFilter === 'all' || archiveFilter === 'archived'
+      
       const response = await tvShowsAPI.getAll(
         includeArchived,
         debouncedSearchQuery || undefined,
         sortBy || undefined,
         sortBy ? sortOrder : undefined,
         currentPage,
-        50
+        50,
+        statusFilter || undefined,
+        archiveFilter
       )
+      
       setTvShows(response.tvShows || [])
       if (response.pagination) {
         setTotalPages(response.pagination.totalPages || 1)
@@ -67,6 +85,7 @@ function TVShowsList() {
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true)
+      const includeArchived = archiveFilter === 'all' || archiveFilter === 'archived'
       const result = await tvShowsAPI.refreshAll(includeArchived)
       
       const newEpisodes = result.results.reduce((sum, r) => sum + (r.newEpisodes || 0), 0)
@@ -112,12 +131,12 @@ function TVShowsList() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [debouncedSearchQuery, sortBy, sortOrder, includeArchived])
+  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, statusFilter])
 
   useEffect(() => {
     loadTVShows()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, includeArchived])
+  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, statusFilter])
 
   const handleSortChange = (value: string) => {
     if (value === 'none') {
@@ -126,9 +145,9 @@ function TVShowsList() {
     } else {
       const lastUnderscoreIndex = value.lastIndexOf('_')
       if (lastUnderscoreIndex !== -1) {
-        const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'first_air_date' | 'created_at'
+        const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date'
         const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
-        if ((by === 'title' || by === 'first_air_date' || by === 'created_at') && (order === 'asc' || order === 'desc')) {
+        if ((by === 'title' || by === 'first_air_date' || by === 'created_at' || by === 'next_episode_date') && (order === 'asc' || order === 'desc')) {
           setSortBy(by)
           setSortOrder(order)
         }
@@ -171,14 +190,28 @@ function TVShowsList() {
               />
             </div>
             <div className="flex gap-2 items-center">
-              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Archive:</label>
               <select
-                value={includeArchived ? 'all' : 'active'}
-                onChange={(e) => setIncludeArchived(e.target.value === 'all')}
+                value={archiveFilter}
+                onChange={(e) => setArchiveFilter(e.target.value as 'all' | 'archived' | 'unarchived')}
                 className="px-3 py-2 border border-border rounded text-sm bg-background"
               >
                 <option value="all">All</option>
-                <option value="active">Active Only</option>
+                <option value="archived">Archived</option>
+                <option value="unarchived">Unarchived</option>
+              </select>
+            </div>
+            <div className="flex gap-2 items-center">
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Status:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-border rounded text-sm bg-background"
+              >
+                <option value="">All</option>
+                {statuses.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
               </select>
             </div>
             <div className="flex gap-2 items-center">
@@ -193,6 +226,8 @@ function TVShowsList() {
                 <option value="title_desc">Title (Z-A)</option>
                 <option value="first_air_date_desc">First Air Date (Newest)</option>
                 <option value="first_air_date_asc">First Air Date (Oldest)</option>
+                <option value="next_episode_date_asc">Next Episode Date (Ascending)</option>
+                <option value="next_episode_date_desc">Next Episode Date (Descending)</option>
                 <option value="created_at_desc">Created At (Newest)</option>
                 <option value="created_at_asc">Created At (Oldest)</option>
               </select>
@@ -218,7 +253,16 @@ function TVShowsList() {
             <div className="mb-4 text-sm text-muted-foreground">
               Showing {tvShows.length} of {total} TV shows
             </div>
-            <TVShowTable tvShows={tvShows} onDelete={handleDelete} />
+            <TVShowTable tvShows={tvShows} onDelete={handleDelete} onArchive={async (tvShow, isArchived) => {
+              try {
+                await tvShowsAPI.archive(tvShow.id, isArchived)
+                loadTVShows()
+                toast.success(`TV show ${isArchived ? 'archived' : 'unarchived'} successfully`)
+              } catch (error) {
+                console.error('Error archiving TV show:', error)
+                toast.error('Failed to archive TV show')
+              }
+            }} />
             {totalPages > 1 && (
               <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
                 <button

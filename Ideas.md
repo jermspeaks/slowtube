@@ -31,6 +31,7 @@
 - [ ] Responsive view per pages. Start with dashboard
 - [ ] Optimistic UI for state transitions of video cards from feed -> inbox or archive so it's not jarring to jump from bottom to top. Revisit how re-renders should work here
 - [x] TV Show episodes view for archive
+- [ ] TV show filters - need to include filter by status, archived/unarchive, AND sort by title, first air date, next episode date, asc and desc. Actions need to be a dropdown for delete and archive. Delete will need a dialog to confirm we want to delete the tv show. Table needs to include how much we've watched the show (watched complete)
 
 ## Questions
 

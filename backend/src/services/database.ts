@@ -847,17 +847,30 @@ export const tvShowQueries = {
   getAll: (
     includeArchived: boolean = true,
     search?: string,
-    sortBy?: 'title' | 'first_air_date' | 'created_at',
+    sortBy?: 'title' | 'first_air_date' | 'created_at' | 'next_episode_date',
     sortOrder?: 'asc' | 'desc',
     limit?: number,
-    offset?: number
+    offset?: number,
+    statusFilter?: string,
+    archiveFilter?: 'all' | 'archived' | 'unarchived'
   ) => {
     const conditions: string[] = []
     const params: any[] = []
 
-    // Archived filter
-    if (!includeArchived) {
+    // Archived filter - use archiveFilter if provided, otherwise fall back to includeArchived
+    if (archiveFilter === 'archived') {
+      conditions.push('tss.is_archived = 1')
+    } else if (archiveFilter === 'unarchived') {
       conditions.push('(tss.is_archived = 0 OR tss.is_archived IS NULL)')
+    } else if (!includeArchived) {
+      // Legacy behavior: if includeArchived is false and no archiveFilter, exclude archived
+      conditions.push('(tss.is_archived = 0 OR tss.is_archived IS NULL)')
+    }
+
+    // Status filter
+    if (statusFilter && statusFilter.trim()) {
+      conditions.push('ts.status = ?')
+      params.push(statusFilter.trim())
     }
 
     // Search filter (case-insensitive search on title and overview)
@@ -871,12 +884,20 @@ export const tvShowQueries = {
 
     // Build ORDER BY clause
     let orderBy = 'ORDER BY ts.title ASC' // Default sort
-    if (sortBy && (sortBy === 'title' || sortBy === 'first_air_date' || sortBy === 'created_at')) {
+    if (sortBy) {
       const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
-      // Handle NULL values - put them at the end
-      orderBy = `ORDER BY 
-        CASE WHEN ts.${sortBy} IS NULL THEN 1 ELSE 0 END,
-        ts.${sortBy} ${order}`
+      
+      if (sortBy === 'next_episode_date') {
+        // Sort by next unwatched episode with future air_date
+        orderBy = `ORDER BY 
+          CASE WHEN next_ep.air_date IS NULL THEN 1 ELSE 0 END,
+          next_ep.air_date ${order}`
+      } else if (sortBy === 'title' || sortBy === 'first_air_date' || sortBy === 'created_at') {
+        // Handle NULL values - put them at the end
+        orderBy = `ORDER BY 
+          CASE WHEN ts.${sortBy} IS NULL THEN 1 ELSE 0 END,
+          ts.${sortBy} ${order}`
+      }
     }
 
     // Build LIMIT and OFFSET clauses
@@ -890,25 +911,74 @@ export const tvShowQueries = {
       }
     }
 
+    // Subquery for next episode date (first unwatched episode with future air_date)
+    const nextEpisodeSubquery = `
+      SELECT MIN(e.air_date) as air_date, e.tv_show_id
+      FROM episodes e
+      WHERE e.is_watched = 0 
+        AND e.air_date IS NOT NULL
+        AND e.air_date > date('now')
+      GROUP BY e.tv_show_id
+    `
+
+    // Subqueries for watched progress
+    const watchedProgressSubquery = `
+      SELECT 
+        tv_show_id,
+        COUNT(*) as total_episodes,
+        SUM(is_watched) as watched_count
+      FROM episodes
+      GROUP BY tv_show_id
+    `
+
     const query = `
-      SELECT ts.*
+      SELECT 
+        ts.*,
+        next_ep.air_date as next_episode_date,
+        COALESCE(wp.watched_count, 0) as watched_count,
+        COALESCE(wp.total_episodes, 0) as total_episodes
       FROM tv_shows ts
       LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
+      LEFT JOIN (${nextEpisodeSubquery}) next_ep ON ts.id = next_ep.tv_show_id
+      LEFT JOIN (${watchedProgressSubquery}) wp ON ts.id = wp.tv_show_id
       ${whereClause}
       ${orderBy}
       ${limitClause}
     `
 
-    return db.prepare(query).all(...params) as TVShow[]
+    const results = db.prepare(query).all(...params) as (TVShow & { 
+      next_episode_date: string | null
+      watched_count: number
+      total_episodes: number
+    })[]
+    
+    // Convert to TVShow format with additional fields
+    return results.map(r => ({
+      ...r,
+      next_episode_date: r.next_episode_date || null,
+      watched_count: r.watched_count || 0,
+      total_episodes: r.total_episodes || 0,
+    })) as any[]
   },
 
-  getCount: (includeArchived: boolean = true, search?: string) => {
+  getCount: (includeArchived: boolean = true, search?: string, statusFilter?: string, archiveFilter?: 'all' | 'archived' | 'unarchived') => {
     const conditions: string[] = []
     const params: any[] = []
 
-    // Archived filter
-    if (!includeArchived) {
+    // Archived filter - use archiveFilter if provided, otherwise fall back to includeArchived
+    if (archiveFilter === 'archived') {
+      conditions.push('tss.is_archived = 1')
+    } else if (archiveFilter === 'unarchived') {
       conditions.push('(tss.is_archived = 0 OR tss.is_archived IS NULL)')
+    } else if (!includeArchived) {
+      // Legacy behavior: if includeArchived is false and no archiveFilter, exclude archived
+      conditions.push('(tss.is_archived = 0 OR tss.is_archived IS NULL)')
+    }
+
+    // Status filter
+    if (statusFilter && statusFilter.trim()) {
+      conditions.push('ts.status = ?')
+      params.push(statusFilter.trim())
     }
 
     // Search filter (case-insensitive search on title and overview)
@@ -928,6 +998,15 @@ export const tvShowQueries = {
     `
     const result = db.prepare(query).get(...params) as { count: number }
     return result.count
+  },
+
+  getUniqueStatuses: () => {
+    return db.prepare(`
+      SELECT DISTINCT status 
+      FROM tv_shows 
+      WHERE status IS NOT NULL AND status != ''
+      ORDER BY status ASC
+    `).all() as { status: string }[]
   },
 
   getById: (id: number) => {

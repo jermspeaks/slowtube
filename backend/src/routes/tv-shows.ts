@@ -108,8 +108,10 @@ router.get('/', (req, res) => {
   try {
     const includeArchived = req.query.includeArchived === 'true' || req.query.includeArchived === '1'
     const search = req.query.search as string | undefined
-    const sortBy = req.query.sortBy as 'title' | 'first_air_date' | 'created_at' | undefined
+    const sortBy = req.query.sortBy as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | undefined
     const sortOrder = req.query.sortOrder as 'asc' | 'desc' | undefined
+    const status = req.query.status as string | undefined
+    const archiveFilter = req.query.archiveFilter as 'all' | 'archived' | 'unarchived' | undefined
     const page = req.query.page ? parseInt(req.query.page as string, 10) : 1
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50
 
@@ -121,8 +123,8 @@ router.get('/', (req, res) => {
     }
 
     const offset = (page - 1) * limit
-    const tvShows = tvShowQueries.getAll(includeArchived, search, sortBy, sortOrder, limit, offset)
-    const total = tvShowQueries.getCount(includeArchived, search)
+    const tvShows = tvShowQueries.getAll(includeArchived, search, sortBy, sortOrder, limit, offset, status, archiveFilter)
+    const total = tvShowQueries.getCount(includeArchived, search, status, archiveFilter)
     const totalPages = Math.ceil(total / limit)
     
     // Add archived status to each TV show
@@ -146,6 +148,17 @@ router.get('/', (req, res) => {
   } catch (error) {
     console.error('Error fetching TV shows:', error)
     res.status(500).json({ error: 'Failed to fetch TV shows' })
+  }
+})
+
+// Get unique statuses for filtering
+router.get('/statuses', (req, res) => {
+  try {
+    const statuses = tvShowQueries.getUniqueStatuses()
+    res.json(statuses.map(s => s.status))
+  } catch (error) {
+    console.error('Error fetching TV show statuses:', error)
+    res.status(500).json({ error: 'Failed to fetch TV show statuses' })
   }
 })
 

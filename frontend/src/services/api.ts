@@ -145,10 +145,12 @@ export const tvShowsAPI = {
   getAll: async (
     includeArchived?: boolean,
     search?: string,
-    sortBy?: 'title' | 'first_air_date' | 'created_at',
+    sortBy?: 'title' | 'first_air_date' | 'created_at' | 'next_episode_date',
     sortOrder?: 'asc' | 'desc',
     page?: number,
-    limit?: number
+    limit?: number,
+    status?: string,
+    archiveFilter?: 'all' | 'archived' | 'unarchived'
   ) => {
     const params: Record<string, string | number> = {}
     if (includeArchived !== undefined) {
@@ -159,7 +161,13 @@ export const tvShowsAPI = {
     if (sortOrder) params.sortOrder = sortOrder
     if (page !== undefined) params.page = page
     if (limit !== undefined) params.limit = limit
+    if (status) params.status = status
+    if (archiveFilter) params.archiveFilter = archiveFilter
     const response = await api.get('/api/tv-shows', { params })
+    return response.data
+  },
+  getStatuses: async () => {
+    const response = await api.get('/api/tv-shows/statuses')
     return response.data
   },
   search: async (query: string) => {
