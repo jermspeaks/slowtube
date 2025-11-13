@@ -20,6 +20,7 @@ function TVShowsList() {
   const [total, setTotal] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showMoreFilters, setShowMoreFilters] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -178,6 +179,7 @@ function TVShowsList() {
         </div>
 
         <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+          {/* Always visible section */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex gap-2 items-center w-full sm:w-auto sm:flex-1 sm:max-w-md">
               <label className="font-semibold text-sm text-foreground whitespace-nowrap">Search:</label>
@@ -188,31 +190,6 @@ function TVShowsList() {
                 placeholder="Search by title or overview..."
                 className="px-3 py-2 border border-border rounded text-sm bg-background flex-1"
               />
-            </div>
-            <div className="flex gap-2 items-center">
-              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Archive:</label>
-              <select
-                value={archiveFilter}
-                onChange={(e) => setArchiveFilter(e.target.value as 'all' | 'archived' | 'unarchived')}
-                className="px-3 py-2 border border-border rounded text-sm bg-background"
-              >
-                <option value="all">All</option>
-                <option value="archived">Archived</option>
-                <option value="unarchived">Unarchived</option>
-              </select>
-            </div>
-            <div className="flex gap-2 items-center">
-              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Status:</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-border rounded text-sm bg-background"
-              >
-                <option value="">All</option>
-                {statuses.map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
             </div>
             <div className="flex gap-2 items-center">
               <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
@@ -234,6 +211,59 @@ function TVShowsList() {
                 <option value="created_at_asc">Created At (Oldest)</option>
               </select>
             </div>
+          </div>
+
+          {/* Collapsible "Show more" section */}
+          <div className="mt-4">
+            <button
+              onClick={() => setShowMoreFilters(!showMoreFilters)}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-medium transition-colors"
+              aria-expanded={showMoreFilters}
+              aria-label={showMoreFilters ? 'Show less filters' : 'Show more filters'}
+            >
+              <span>{showMoreFilters ? 'Show less' : 'Show more'}</span>
+              <svg
+                className={`w-4 h-4 transition-transform ${showMoreFilters ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showMoreFilters && (
+              <div className="mt-4 pt-4 border-t border-border space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <div className="flex gap-2 items-center">
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Archive:</label>
+                    <select
+                      value={archiveFilter}
+                      onChange={(e) => setArchiveFilter(e.target.value as 'all' | 'archived' | 'unarchived')}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background"
+                    >
+                      <option value="all">All</option>
+                      <option value="archived">Archived</option>
+                      <option value="unarchived">Unarchived</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Status:</label>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background"
+                    >
+                      <option value="">All</option>
+                      {statuses.map(status => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
