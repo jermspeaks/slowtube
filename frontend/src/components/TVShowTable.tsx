@@ -1,5 +1,6 @@
 import { TVShow } from '../types/tv-show'
 import { format } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -9,6 +10,8 @@ interface TVShowTableProps {
 }
 
 function TVShowTable({ tvShows, onDelete }: TVShowTableProps) {
+  const navigate = useNavigate()
+
   const getImageUrl = (path: string | null) => {
     if (!path) return null
     return `${TMDB_IMAGE_BASE}/w185${path}`
@@ -57,7 +60,12 @@ function TVShowTable({ tvShows, onDelete }: TVShowTableProps) {
                   )}
                 </td>
                 <td className="p-3 max-w-[300px]">
-                  <div className="font-bold mb-1">{tvShow.title}</div>
+                  <div
+                    className="font-bold mb-1 cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => navigate(`/tv-shows/${tvShow.id}`)}
+                  >
+                    {tvShow.title}
+                  </div>
                   {tvShow.tmdb_id && (
                     <div className="text-xs text-muted-foreground">TMDB: {tvShow.tmdb_id}</div>
                   )}

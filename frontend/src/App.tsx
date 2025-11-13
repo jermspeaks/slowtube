@@ -9,6 +9,7 @@ import ChannelDetail from './pages/ChannelDetail'
 import Calendar from './pages/Calendar'
 import MoviesList from './pages/MoviesList'
 import TVShowsList from './pages/TVShowsList'
+import TVShowDetail from './pages/TVShowDetail'
 import Upcoming from './pages/Upcoming'
 import WatchNext from './pages/WatchNext'
 import Tags from './pages/Tags'
@@ -45,6 +46,7 @@ function AppContent() {
         <Route path="/channels/watch-later" element={<ChannelsList />} />
         <Route path="/channels/:channelId" element={<ChannelDetail />} />
         <Route path="/movies" element={<MoviesList />} />
+        <Route path="/tv-shows/:id" element={<TVShowDetail />} />
         <Route path="/tv-shows" element={<TVShowsList />} />
         <Route path="/upcoming" element={<Upcoming />} />
         <Route path="/watch-next" element={<WatchNext />} />
