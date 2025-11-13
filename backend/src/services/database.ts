@@ -1320,6 +1320,14 @@ export const episodeQueries = {
     `).run(tvShowId).changes
   },
 
+  markAllEpisodesAsWatched: () => {
+    return db.prepare(`
+      UPDATE episodes 
+      SET is_watched = 1, watched_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE is_watched = 0
+    `).run().changes
+  },
+
   markAsUnwatched: (id: number) => {
     return db.prepare(`
       UPDATE episodes 

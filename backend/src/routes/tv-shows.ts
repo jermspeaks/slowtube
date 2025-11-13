@@ -103,6 +103,17 @@ router.post('/refresh', async (req, res) => {
   }
 })
 
+// Mark all TV episodes as watched (across all TV shows)
+router.post('/episodes/watched-all', (req, res) => {
+  try {
+    const updatedCount = episodeQueries.markAllEpisodesAsWatched()
+    res.json({ message: 'All TV episodes marked as watched', updatedCount })
+  } catch (error) {
+    console.error('Error marking all TV episodes as watched:', error)
+    res.status(500).json({ error: 'Failed to mark all TV episodes as watched' })
+  }
+})
+
 // Get all TV shows
 router.get('/', (req, res) => {
   try {

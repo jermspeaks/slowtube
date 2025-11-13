@@ -10,6 +10,16 @@ import EpisodeTable from '../components/EpisodeTable'
 import EpisodeCardGrid from '../components/EpisodeCardGrid'
 import EpisodeDetailModal from '../components/EpisodeDetailModal'
 import ViewToggle from '../components/ViewToggle'
+import { Check } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog'
+import { Button } from '../components/ui/button'
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -23,6 +33,7 @@ function TVShowDetail() {
   const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isMarkAllDialogOpen, setIsMarkAllDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -97,6 +108,25 @@ function TVShowDetail() {
       toast.error('Failed to refresh episodes')
     } finally {
       setIsRefreshing(false)
+    }
+  }
+
+  const handleMarkAllWatched = () => {
+    if (!id || !tvShow) return
+    setIsMarkAllDialogOpen(true)
+  }
+
+  const handleMarkAllWatchedConfirm = async () => {
+    if (!id) return
+
+    try {
+      const result = await tvShowsAPI.markAllEpisodesWatched(parseInt(id, 10))
+      await loadEpisodes()
+      setIsMarkAllDialogOpen(false)
+      toast.success(`All episodes marked as watched (${result.updatedCount || 0} episodes updated)`)
+    } catch (error) {
+      console.error('Error marking all episodes as watched:', error)
+      toast.error('Failed to mark all episodes as watched')
     }
   }
 
@@ -261,6 +291,13 @@ function TVShowDetail() {
                   >
                     {isRefreshing ? 'Refreshing...' : 'Refresh Episodes'}
                   </button>
+                  <button
+                    onClick={handleMarkAllWatched}
+                    className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded transition-colors backdrop-blur-sm flex items-center gap-2"
+                  >
+                    <Check className="h-4 w-4" />
+                    Mark All Episodes Watched
+                  </button>
                   <a
                     href={`https://www.themoviedb.org/tv/${tvShow.tmdb_id}`}
                     target="_blank"
@@ -405,6 +442,31 @@ function TVShowDetail() {
         onOpenChange={handleModalClose}
         onUpdate={handleEpisodeUpdate}
       />
+
+      {/* Mark All Episodes Watched Dialog */}
+      <Dialog open={isMarkAllDialogOpen} onOpenChange={setIsMarkAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mark All Episodes as Watched</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to mark all episodes of "{tvShow?.title}" as watched? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsMarkAllDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMarkAllWatchedConfirm}
+            >
+              Mark All Watched
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

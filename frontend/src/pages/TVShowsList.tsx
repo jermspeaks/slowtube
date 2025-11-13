@@ -88,8 +88,8 @@ function TVShowsList() {
       const includeArchived = archiveFilter === 'all' || archiveFilter === 'archived'
       const result = await tvShowsAPI.refreshAll(includeArchived)
       
-      const newEpisodes = result.results.reduce((sum, r) => sum + (r.newEpisodes || 0), 0)
-      const updatedEpisodes = result.results.reduce((sum, r) => sum + (r.updatedEpisodes || 0), 0)
+      const newEpisodes = result.results.reduce((sum: number, r: { newEpisodes?: number }) => sum + (r.newEpisodes || 0), 0)
+      const updatedEpisodes = result.results.reduce((sum: number, r: { updatedEpisodes?: number }) => sum + (r.updatedEpisodes || 0), 0)
       
       if (result.successful > 0) {
         toast.success(
