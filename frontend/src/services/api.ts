@@ -276,6 +276,10 @@ export const moviesAPI = {
     const response = await api.patch(`/api/movies/${id}/star`, { isStarred })
     return response.data
   },
+  watched: async (id: number, isWatched: boolean) => {
+    const response = await api.patch(`/api/movies/${id}/watched`, { isWatched })
+    return response.data
+  },
 }
 
 // Calendar API

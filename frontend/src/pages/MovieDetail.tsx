@@ -4,7 +4,7 @@ import { Movie } from '../types/movie'
 import { moviesAPI } from '../services/api'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
-import { Star, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
+import { Star, Archive, ArchiveRestore, Trash2, Check, X } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -72,6 +72,19 @@ function MovieDetail() {
     } catch (error) {
       console.error('Error starring movie:', error)
       toast.error('Failed to star movie')
+    }
+  }
+
+  const handleWatched = async () => {
+    if (!id || !movie) return
+
+    try {
+      await moviesAPI.watched(parseInt(id, 10), !movie.is_watched)
+      await loadMovie()
+      toast.success(`Movie marked as ${movie.is_watched ? 'unwatched' : 'watched'} successfully`)
+    } catch (error) {
+      console.error('Error marking movie as watched:', error)
+      toast.error('Failed to mark movie as watched')
     }
   }
 
@@ -183,6 +196,26 @@ function MovieDetail() {
                   >
                     <Star className={`h-4 w-4 ${movie.is_starred ? 'fill-current' : ''}`} />
                     {movie.is_starred ? 'Starred' : 'Star'}
+                  </button>
+                  <button
+                    onClick={handleWatched}
+                    className={`px-4 py-2 rounded transition-colors backdrop-blur-sm flex items-center gap-2 ${
+                      movie.is_watched
+                        ? 'bg-green-500/80 hover:bg-green-500 text-white'
+                        : 'bg-white/20 hover:bg-white/30 text-white'
+                    }`}
+                  >
+                    {movie.is_watched ? (
+                      <>
+                        <Check className="h-4 w-4" />
+                        Watched
+                      </>
+                    ) : (
+                      <>
+                        <X className="h-4 w-4" />
+                        Mark as Watched
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleArchive}

@@ -848,8 +848,10 @@ export interface MovieState {
   movie_id: number
   is_archived: number // 0 or 1 (boolean as integer in SQLite)
   is_starred: number // 0 or 1 (boolean as integer in SQLite)
+  is_watched: number // 0 or 1 (boolean as integer in SQLite)
   archived_at: string | null
   starred_at: string | null
+  watched_at: string | null
   updated_at: string
 }
 
@@ -1223,7 +1225,8 @@ export const movieQueries = {
       SELECT 
         m.*,
         COALESCE(ms.is_archived, 0) as is_archived,
-        COALESCE(ms.is_starred, 0) as is_starred
+        COALESCE(ms.is_starred, 0) as is_starred,
+        COALESCE(ms.is_watched, 0) as is_watched
       FROM movies m
       LEFT JOIN movie_states ms ON m.id = ms.movie_id
       ${whereClause}
@@ -1234,6 +1237,7 @@ export const movieQueries = {
     const results = db.prepare(query).all(...params) as (Movie & {
       is_archived: number
       is_starred: number
+      is_watched: number
     })[]
 
     // Convert to Movie format with boolean fields
@@ -1241,6 +1245,7 @@ export const movieQueries = {
       ...r,
       is_archived: r.is_archived === 1,
       is_starred: r.is_starred === 1,
+      is_watched: r.is_watched === 1,
     })) as any[]
   },
 
@@ -1290,13 +1295,15 @@ export const movieQueries = {
       SELECT 
         m.*,
         COALESCE(ms.is_archived, 0) as is_archived,
-        COALESCE(ms.is_starred, 0) as is_starred
+        COALESCE(ms.is_starred, 0) as is_starred,
+        COALESCE(ms.is_watched, 0) as is_watched
       FROM movies m
       LEFT JOIN movie_states ms ON m.id = ms.movie_id
       WHERE m.id = ?
     `).get(id) as (Movie & {
       is_archived: number
       is_starred: number
+      is_watched: number
     }) | undefined
 
     if (!result) return undefined
@@ -1305,6 +1312,7 @@ export const movieQueries = {
       ...result,
       is_archived: result.is_archived === 1,
       is_starred: result.is_starred === 1,
+      is_watched: result.is_watched === 1,
     } as any
   },
 
@@ -1391,6 +1399,18 @@ export const movieStateQueries = {
         updated_at = CURRENT_TIMESTAMP
     `)
     return stmt.run(movieId, isStarred ? 1 : 0, isStarred ? new Date().toISOString() : null).changes
+  },
+
+  setWatched: (movieId: number, isWatched: boolean) => {
+    const stmt = db.prepare(`
+      INSERT INTO movie_states (movie_id, is_watched, watched_at, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(movie_id) DO UPDATE SET
+        is_watched = excluded.is_watched,
+        watched_at = excluded.watched_at,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    return stmt.run(movieId, isWatched ? 1 : 0, isWatched ? new Date().toISOString() : null).changes
   },
 }
 

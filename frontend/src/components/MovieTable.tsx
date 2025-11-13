@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from './ui/dialog'
 import { Button } from './ui/button'
-import { MoreVertical, Trash2, Archive, ArchiveRestore, Star } from 'lucide-react'
+import { MoreVertical, Trash2, Archive, ArchiveRestore, Star, Check, X } from 'lucide-react'
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -26,9 +26,10 @@ interface MovieTableProps {
   onDelete: (movie: Movie) => void
   onArchive?: (movie: Movie, isArchived: boolean) => void
   onStar?: (movie: Movie, isStarred: boolean) => void
+  onWatched?: (movie: Movie, isWatched: boolean) => void
 }
 
-function MovieTable({ movies, onDelete, onArchive, onStar }: MovieTableProps) {
+function MovieTable({ movies, onDelete, onArchive, onStar, onWatched }: MovieTableProps) {
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [movieToDelete, setMovieToDelete] = useState<Movie | null>(null)
@@ -60,6 +61,12 @@ function MovieTable({ movies, onDelete, onArchive, onStar }: MovieTableProps) {
   const handleStarClick = (movie: Movie) => {
     if (onStar) {
       onStar(movie, !movie.is_starred)
+    }
+  }
+
+  const handleWatchedClick = (movie: Movie) => {
+    if (onWatched) {
+      onWatched(movie, !movie.is_watched)
     }
   }
 
@@ -154,6 +161,24 @@ function MovieTable({ movies, onDelete, onArchive, onStar }: MovieTableProps) {
                               <>
                                 <Star className="mr-2 h-4 w-4" />
                                 Star
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        )}
+                        {onWatched && (
+                          <DropdownMenuItem
+                            onClick={() => handleWatchedClick(movie)}
+                            className="cursor-pointer"
+                          >
+                            {movie.is_watched ? (
+                              <>
+                                <X className="mr-2 h-4 w-4" />
+                                Mark as Unwatched
+                              </>
+                            ) : (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Mark as Watched
                               </>
                             )}
                           </DropdownMenuItem>

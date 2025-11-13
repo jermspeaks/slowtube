@@ -12,5 +12,6 @@ export interface Movie {
   updated_at: string
   is_archived: boolean
   is_starred: boolean
+  is_watched: boolean
 }
 

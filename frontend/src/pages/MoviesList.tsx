@@ -142,6 +142,17 @@ function MoviesList() {
     }
   }
 
+  const handleWatched = async (movie: Movie, isWatched: boolean) => {
+    try {
+      await moviesAPI.watched(movie.id, isWatched)
+      loadMovies()
+      toast.success(`Movie marked as ${isWatched ? 'watched' : 'unwatched'} successfully`)
+    } catch (error) {
+      console.error('Error marking movie as watched:', error)
+      toast.error('Failed to mark movie as watched')
+    }
+  }
+
   const handleAdd = () => {
     // Reload movies after adding
     loadMovies()
@@ -352,6 +363,7 @@ function MoviesList() {
               onDelete={handleDelete}
               onArchive={handleArchive}
               onStar={handleStar}
+              onWatched={handleWatched}
             />
             {totalPages > 1 && (
               <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">

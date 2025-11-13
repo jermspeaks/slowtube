@@ -190,5 +190,33 @@ router.patch('/:id/star', (req, res) => {
   }
 })
 
+// Mark movie as watched/unwatched
+router.patch('/:id/watched', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid movie ID' })
+    }
+
+    const movie = movieQueries.getById(id)
+    if (!movie) {
+      return res.status(404).json({ error: 'Movie not found' })
+    }
+
+    const { isWatched } = req.body
+    if (typeof isWatched !== 'boolean') {
+      return res.status(400).json({ error: 'isWatched must be a boolean' })
+    }
+
+    // Set watched state
+    movieStateQueries.setWatched(id, isWatched)
+
+    res.json({ message: `Movie marked as ${isWatched ? 'watched' : 'unwatched'} successfully`, isWatched })
+  } catch (error) {
+    console.error('Error marking movie as watched:', error)
+    res.status(500).json({ error: 'Failed to mark movie as watched' })
+  }
+})
+
 export default router
 
