@@ -25,6 +25,9 @@ function MoviesList() {
   const [watchedFilter, setWatchedFilter] = useState<'all' | 'watched' | 'unwatched'>(
     (searchParams.get('watched') as 'all' | 'watched' | 'unwatched') || 'unwatched'
   )
+  const [playlistFilter, setPlaylistFilter] = useState<'all' | 'in_playlist' | 'not_in_playlist'>(
+    (searchParams.get('playlist') as 'all' | 'in_playlist' | 'not_in_playlist') || 'all'
+  )
   const [sortBy, setSortBy] = useState<'title' | 'release_date' | 'created_at' | null>(
     (searchParams.get('sortBy') as 'title' | 'release_date' | 'created_at') || 'title'
   )
@@ -47,6 +50,7 @@ function MoviesList() {
     const urlArchive = (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
     const urlStarred = (searchParams.get('starred') as 'all' | 'starred' | 'unstarred') || 'all'
     const urlWatched = (searchParams.get('watched') as 'all' | 'watched' | 'unwatched') || 'unwatched'
+    const urlPlaylist = (searchParams.get('playlist') as 'all' | 'in_playlist' | 'not_in_playlist') || 'all'
     const urlSortBy = (searchParams.get('sortBy') as 'title' | 'release_date' | 'created_at') || 'title'
     const urlSortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc'
     const urlPage = parseInt(searchParams.get('page') || '1', 10)
@@ -55,6 +59,7 @@ function MoviesList() {
       urlArchive !== archiveFilter ||
       urlStarred !== starredFilter ||
       urlWatched !== watchedFilter ||
+      urlPlaylist !== playlistFilter ||
       urlSortBy !== sortBy ||
       urlSortOrder !== sortOrder ||
       urlPage !== currentPage
@@ -75,6 +80,9 @@ function MoviesList() {
     }
     if (urlWatched !== watchedFilter) {
       setWatchedFilter(urlWatched)
+    }
+    if (urlPlaylist !== playlistFilter) {
+      setPlaylistFilter(urlPlaylist)
     }
     if (urlSortBy !== sortBy) {
       setSortBy(urlSortBy)
@@ -108,7 +116,8 @@ function MoviesList() {
         50,
         archiveFilter !== 'all' ? archiveFilter : undefined,
         starredFilter !== 'all' ? starredFilter : undefined,
-        watchedFilter !== 'all' ? watchedFilter : undefined
+        watchedFilter !== 'all' ? watchedFilter : undefined,
+        playlistFilter !== 'all' ? playlistFilter : undefined
       )
       setMovies(response.movies || [])
       if (response.pagination) {
@@ -252,6 +261,10 @@ function MoviesList() {
       params.set('watched', watchedFilter)
     }
     
+    if (playlistFilter !== 'all') {
+      params.set('playlist', playlistFilter)
+    }
+    
     if (sortBy && sortBy !== 'title') {
       params.set('sortBy', sortBy)
       params.set('sortOrder', sortOrder)
@@ -270,18 +283,18 @@ function MoviesList() {
     if (currentParams !== newParams) {
       setSearchParams(params, { replace: true })
     }
-  }, [debouncedSearchQuery, archiveFilter, starredFilter, watchedFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
+  }, [debouncedSearchQuery, archiveFilter, starredFilter, watchedFilter, playlistFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
 
   useEffect(() => {
     if (!isSyncingFromUrlRef.current) {
       setCurrentPage(1)
     }
-  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, starredFilter, watchedFilter])
+  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, starredFilter, watchedFilter, playlistFilter])
 
   useEffect(() => {
     loadMovies()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, starredFilter, watchedFilter])
+  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, starredFilter, watchedFilter, playlistFilter])
 
   const handleSortChange = (value: string) => {
     if (value === 'none') {
@@ -401,6 +414,18 @@ function MoviesList() {
                       <option value="all">All</option>
                       <option value="watched">Watched</option>
                       <option value="unwatched">Unwatched</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Playlist:</label>
+                    <select
+                      value={playlistFilter}
+                      onChange={(e) => setPlaylistFilter(e.target.value as 'all' | 'in_playlist' | 'not_in_playlist')}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background"
+                    >
+                      <option value="all">All</option>
+                      <option value="in_playlist">In Playlist</option>
+                      <option value="not_in_playlist">Not in Playlist</option>
                     </select>
                   </div>
                 </div>

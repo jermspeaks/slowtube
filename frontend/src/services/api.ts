@@ -240,7 +240,8 @@ export const moviesAPI = {
     limit?: number,
     archiveFilter?: 'all' | 'archived' | 'unarchived',
     starredFilter?: 'all' | 'starred' | 'unstarred',
-    watchedFilter?: 'all' | 'watched' | 'unwatched'
+    watchedFilter?: 'all' | 'watched' | 'unwatched',
+    playlistFilter?: 'all' | 'in_playlist' | 'not_in_playlist'
   ) => {
     const params: Record<string, string | number> = {}
     if (search) params.search = search
@@ -251,6 +252,7 @@ export const moviesAPI = {
     if (archiveFilter) params.archiveFilter = archiveFilter
     if (starredFilter) params.starredFilter = starredFilter
     if (watchedFilter) params.watchedFilter = watchedFilter
+    if (playlistFilter) params.playlistFilter = playlistFilter
     const response = await api.get('/api/movies', { params })
     return response.data
   },

@@ -1173,7 +1173,8 @@ export const movieQueries = {
     offset?: number,
     archiveFilter?: 'all' | 'archived' | 'unarchived',
     starredFilter?: 'all' | 'starred' | 'unstarred',
-    watchedFilter?: 'all' | 'watched' | 'unwatched'
+    watchedFilter?: 'all' | 'watched' | 'unwatched',
+    playlistFilter?: 'all' | 'in_playlist' | 'not_in_playlist'
   ) => {
     const conditions: string[] = []
     const params: any[] = []
@@ -1197,6 +1198,13 @@ export const movieQueries = {
       conditions.push('ms.is_watched = 1')
     } else if (watchedFilter === 'unwatched') {
       conditions.push('(ms.is_watched = 0 OR ms.is_watched IS NULL)')
+    }
+
+    // Playlist filter
+    if (playlistFilter === 'in_playlist') {
+      conditions.push('EXISTS (SELECT 1 FROM movie_playlist_items WHERE movie_id = m.id)')
+    } else if (playlistFilter === 'not_in_playlist') {
+      conditions.push('NOT EXISTS (SELECT 1 FROM movie_playlist_items WHERE movie_id = m.id)')
     }
 
     // Search filter (case-insensitive search on title and overview)
@@ -1261,7 +1269,8 @@ export const movieQueries = {
     search?: string,
     archiveFilter?: 'all' | 'archived' | 'unarchived',
     starredFilter?: 'all' | 'starred' | 'unstarred',
-    watchedFilter?: 'all' | 'watched' | 'unwatched'
+    watchedFilter?: 'all' | 'watched' | 'unwatched',
+    playlistFilter?: 'all' | 'in_playlist' | 'not_in_playlist'
   ) => {
     const conditions: string[] = []
     const params: any[] = []
@@ -1285,6 +1294,13 @@ export const movieQueries = {
       conditions.push('ms.is_watched = 1')
     } else if (watchedFilter === 'unwatched') {
       conditions.push('(ms.is_watched = 0 OR ms.is_watched IS NULL)')
+    }
+
+    // Playlist filter
+    if (playlistFilter === 'in_playlist') {
+      conditions.push('EXISTS (SELECT 1 FROM movie_playlist_items WHERE movie_id = m.id)')
+    } else if (playlistFilter === 'not_in_playlist') {
+      conditions.push('NOT EXISTS (SELECT 1 FROM movie_playlist_items WHERE movie_id = m.id)')
     }
 
     // Search filter (case-insensitive search on title and overview)
