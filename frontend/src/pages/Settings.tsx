@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { videosAPI, importAPI, tvShowsAPI } from '../services/api'
+import { videosAPI, importAPI, tvShowsAPI, channelsAPI } from '../services/api'
 import { Button } from '@/components/ui/button'
-import { Upload, Trash2, Film } from 'lucide-react'
+import { Upload, Trash2, Film, RefreshCw } from 'lucide-react'
 import { useTimezone } from '../hooks/useTimezone'
 import { useTheme } from '../hooks/useTheme'
 import { toast } from 'sonner'
@@ -30,6 +30,7 @@ function Settings() {
     authenticated: boolean
     loading: boolean
   }>({ authenticated: false, loading: true })
+  const [syncingSubscriptions, setSyncingSubscriptions] = useState(false)
 
   useEffect(() => {
     if (!timezoneLoading && timezone) {
@@ -327,6 +328,28 @@ function Settings() {
     window.location.href = authUrl
   }
 
+  const handleSyncSubscriptions = async () => {
+    try {
+      setSyncingSubscriptions(true)
+      const result = await channelsAPI.syncSubscriptions()
+      
+      toast.success(result.message || `Successfully synced ${result.synced || 0} subscribed channels`)
+    } catch (error: any) {
+      console.error('Error syncing subscriptions:', error)
+      
+      if (error.response?.status === 401 || error.response?.data?.requiresAuth) {
+        toast.error('YouTube authentication required. Please connect your YouTube account.')
+        // Refresh auth status
+        await checkYoutubeAuth()
+      } else {
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to sync subscriptions'
+        toast.error(errorMessage)
+      }
+    } finally {
+      setSyncingSubscriptions(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
@@ -370,13 +393,23 @@ function Settings() {
                   )}
                   
                   {youtubeAuthStatus.authenticated && (
-                    <Button
-                      onClick={checkYoutubeAuth}
-                      variant="outline"
-                      className="gap-2"
-                    >
-                      Refresh Status
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSyncSubscriptions}
+                        disabled={syncingSubscriptions}
+                        className="gap-2"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${syncingSubscriptions ? 'animate-spin' : ''}`} />
+                        {syncingSubscriptions ? 'Syncing...' : 'Sync Subscriptions'}
+                      </Button>
+                      <Button
+                        onClick={checkYoutubeAuth}
+                        variant="outline"
+                        className="gap-2"
+                      >
+                        Refresh Status
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}

@@ -1,7 +1,6 @@
 import express from 'express'
 import { channelQueries, videoQueries, tagQueries, commentQueries } from '../services/database.js'
-import { fetchLatestVideosFromChannel } from '../services/youtube.js'
-import { fetchSubscribedChannels } from '../services/youtube.js'
+import { fetchLatestVideosFromChannel, fetchSubscribedChannels, fetchChannelDetailsFromYouTube } from '../services/youtube.js'
 import { getAuthenticatedClient } from './auth.js'
 
 const router = express.Router()
@@ -166,7 +165,73 @@ router.post('/sync-subscriptions', async (req, res) => {
 
     const subscribedChannels = await fetchSubscribedChannels()
     
-    // ... rest of sync logic from previous response ...
+    // Get authenticated client for fetching additional channel details
+    const authClient = await getAuthenticatedClient()
+    
+    // Collect channel IDs to fetch additional details (subscriber count, etc.)
+    const channelIds = subscribedChannels.map(ch => ch.channelId)
+    
+    // Fetch additional channel details in batches (max 50 per batch)
+    const channelDetailsMap = new Map<string, {
+      id: string
+      title: string | null
+      description: string | null
+      thumbnailUrl: string | null
+      subscriberCount: number | null
+    } | null>()
+    
+    // Process in batches of 50
+    for (let i = 0; i < channelIds.length; i += 50) {
+      const batch = channelIds.slice(i, i + 50)
+      const batchDetails = await fetchChannelDetailsFromYouTube(batch, authClient)
+      batchDetails.forEach((details, channelId) => {
+        channelDetailsMap.set(channelId, details)
+      })
+    }
+    
+    let created = 0
+    let updated = 0
+    
+    // Process each subscribed channel
+    for (const subChannel of subscribedChannels) {
+      const existingChannel = channelQueries.getByChannelId(subChannel.channelId)
+      const channelDetails = channelDetailsMap.get(subChannel.channelId)
+      
+      if (existingChannel) {
+        // Update existing channel
+        const updateData: any = {
+          channel_title: channelDetails?.title || subChannel.channelTitle || existingChannel.channel_title,
+          description: channelDetails?.description || subChannel.description || existingChannel.description,
+          thumbnail_url: channelDetails?.thumbnailUrl || subChannel.thumbnailUrl || existingChannel.thumbnail_url,
+          subscriber_count: channelDetails?.subscriberCount || existingChannel.subscriber_count,
+          is_subscribed: 1, // Mark as subscribed
+        }
+        
+        channelQueries.updateByChannelId(subChannel.channelId, updateData)
+        updated++
+      } else {
+        // Create new channel
+        channelQueries.create({
+          youtube_channel_id: subChannel.channelId,
+          channel_title: channelDetails?.title || subChannel.channelTitle || 'Unknown Channel',
+          description: channelDetails?.description || subChannel.description || null,
+          thumbnail_url: channelDetails?.thumbnailUrl || subChannel.thumbnailUrl || null,
+          subscriber_count: channelDetails?.subscriberCount || null,
+          is_subscribed: 1,
+          custom_tags: null,
+        })
+        created++
+      }
+    }
+    
+    const synced = subscribedChannels.length
+    
+    res.json({
+      synced,
+      created,
+      updated,
+      message: `Successfully synced ${synced} subscribed channels (${created} created, ${updated} updated)`
+    })
     
   } catch (error: any) {
     console.error('Error syncing subscriptions:', error)

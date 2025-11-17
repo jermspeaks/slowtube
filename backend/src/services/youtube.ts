@@ -402,7 +402,7 @@ function parseDuration(duration: string): string {
 }
 
 // Fetch channel details from YouTube API
-async function fetchChannelDetailsFromYouTube(channelIds: string[], oauthClient?: any): Promise<Map<string, {
+export async function fetchChannelDetailsFromYouTube(channelIds: string[], oauthClient?: any): Promise<Map<string, {
   id: string
   title: string | null
   description: string | null

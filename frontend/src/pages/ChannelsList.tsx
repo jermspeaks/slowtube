@@ -3,12 +3,15 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Channel, ChannelWithCount } from '../types/channel'
 import { channelsAPI } from '../services/api'
 import { toast } from 'sonner'
+import { RefreshCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 function ChannelsList() {
   const location = useLocation()
   const navigate = useNavigate()
   const [channels, setChannels] = useState<ChannelWithCount[]>([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
 
   // Determine filter type from route
   const filterType = location.pathname.includes('/subscribed') ? 'subscribed' : 'watch_later'
@@ -50,18 +53,58 @@ function ChannelsList() {
     return count.toString()
   }
 
+  const handleSyncSubscriptions = async () => {
+    try {
+      setSyncing(true)
+      const result = await channelsAPI.syncSubscriptions()
+      
+      toast.success(result.message || `Successfully synced ${result.synced || 0} subscribed channels`)
+      
+      // Refresh the channel list
+      await loadChannels()
+    } catch (error: any) {
+      console.error('Error syncing subscriptions:', error)
+      
+      if (error.response?.status === 401 || error.response?.data?.requiresAuth) {
+        toast.error('YouTube authentication required. Please connect your YouTube account in Settings.', {
+          action: {
+            label: 'Go to Settings',
+            onClick: () => navigate('/settings')
+          }
+        })
+      } else {
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to sync subscriptions'
+        toast.error(errorMessage)
+      }
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            {filterType === 'subscribed' ? 'Subscribed Channels' : 'Watch Later Channels'}
-          </h1>
-          <p className="text-muted-foreground">
-            {filterType === 'subscribed' 
-              ? 'Channels you are subscribed to' 
-              : 'Channels with videos in your watch later list'}
-          </p>
+        <div className="mb-6 flex justify-between items-start gap-4 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              {filterType === 'subscribed' ? 'Subscribed Channels' : 'Watch Later Channels'}
+            </h1>
+            <p className="text-muted-foreground">
+              {filterType === 'subscribed' 
+                ? 'Channels you are subscribed to' 
+                : 'Channels with videos in your watch later list'}
+            </p>
+          </div>
+          {filterType === 'subscribed' && (
+            <Button
+              onClick={handleSyncSubscriptions}
+              disabled={syncing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync Subscriptions'}
+            </Button>
+          )}
         </div>
 
         {loading ? (
