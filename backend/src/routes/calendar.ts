@@ -22,23 +22,22 @@ router.get('/episodes', (req, res) => {
       return res.status(400).json({ error: 'Dates must be in YYYY-MM-DD format' })
     }
 
-    const episodes = episodeQueries.getByDateRange(startDateStr, endDateStr, hideArchivedBool)
+    // Expand date range by 1 day on each side to account for timezone differences
+    // This ensures we get all episodes that might appear on the requested dates
+    // in any timezone. The frontend will filter them correctly using timezone-aware dates.
+    const expandedStartDate = new Date(startDateStr)
+    expandedStartDate.setDate(expandedStartDate.getDate() - 1)
+    const expandedStartDateStr = expandedStartDate.toISOString().split('T')[0]
 
-    // Group episodes by date
-    const episodesByDate: Record<string, typeof episodes> = {}
-    
-    for (const episode of episodes) {
-      if (!episode.air_date) continue
-      
-      const dateKey = episode.air_date.split('T')[0] // Get just the date part
-      if (!episodesByDate[dateKey]) {
-        episodesByDate[dateKey] = []
-      }
-      episodesByDate[dateKey].push(episode)
-    }
+    const expandedEndDate = new Date(endDateStr)
+    expandedEndDate.setDate(expandedEndDate.getDate() + 1)
+    const expandedEndDateStr = expandedEndDate.toISOString().split('T')[0]
 
+    const episodes = episodeQueries.getByDateRange(expandedStartDateStr, expandedEndDateStr, hideArchivedBool)
+
+    // Return flat array - frontend will handle timezone-aware grouping
     res.json({
-      episodes: episodesByDate,
+      episodes: episodes,
       total: episodes.length,
     })
   } catch (error) {

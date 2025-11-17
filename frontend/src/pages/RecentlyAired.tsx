@@ -37,22 +37,22 @@ function RecentlyAired() {
         hideArchived
       )
 
-      // Flatten episodes from grouped object and filter to only past episodes
-      const allEpisodes: Episode[] = []
-      Object.values(response.episodes as Record<string, Episode[]>).forEach((dayEpisodes) => {
-        // Filter out future episodes
-        const pastEpisodes = dayEpisodes.filter(ep => {
-          if (!ep.air_date) return false
-          const airDate = new Date(ep.air_date)
-          return airDate <= today
-        })
-        allEpisodes.push(...pastEpisodes)
+      // Backend now returns flat array of episodes
+      // Filter to only past episodes using timezone-aware comparison
+      const allEpisodes: Episode[] = (response.episodes || []).filter(ep => {
+        if (!ep.air_date) return false
+        // Parse as UTC midnight and compare with today
+        const dateStr = ep.air_date.includes('T') ? ep.air_date : `${ep.air_date}T00:00:00Z`
+        const airDate = new Date(dateStr)
+        return airDate <= today
       })
 
       // Sort by air date (most recent first)
       allEpisodes.sort((a, b) => {
         if (!a.air_date || !b.air_date) return 0
-        return new Date(b.air_date).getTime() - new Date(a.air_date).getTime()
+        const dateStrA = a.air_date.includes('T') ? a.air_date : `${a.air_date}T00:00:00Z`
+        const dateStrB = b.air_date.includes('T') ? b.air_date : `${b.air_date}T00:00:00Z`
+        return new Date(dateStrB).getTime() - new Date(dateStrA).getTime()
       })
 
       setEpisodes(allEpisodes)

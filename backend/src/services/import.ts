@@ -10,6 +10,7 @@ import {
   fetchTVShowEpisodes,
   searchMovies
 } from './tmdb.js'
+import { normalizeAirDate } from '../utils/date.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -146,7 +147,7 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
                 episode_number: episodeData.episode_number,
                 name: episodeData.name,
                 overview: episodeData.overview,
-                air_date: episodeData.air_date,
+                air_date: normalizeAirDate(episodeData.air_date),
                 runtime: episodeData.runtime,
                 still_path: episodeData.still_path,
                 is_watched: 0,

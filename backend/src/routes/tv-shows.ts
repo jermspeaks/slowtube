@@ -2,6 +2,7 @@ import express from 'express'
 import { tvShowQueries, episodeQueries, tvShowStateQueries, movieQueries } from '../services/database.js'
 import { searchTVShows, fetchTVShowDetails, fetchTVShowEpisodes } from '../services/tmdb.js'
 import { refreshTVShowEpisodes, refreshAllTVShowEpisodes } from '../services/tv-episode-refresh.js'
+import { normalizeAirDate } from '../utils/date.js'
 
 const router = express.Router()
 
@@ -57,7 +58,7 @@ router.post('/', async (req, res) => {
             episode_number: episodeData.episode_number,
             name: episodeData.name,
             overview: episodeData.overview,
-            air_date: episodeData.air_date,
+            air_date: normalizeAirDate(episodeData.air_date),
             runtime: episodeData.runtime,
             still_path: episodeData.still_path,
             is_watched: 0,

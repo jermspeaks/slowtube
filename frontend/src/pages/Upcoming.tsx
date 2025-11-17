@@ -66,13 +66,9 @@ function Upcoming() {
         hideArchived
       )
 
-      // Flatten episodes from grouped object
-      const allEpisodes: Episode[] = []
-      Object.values(response.episodes as Record<string, Episode[]>).forEach((dayEpisodes) => {
-        allEpisodes.push(...dayEpisodes)
-      })
-
-      setEpisodes(allEpisodes)
+      // Backend now returns flat array of episodes
+      // Frontend components will handle timezone-aware grouping
+      setEpisodes(response.episodes || [])
     } catch (error) {
       console.error('Error loading episodes:', error)
       toast.error('Failed to load upcoming episodes')
