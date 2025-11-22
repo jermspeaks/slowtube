@@ -87,11 +87,11 @@ router.get('/youtube/callback', async (req, res) => {
     })
 
     // Redirect to frontend with success
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5200'
     res.redirect(`${frontendUrl}/dashboard?auth=success`)
   } catch (error) {
     console.error('OAuth callback error:', error)
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000'
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5200'
     res.redirect(`${frontendUrl}/login?error=oauth_failed`)
   }
 })

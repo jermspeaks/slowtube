@@ -131,7 +131,7 @@ npm run dev
 ```
 
 The application will be available at:
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:5200
 - Backend: http://localhost:3001
 
 ## API Setup
@@ -169,7 +169,7 @@ However, detailed video information (title, description, duration, etc.) won't b
 ## Usage
 
 1. Start both servers (backend and frontend)
-2. Navigate to http://localhost:3000
+2. Navigate to http://localhost:5200
 3. Configure your preferences in Settings:
    - Set your timezone for accurate calendar displays
    - Choose your theme preference (system/light/dark)

@@ -27,10 +27,10 @@ const PORT = Number(process.env.PORT) || 3001
 const allowedOrigins = process.env.FRONTEND_URL 
   ? [process.env.FRONTEND_URL]
   : [
-      'http://localhost:3000',
-      /^http:\/\/192\.168\.\d+\.\d+:3000$/,
-      /^http:\/\/10\.\d+\.\d+\.\d+:3000$/,
-      /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:3000$/,
+      'http://localhost:5200',
+      /^http:\/\/192\.168\.\d+\.\d+:5200$/,
+      /^http:\/\/10\.\d+\.\d+\.\d+:5200$/,
+      /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:5200$/,
     ]
 
 app.use(cors({
