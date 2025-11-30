@@ -285,8 +285,21 @@ export const videoQueries = {
   getVideosNeedingFetch: (limit: number = 5) => {
     return db.prepare(`
       SELECT * FROM videos 
-      WHERE (fetch_status = 'pending' OR fetch_status IS NULL OR fetch_status = 'unavailable' OR fetch_status = 'failed')
-        AND fetch_status != 'completed'
+      WHERE (
+        -- Videos that haven't been fetched yet (exclude 'unavailable' - those are known private/deleted)
+        (fetch_status = 'pending' OR fetch_status IS NULL OR fetch_status = 'failed')
+        OR
+        -- Videos marked as completed but missing ESSENTIAL metadata (only check critical fields)
+        -- Note: description, duration, published_at can be NULL even after successful fetch
+        (
+          fetch_status = 'completed' 
+          AND youtube_id IS NOT NULL
+          AND (
+            title = 'Untitled Video' 
+            OR channel_title IS NULL
+          )
+        )
+      )
       ORDER BY created_at ASC
       LIMIT ?
     `).all(limit) as Video[]
@@ -295,8 +308,21 @@ export const videoQueries = {
   countPendingFetch: () => {
     const result = db.prepare(`
       SELECT COUNT(*) as count FROM videos 
-      WHERE (fetch_status = 'pending' OR fetch_status IS NULL OR fetch_status = 'unavailable' OR fetch_status = 'failed')
-        AND fetch_status != 'completed'
+      WHERE (
+        -- Videos that haven't been fetched yet (exclude 'unavailable' - those are known private/deleted)
+        (fetch_status = 'pending' OR fetch_status IS NULL OR fetch_status = 'failed')
+        OR
+        -- Videos marked as completed but missing ESSENTIAL metadata (only check critical fields)
+        -- Note: description, duration, published_at can be NULL even after successful fetch
+        (
+          fetch_status = 'completed' 
+          AND youtube_id IS NOT NULL
+          AND (
+            title = 'Untitled Video' 
+            OR channel_title IS NULL
+          )
+        )
+      )
     `).get() as { count: number }
     return result.count
   },

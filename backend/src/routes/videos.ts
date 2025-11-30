@@ -1,7 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries } from '../services/database.js'
-import { importVideosFromTakeout, processBatchVideoFetch, backfillChannelIds } from '../services/youtube.js'
+import { importVideosFromTakeout, processBatchVideoFetch, fetchAllVideoDetails, backfillChannelIds } from '../services/youtube.js'
 
 const router = express.Router()
 
@@ -347,19 +347,38 @@ router.get('/fetch-details/status', (req, res) => {
 })
 
 // Fetch video details from YouTube API (background job)
+// Processes all videos continuously in batches until complete
 router.post('/fetch-details', async (req, res) => {
   try {
-    // Process a batch of videos (now includes pending, unavailable, and failed videos)
-    const batchResult = await processBatchVideoFetch(5)
+    // Get batch size and delay from query params or use defaults
+    const batchSize = req.query.batchSize 
+      ? parseInt(String(req.query.batchSize), 10) 
+      : 5
+
+    if (isNaN(batchSize) || batchSize < 1 || batchSize > 50) {
+      return res.status(400).json({ error: 'Invalid batch size. Must be between 1 and 50.' })
+    }
+
+    const delayBetweenBatches = req.query.delay 
+      ? parseInt(String(req.query.delay), 10) 
+      : 1000
+
+    if (isNaN(delayBetweenBatches) || delayBetweenBatches < 0) {
+      return res.status(400).json({ error: 'Invalid delay. Must be a non-negative number.' })
+    }
+
+    // Process all videos continuously in batches
+    const result = await fetchAllVideoDetails(batchSize, delayBetweenBatches)
     
-    // Count remaining videos that need fetching
+    // Count remaining videos (should be 0 unless safety limit was reached)
     const remaining = videoQueries.countPendingFetch()
     
     res.json({
-      processed: batchResult.processed,
-      unavailable: batchResult.unavailable,
+      processed: result.totalProcessed,
+      unavailable: result.totalUnavailable,
+      batchesProcessed: result.batchesProcessed,
       remaining,
-      status: remaining > 0 ? 'pending' : 'completed',
+      status: remaining > 0 ? 'partial' : 'completed',
     })
   } catch (error: any) {
     console.error('Error fetching video details:', error)

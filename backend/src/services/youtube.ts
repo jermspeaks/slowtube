@@ -472,9 +472,11 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
       
       // If using OAuth and got 0 results, try falling back to API key
       // This might indicate OAuth scope/permission issues
+      let triedApiKeyFallback = false
       if (oauthClient) {
         const apiKey = getYouTubeApiKey()
         if (apiKey) {
+          triedApiKeyFallback = true
           console.warn(`OAuth returned 0 results, trying API key fallback...`)
           try {
             const apiKeyClient = google.youtube({ version: 'v3', auth: apiKey })
@@ -519,15 +521,19 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
               console.log(`Fetched details for ${fallbackVideos.length} out of ${videoIds.length} videos (using API key fallback)`)
               return fallbackResult
             } else {
-              console.warn(`API key fallback also returned 0 results. Videos may be private, deleted, or unavailable.`)
+              console.warn(`API key fallback also returned 0 results. Trying ytdl-core/oEmbed fallback...`)
             }
           } catch (fallbackError: any) {
             console.error('API key fallback also failed:', fallbackError.message)
+            console.warn('Trying ytdl-core/oEmbed fallback...')
           }
         }
       }
       
-      console.warn(`This could mean the videos are private, deleted, or the API doesn't have permission to access them.`)
+      // If API returned 0 results (and API key fallback didn't help if we tried it),
+      // try using ytdl-core/oEmbed fallback methods
+      console.warn(`YouTube API returned 0 results. Attempting fallback methods (ytdl-core/oEmbed)...`)
+      return await fetchVideoDetailsWithFallback(videoIds)
     }
     
     for (const video of videos) {
@@ -799,6 +805,7 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
 
     const videoIds = videos.map(v => v.youtube_id)
     console.log(`Processing batch of ${videoIds.length} videos`)
+    console.log(`Video IDs: ${videoIds.join(', ')}`)
 
     // For videos.list, API key is preferred over OAuth since it's a public read operation
     // OAuth is better for user-specific operations. Try API key first, then OAuth as fallback
@@ -940,6 +947,83 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
   } catch (error) {
     console.error('Error processing batch video fetch:', error)
     throw error
+  }
+}
+
+// Continuously fetch video details in batches until all videos are processed
+export async function fetchAllVideoDetails(batchSize: number = 5, delayBetweenBatches: number = 1000): Promise<{
+  totalProcessed: number
+  totalUnavailable: number
+  batchesProcessed: number
+}> {
+  let totalProcessed = 0
+  let totalUnavailable = 0
+  let batchesProcessed = 0
+  const maxBatches = 1000 // Safety limit to prevent infinite loops
+  let previousRemaining = Infinity // Track remaining count to detect stuck loops
+  let stuckCount = 0 // Count how many times we've seen the same remaining count
+
+  try {
+    // Get initial count to show progress
+    const initialRemaining = videoQueries.countPendingFetch()
+    const estimatedBatches = Math.ceil(initialRemaining / batchSize)
+    
+    console.log(`Starting continuous video details fetch...`)
+    console.log(`Initial count: ${initialRemaining} videos needing fetch (estimated ${estimatedBatches} batches)`)
+    
+    while (batchesProcessed < maxBatches) {
+      const batchResult = await processBatchVideoFetch(batchSize)
+      
+      totalProcessed += batchResult.processed
+      totalUnavailable += batchResult.unavailable
+      batchesProcessed++
+
+      // Check if there are more videos to process
+      const remaining = videoQueries.countPendingFetch()
+      
+      if (remaining === 0) {
+        console.log(`Video fetch completed. Total processed: ${totalProcessed}, unavailable: ${totalUnavailable}, batches: ${batchesProcessed}`)
+        break
+      }
+
+      // Detect if we're stuck (same remaining count for multiple batches)
+      if (remaining === previousRemaining && batchResult.processed === 0) {
+        stuckCount++
+        if (stuckCount >= 3) {
+          console.warn(`Detected stuck loop: remaining count hasn't changed for ${stuckCount} batches. Stopping to prevent infinite loop.`)
+          console.warn(`This might indicate videos are being processed but not properly excluded from the query.`)
+          break
+        }
+      } else {
+        stuckCount = 0 // Reset if we made progress
+      }
+      previousRemaining = remaining
+
+      // Add delay between batches to avoid rate limiting (except for the last batch)
+      if (remaining > 0) {
+        const progressPercent = Math.round(((initialRemaining - remaining) / initialRemaining) * 100)
+        console.log(`Processed batch ${batchesProcessed}/${estimatedBatches} (${progressPercent}%). Remaining: ${remaining}. Continuing...`)
+        await delay(delayBetweenBatches)
+      }
+    }
+
+    if (batchesProcessed >= maxBatches) {
+      console.warn(`Video fetch reached safety limit of ${maxBatches} batches. There may be more videos to process.`)
+    }
+
+    return {
+      totalProcessed,
+      totalUnavailable,
+      batchesProcessed,
+    }
+  } catch (error) {
+    console.error('Error during continuous video details fetch:', error)
+    // Return partial results even on error
+    return {
+      totalProcessed,
+      totalUnavailable,
+      batchesProcessed,
+    }
   }
 }
 

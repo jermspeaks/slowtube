@@ -125,7 +125,11 @@ function WatchLater() {
       
       // Show success message
       if (result.processed > 0) {
-        toast.success(`Fetched ${result.processed} video${result.processed !== 1 ? 's' : ''}. ${result.remaining} remaining.`)
+        if (result.remaining === 0) {
+          toast.success(`Successfully fetched ${result.processed} video${result.processed !== 1 ? 's' : ''}! All videos are now up to date.`)
+        } else {
+          toast.success(`Fetched ${result.processed} video${result.processed !== 1 ? 's' : ''}. ${result.remaining} remaining.`)
+        }
       } else if (result.remaining === 0) {
         toast.success('All videos have been fetched!')
       } else {
