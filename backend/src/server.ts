@@ -24,14 +24,19 @@ const app = express()
 const PORT = Number(process.env.PORT) || 3001
 
 // CORS configuration - allow localhost and local network IPs
+const defaultOrigins = [
+  'http://localhost:5200',
+  'http://127.0.0.1:5200',
+  /^http:\/\/localhost:\d+$/,
+  /^http:\/\/127\.0\.0\.1:\d+$/,
+  /^http:\/\/192\.168\.\d+\.\d+:\d+$/,
+  /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/,
+  /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+$/,
+]
+
 const allowedOrigins = process.env.FRONTEND_URL 
-  ? [process.env.FRONTEND_URL]
-  : [
-      'http://localhost:5200',
-      /^http:\/\/192\.168\.\d+\.\d+:5200$/,
-      /^http:\/\/10\.\d+\.\d+\.\d+:5200$/,
-      /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:5200$/,
-    ]
+  ? [process.env.FRONTEND_URL, ...defaultOrigins]
+  : defaultOrigins
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -49,7 +54,9 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true)
     } else {
-      callback(new Error('Not allowed by CORS'))
+      console.warn(`CORS: Rejected origin: ${origin}`)
+      console.warn(`CORS: Allowed origins:`, allowedOrigins)
+      callback(new Error(`Not allowed by CORS: ${origin}`))
     }
   },
   credentials: true,

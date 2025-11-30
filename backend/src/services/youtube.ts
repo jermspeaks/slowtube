@@ -1,5 +1,6 @@
 import Papa from 'papaparse'
 import { google } from 'googleapis'
+import ytdl from '@distube/ytdl-core'
 import { videoQueries, videoStateQueries, channelQueries } from './database.js'
 import { getAuthenticatedClient } from '../routes/auth.js'
 
@@ -115,10 +116,15 @@ export function parseGoogleTakeoutCSV(csvContent: string): Array<{
     // First, try to get Video ID directly (playlist format)
     const directVideoId = row['Video ID'] || row['video id'] || row['videoId'] || row['VideoId'] || row['Video_Id']
     
-    if (directVideoId && typeof directVideoId === 'string' && directVideoId.trim().length === 11) {
-      // Looks like a valid YouTube video ID (11 characters)
-      videoId = directVideoId.trim()
-    } else {
+    if (directVideoId && typeof directVideoId === 'string') {
+      const trimmedId = directVideoId.trim()
+      // YouTube video IDs are exactly 11 characters
+      if (trimmedId.length === 11) {
+        videoId = trimmedId
+      }
+    }
+    
+    if (!videoId) {
       // Try to extract from URL (watch history format)
       const url = row['URL'] || row['url'] || row['Url'] || row['Video URL'] || row['Link'] || row['link']
       if (url) {
@@ -163,7 +169,7 @@ function getThumbnailUrl(videoId: string): string {
 }
 
 // Import videos from Google Takeout JSON or CSV into database
-export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'json'): { imported: number; updated: number } {
+export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'json'): { imported: number; updated: number; skipped: number } {
   try {
     let parsedVideos: Array<{
       id: string
@@ -183,55 +189,63 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
     }
     let imported = 0
     let updated = 0
+    let skipped = 0
     let firstImported = false
 
     for (const video of parsedVideos) {
       const existingVideo = videoQueries.getByYoutubeId(video.id)
 
-      const videoData = {
-        youtube_id: video.id,
-        title: 'Untitled Video', // Will be updated by YouTube API fetch
-        description: null, // Will be updated by YouTube API fetch
-        thumbnail_url: getThumbnailUrl(video.id), // Temporary thumbnail, may be updated by API
-        duration: null, // Will be updated by YouTube API fetch
-        published_at: null, // Will be fetched from YouTube API
-        added_to_playlist_at: video.watchedAt, // Store CSV timestamp here
-        fetch_status: 'pending' as const, // Mark as pending for YouTube API fetch
-        channel_title: null, // Will be updated by YouTube API fetch
-        youtube_channel_id: null, // Will be updated by YouTube API fetch
-        youtube_url: `https://www.youtube.com/watch?v=${video.id}`, // Construct URL from video ID
-      }
-
       if (existingVideo) {
-        // Update existing video - only update if it's not already fetched
-        if (existingVideo.fetch_status !== 'completed') {
-          // Update added_to_playlist_at if it's newer
-          const updateData: any = {
-            added_to_playlist_at: video.watchedAt,
-            youtube_url: `https://www.youtube.com/watch?v=${video.id}`,
-          }
-          // Only update fetch_status if it's not already set
-          if (!existingVideo.fetch_status || existingVideo.fetch_status === 'pending') {
-            updateData.fetch_status = 'pending'
-          }
-          videoQueries.update(existingVideo.id, updateData)
-          updated++
+        // Skip videos that are already successfully fetched
+        if (existingVideo.fetch_status === 'completed') {
+          skipped++
+          continue
         }
+
+        // Update existing video that hasn't been fetched yet
+        // Update added_to_playlist_at if it's newer
+        const updateData: any = {
+          added_to_playlist_at: video.watchedAt,
+          youtube_url: `https://www.youtube.com/watch?v=${video.id}`,
+        }
+        // Only update fetch_status if it's not already set or is pending
+        if (!existingVideo.fetch_status || existingVideo.fetch_status === 'pending') {
+          updateData.fetch_status = 'pending'
+        }
+        videoQueries.update(existingVideo.id, updateData)
+        updated++
+        
         if (!firstImported) {
           console.log('First video updated:', {
             id: existingVideo.id,
             youtube_id: video.id,
             added_to_playlist_at: video.watchedAt,
+            fetch_status: existingVideo.fetch_status,
           })
           firstImported = true
         }
       } else {
         // Create new video
+        const videoData = {
+          youtube_id: video.id,
+          title: 'Untitled Video', // Will be updated by YouTube API fetch
+          description: null, // Will be updated by YouTube API fetch
+          thumbnail_url: getThumbnailUrl(video.id), // Temporary thumbnail, may be updated by API
+          duration: null, // Will be updated by YouTube API fetch
+          published_at: null, // Will be fetched from YouTube API
+          added_to_playlist_at: video.watchedAt, // Store CSV timestamp here
+          fetch_status: 'pending' as const, // Mark as pending for YouTube API fetch
+          channel_title: null, // Will be updated by YouTube API fetch
+          youtube_channel_id: null, // Will be updated by YouTube API fetch
+          youtube_url: `https://www.youtube.com/watch?v=${video.id}`, // Construct URL from video ID
+        }
+        
         const videoId = videoQueries.create(videoData)
         
         // Set initial state to 'feed'
         videoStateQueries.setState(videoId, 'feed')
         imported++
+        
         if (!firstImported) {
           console.log('First video imported:', {
             id: videoId,
@@ -245,8 +259,8 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
       }
     }
 
-    console.log(`Import complete: ${imported} imported, ${updated} updated`)
-    return { imported, updated }
+    console.log(`Import complete: ${imported} imported, ${updated} updated, ${skipped} skipped (already fetched)`)
+    return { imported, updated, skipped }
   } catch (error) {
     console.error('Error importing videos:', error)
     throw error
@@ -276,20 +290,109 @@ function getYouTubeApiKey(): string | null {
 
 // Get YouTube API client (OAuth-first with API key fallback)
 // If oauthClient is provided, use it; otherwise fallback to API key
+// Note: According to YouTube API docs, some operations may require both OAuth and API key
 function getYouTubeClient(oauthClient?: any) {
-  // If OAuth client is provided, use it
+  const apiKey = getYouTubeApiKey()
+  
+  // If OAuth client is provided, use it (with optional API key for quota tracking)
   if (oauthClient) {
-    return google.youtube({ version: 'v3', auth: oauthClient })
+    // Verify OAuth client has credentials
+    const credentials = oauthClient.credentials
+    if (!credentials || !credentials.access_token) {
+      console.warn('OAuth client provided but missing access_token, falling back to API key')
+      // Fall through to API key fallback
+    } else {
+      // Use OAuth as primary auth, but also include API key if available for quota tracking
+      // The googleapis library should handle this correctly
+      const client = google.youtube({ version: 'v3', auth: oauthClient })
+      
+      // If we have an API key, we can set it as a default param (though OAuth should work alone)
+      // Some YouTube API operations benefit from having both
+      return client
+    }
   }
   
   // Otherwise, try API key
-  const apiKey = getYouTubeApiKey()
   if (!apiKey) {
     return null
   }
   
   // Pass API key when creating client for better compatibility
   return google.youtube({ version: 'v3', auth: apiKey })
+}
+
+// Fetch video details using YouTube oEmbed API (fallback method)
+// This is free and doesn't require authentication, but provides limited metadata
+async function fetchVideoDetailsFromOEmbed(videoId: string): Promise<YouTubeVideoDetails | null> {
+  try {
+    const url = `https://www.youtube.com/oembed?format=json&url=https://www.youtube.com/watch?v=${videoId}`
+    const response = await fetch(url)
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null // Video not found
+      }
+      throw new Error(`oEmbed API returned status ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    // oEmbed provides limited data, so we construct what we can
+    return {
+      id: videoId,
+      title: data.title || 'Untitled Video',
+      description: null, // oEmbed doesn't provide description
+      channelId: null, // oEmbed doesn't provide channel ID
+      channelTitle: data.author_name || null,
+      publishedAt: null, // oEmbed doesn't provide publish date
+      duration: null, // oEmbed doesn't provide duration
+      thumbnails: {
+        default: data.thumbnail_url ? { url: data.thumbnail_url } : undefined,
+        medium: data.thumbnail_url ? { url: data.thumbnail_url } : undefined,
+        high: data.thumbnail_url ? { url: data.thumbnail_url } : undefined,
+      },
+    }
+  } catch (error: any) {
+    console.warn(`oEmbed fetch failed for video ${videoId}:`, error.message)
+    return null
+  }
+}
+
+// Fetch video details using ytdl-core (fallback method)
+// This can extract full metadata without API key, but may be slower
+async function fetchVideoDetailsFromYtdl(videoId: string): Promise<YouTubeVideoDetails | null> {
+  try {
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
+    const info = await ytdl.getInfo(videoUrl)
+    
+    if (!info || !info.videoDetails) {
+      return null
+    }
+    
+    const details = info.videoDetails
+    
+    return {
+      id: videoId,
+      title: details.title || 'Untitled Video',
+      description: details.description || null,
+      channelId: details.channelId || null,
+      channelTitle: details.author?.name || details.ownerChannelName || null,
+      publishedAt: details.publishDate || null,
+      duration: details.lengthSeconds ? `PT${details.lengthSeconds}S` : null,
+      thumbnails: {
+        default: details.thumbnails?.[0]?.url ? { url: details.thumbnails[0].url } : undefined,
+        medium: details.thumbnails?.find(t => t.width && t.width >= 320)?.url 
+          ? { url: details.thumbnails.find(t => t.width && t.width >= 320)!.url } 
+          : undefined,
+        high: details.thumbnails?.find(t => t.width && t.width >= 480)?.url 
+          ? { url: details.thumbnails.find(t => t.width && t.width >= 480)!.url } 
+          : undefined,
+      },
+    }
+  } catch (error: any) {
+    console.warn(`ytdl-core fetch failed for video ${videoId}:`, error.message)
+    return null
+  }
 }
 
 // Fetch video details from YouTube API in batches
@@ -315,11 +418,40 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
   }
 
   try {
+    // Log authentication method and video IDs being fetched
+    if (oauthClient) {
+      const credentials = oauthClient.credentials
+      const hasToken = !!credentials?.access_token
+      const tokenExpiry = credentials?.expiry_date ? new Date(credentials.expiry_date) : null
+      const isExpired = tokenExpiry ? new Date() >= tokenExpiry : false
+      console.log(`Fetching ${videoIds.length} videos using OAuth:`, {
+        hasAccessToken: hasToken,
+        tokenExpiry: tokenExpiry?.toISOString(),
+        isExpired,
+        hasRefreshToken: !!credentials?.refresh_token,
+      })
+    } else {
+      console.log(`Fetching ${videoIds.length} videos using API key`)
+    }
+    console.log(`Video IDs: ${videoIds.join(', ')}`)
+
     // Fetch video details - auth is now in the client, no need to pass key
-    const videosResponse = await youtube.videos.list({
+    // According to YouTube API docs, videos.list works with either API key or OAuth
+    // However, some operations may benefit from having both for quota tracking
+    const apiKey = getYouTubeApiKey()
+    const requestParams: any = {
       part: ['snippet', 'contentDetails'],
       id: videoIds,
-    })
+      maxResults: 50, // Explicitly set max results
+    }
+    
+    // Include API key if available (even with OAuth) for quota tracking
+    // The OAuth token will still be used for authorization
+    if (apiKey && !oauthClient) {
+      requestParams.key = apiKey
+    }
+    
+    const videosResponse = await youtube.videos.list(requestParams)
 
     const result = new Map<string, YouTubeVideoDetails | null>()
     
@@ -329,6 +461,74 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
     }
 
     const videos = videosResponse.data.items || []
+    
+    // Log API response details for debugging
+    if (videos.length === 0 && videoIds.length > 0) {
+      console.warn(`YouTube API returned 0 videos for ${videoIds.length} requested IDs. Response:`, {
+        pageInfo: videosResponse.data.pageInfo,
+        items: videosResponse.data.items,
+        totalResults: videosResponse.data.pageInfo?.totalResults,
+      })
+      
+      // If using OAuth and got 0 results, try falling back to API key
+      // This might indicate OAuth scope/permission issues
+      if (oauthClient) {
+        const apiKey = getYouTubeApiKey()
+        if (apiKey) {
+          console.warn(`OAuth returned 0 results, trying API key fallback...`)
+          try {
+            const apiKeyClient = google.youtube({ version: 'v3', auth: apiKey })
+            const fallbackResponse = await apiKeyClient.videos.list({
+              part: ['snippet', 'contentDetails'],
+              id: videoIds,
+              maxResults: 50,
+            })
+            
+            const fallbackVideos = fallbackResponse.data.items || []
+            if (fallbackVideos.length > 0) {
+              console.log(`API key fallback succeeded! Retrieved ${fallbackVideos.length} videos`)
+              // Use fallback results instead
+              const fallbackResult = new Map<string, YouTubeVideoDetails | null>()
+              
+              // Mark all videos as null initially
+              for (const videoId of videoIds) {
+                fallbackResult.set(videoId, null)
+              }
+              
+              for (const video of fallbackVideos) {
+                if (!video.id) continue
+
+                const details: YouTubeVideoDetails = {
+                  id: video.id,
+                  title: video.snippet?.title || 'Untitled Video',
+                  description: video.snippet?.description || null,
+                  channelId: video.snippet?.channelId || null,
+                  channelTitle: video.snippet?.channelTitle || null,
+                  publishedAt: video.snippet?.publishedAt || null,
+                  duration: video.contentDetails?.duration || null,
+                  thumbnails: {
+                    default: video.snippet?.thumbnails?.default?.url ? { url: video.snippet.thumbnails.default.url } : undefined,
+                    medium: video.snippet?.thumbnails?.medium?.url ? { url: video.snippet.thumbnails.medium.url } : undefined,
+                    high: video.snippet?.thumbnails?.high?.url ? { url: video.snippet.thumbnails.high.url } : undefined,
+                  },
+                }
+
+                fallbackResult.set(video.id, details)
+              }
+              
+              console.log(`Fetched details for ${fallbackVideos.length} out of ${videoIds.length} videos (using API key fallback)`)
+              return fallbackResult
+            } else {
+              console.warn(`API key fallback also returned 0 results. Videos may be private, deleted, or unavailable.`)
+            }
+          } catch (fallbackError: any) {
+            console.error('API key fallback also failed:', fallbackError.message)
+          }
+        }
+      }
+      
+      console.warn(`This could mean the videos are private, deleted, or the API doesn't have permission to access them.`)
+    }
     
     for (const video of videos) {
       if (!video.id) continue
@@ -371,17 +571,98 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
     // Check for specific error types and provide helpful messages
     if (error.code === 403) {
       const errorMessage = error.response?.data?.error?.message || error.message
-      throw new Error(`YouTube API access denied (403). Check your API key and quota. Details: ${errorMessage}`)
+      console.warn(`YouTube API access denied (403). Attempting fallback methods...`)
+      
+      // Try fallback methods when API fails
+      return await fetchVideoDetailsWithFallback(videoIds)
     } else if (error.code === 400) {
       const errorMessage = error.response?.data?.error?.message || error.message
-      throw new Error(`YouTube API bad request (400). ${errorMessage}`)
+      console.warn(`YouTube API bad request (400). Attempting fallback methods...`)
+      
+      // Try fallback methods
+      return await fetchVideoDetailsWithFallback(videoIds)
     } else if (error.code === 401) {
       const errorMessage = error.response?.data?.error?.message || error.message
-      throw new Error(`YouTube API unauthorized (401). Authentication failed. Details: ${errorMessage}`)
+      console.warn(`YouTube API unauthorized (401). Attempting fallback methods...`)
+      
+      // Try fallback methods
+      return await fetchVideoDetailsWithFallback(videoIds)
     }
     
-    throw error
+    // For other errors, try fallback before throwing
+    console.warn(`YouTube API error. Attempting fallback methods...`)
+    try {
+      return await fetchVideoDetailsWithFallback(videoIds)
+    } catch (fallbackError) {
+      throw error // Throw original error if fallback also fails
+    }
   }
+}
+
+// Fetch video details using fallback methods (oEmbed or ytdl-core)
+// This is called when the YouTube API fails
+async function fetchVideoDetailsWithFallback(videoIds: string[]): Promise<Map<string, YouTubeVideoDetails | null>> {
+  const result = new Map<string, YouTubeVideoDetails | null>()
+  
+  // Initialize all videos as null
+  for (const videoId of videoIds) {
+    result.set(videoId, null)
+  }
+  
+  console.log(`Attempting to fetch ${videoIds.length} videos using fallback methods...`)
+  
+  // Try ytdl-core first (more complete metadata)
+  // Process videos one at a time to avoid overwhelming the service
+  let ytdlSuccessCount = 0
+  let ytdlFailedIds: string[] = []
+  
+  for (const videoId of videoIds) {
+    try {
+      const details = await fetchVideoDetailsFromYtdl(videoId)
+      if (details) {
+        result.set(videoId, details)
+        ytdlSuccessCount++
+      } else {
+        ytdlFailedIds.push(videoId)
+      }
+    } catch (error: any) {
+      console.warn(`ytdl-core failed for ${videoId}:`, error.message)
+      ytdlFailedIds.push(videoId)
+    }
+    
+    // Small delay to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+  
+  console.log(`ytdl-core succeeded for ${ytdlSuccessCount} videos`)
+  
+  // For videos that ytdl-core failed on, try oEmbed as last resort
+  if (ytdlFailedIds.length > 0) {
+    console.log(`Trying oEmbed for ${ytdlFailedIds.length} remaining videos...`)
+    let oembedSuccessCount = 0
+    
+    for (const videoId of ytdlFailedIds) {
+      try {
+        const details = await fetchVideoDetailsFromOEmbed(videoId)
+        if (details) {
+          result.set(videoId, details)
+          oembedSuccessCount++
+        }
+      } catch (error: any) {
+        console.warn(`oEmbed also failed for ${videoId}:`, error.message)
+      }
+      
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    console.log(`oEmbed succeeded for ${oembedSuccessCount} videos`)
+  }
+  
+  const totalSuccess = Array.from(result.values()).filter(v => v !== null).length
+  console.log(`Fallback methods fetched ${totalSuccess} out of ${videoIds.length} videos`)
+  
+  return result
 }
 
 // Convert YouTube duration (ISO 8601) to readable format
@@ -519,21 +800,29 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
     const videoIds = videos.map(v => v.youtube_id)
     console.log(`Processing batch of ${videoIds.length} videos`)
 
-    // Try to get authenticated OAuth client first, fallback to API key
+    // For videos.list, API key is preferred over OAuth since it's a public read operation
+    // OAuth is better for user-specific operations. Try API key first, then OAuth as fallback
+    const apiKey = process.env.YOUTUBE_API_KEY
     let oauthClient: any = null
-    try {
-      oauthClient = await getAuthenticatedClient()
-      console.log('Using OAuth authentication for YouTube API')
-    } catch (oauthError: any) {
-      if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
-        console.log('OAuth not available, falling back to API key authentication')
-      } else {
-        console.warn('Error getting OAuth client, falling back to API key:', oauthError.message)
+    
+    // Only use OAuth if API key is not available
+    // This avoids OAuth scope/permission issues for public video data
+    if (!apiKey) {
+      try {
+        oauthClient = await getAuthenticatedClient()
+        console.log('Using OAuth authentication for YouTube API (API key not available)')
+      } catch (oauthError: any) {
+        if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
+          console.log('OAuth not available and API key not set. Cannot fetch video details.')
+        } else {
+          console.warn('Error getting OAuth client:', oauthError.message)
+        }
       }
-      // Continue with API key fallback
+    } else {
+      console.log('Using API key authentication for YouTube API (preferred for public video data)')
     }
 
-    // Fetch details from YouTube API (will use OAuth if available, otherwise API key)
+    // Fetch details from YouTube API (will use API key if available, otherwise OAuth)
     const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds, oauthClient)
 
     // Collect unique channel IDs

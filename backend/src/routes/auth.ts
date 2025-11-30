@@ -167,41 +167,70 @@ export async function getAuthenticatedClient() {
     throw error
   }
 
-  // Check if token is expired
+  // Check if token is expired or close to expiring (within 5 minutes)
   if (session.expires_at) {
     const expiresAt = new Date(session.expires_at)
     const now = new Date()
+    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000)
     
-    if (now >= expiresAt && session.refresh_token) {
+    // Refresh if expired or expiring within 5 minutes
+    if (expiresAt <= fiveMinutesFromNow && session.refresh_token) {
+      console.log('OAuth token expired or expiring soon, refreshing...')
       // Refresh token
       const client = getOAuth2Client()
       client.setCredentials({
         refresh_token: session.refresh_token,
       })
       
-      const { credentials } = await client.refreshAccessToken()
-      
-      // Update session
-      const newExpiresAt = credentials.expiry_date
-        ? new Date(credentials.expiry_date).toISOString()
-        : null
-      
-      oauthQueries.update(session.id, {
-        access_token: credentials.access_token!,
-        refresh_token: credentials.refresh_token || session.refresh_token,
-        expires_at: newExpiresAt,
-      })
+      try {
+        const { credentials } = await client.refreshAccessToken()
+        
+        // Update session
+        const newExpiresAt = credentials.expiry_date
+          ? new Date(credentials.expiry_date).toISOString()
+          : null
+        
+        oauthQueries.update(session.id, {
+          access_token: credentials.access_token!,
+          refresh_token: credentials.refresh_token || session.refresh_token,
+          expires_at: newExpiresAt,
+        })
 
-      client.setCredentials(credentials)
-      return client
+        client.setCredentials(credentials)
+        console.log('OAuth token refreshed successfully')
+        return client
+      } catch (refreshError: any) {
+        console.error('Failed to refresh OAuth token:', refreshError)
+        // If refresh fails, try to use existing token anyway
+        // (it might still work if we're within a grace period)
+      }
     }
   }
 
   const client = getOAuth2Client()
-  client.setCredentials({
+  
+  // Set credentials with all available fields
+  const credentials: any = {
     access_token: session.access_token,
-    refresh_token: session.refresh_token,
-  })
+  }
+  
+  if (session.refresh_token) {
+    credentials.refresh_token = session.refresh_token
+  }
+  
+  if (session.expires_at) {
+    credentials.expiry_date = new Date(session.expires_at).getTime()
+  }
+  
+  client.setCredentials(credentials)
+  
+  // Verify credentials are set
+  if (!client.credentials?.access_token) {
+    const error: any = new Error('Failed to set OAuth credentials')
+    error.code = 'AUTHENTICATION_REQUIRED'
+    error.statusCode = 401
+    throw error
+  }
 
   return client
 }

@@ -294,7 +294,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
     }
 
     const fileContent = req.file.buffer.toString('utf-8')
-    let result: { imported: number; updated: number }
+    let result: { imported: number; updated: number; skipped: number }
 
     if (isCsv) {
       // Process CSV file
@@ -323,6 +323,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
       message: 'Videos imported successfully',
       imported: result.imported,
       updated: result.updated,
+      skipped: result.skipped,
       fetchQueued,
     })
   } catch (error: any) {
