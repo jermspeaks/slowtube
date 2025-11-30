@@ -699,12 +699,17 @@ export const statsQueries = {
 
 // Channel operations
 export const channelQueries = {
-  getAll: (filterType?: 'subscribed' | 'watch_later') => {
+  getAll: (filterType?: 'subscribed' | 'watch_later', limit?: number, offset?: number) => {
     let query = ''
     const params: any[] = []
 
     if (filterType === 'subscribed') {
       query = 'SELECT * FROM channels WHERE is_subscribed = 1 ORDER BY channel_title ASC'
+      // Apply pagination only for subscribed filter
+      if (limit !== undefined && offset !== undefined) {
+        query += ' LIMIT ? OFFSET ?'
+        params.push(limit, offset)
+      }
     } else if (filterType === 'watch_later') {
       // Get channels that have videos in watch later
       query = `
@@ -719,6 +724,27 @@ export const channelQueries = {
     }
 
     return db.prepare(query).all(...params) as Channel[]
+  },
+
+  getAllCount: (filterType?: 'subscribed' | 'watch_later') => {
+    let query = ''
+    const params: any[] = []
+
+    if (filterType === 'subscribed') {
+      query = 'SELECT COUNT(*) as count FROM channels WHERE is_subscribed = 1'
+    } else if (filterType === 'watch_later') {
+      query = `
+        SELECT COUNT(DISTINCT c.youtube_channel_id) as count
+        FROM channels c
+        INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+        WHERE v.youtube_channel_id IS NOT NULL
+      `
+    } else {
+      query = 'SELECT COUNT(*) as count FROM channels'
+    }
+
+    const result = db.prepare(query).get(...params) as { count: number }
+    return result.count
   },
 
   getByChannelId: (youtubeChannelId: string) => {

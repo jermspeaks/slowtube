@@ -12,19 +12,44 @@ function ChannelsList() {
   const [channels, setChannels] = useState<ChannelWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  
+  // Pagination state (only for subscribed channels)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
+  const limit = 50
 
   // Determine filter type from route
   const filterType = location.pathname.includes('/subscribed') ? 'subscribed' : 'watch_later'
 
   useEffect(() => {
-    loadChannels()
+    // Reset to page 1 when filter type changes
+    setCurrentPage(1)
   }, [location.pathname])
+
+  useEffect(() => {
+    loadChannels()
+  }, [location.pathname, currentPage])
 
   const loadChannels = async () => {
     try {
       setLoading(true)
-      const data = await channelsAPI.getAll(filterType)
-      setChannels(data || [])
+      
+      if (filterType === 'subscribed') {
+        // For subscribed channels, use pagination
+        const data = await channelsAPI.getAll(filterType, currentPage, limit)
+        setChannels(data.channels || [])
+        setTotal(data.total || 0)
+        setTotalPages(data.totalPages || 1)
+        setCurrentPage(data.page || 1)
+      } else {
+        // For watch_later channels, get all (no pagination)
+        const data = await channelsAPI.getAll(filterType)
+        setChannels(data || [])
+        setTotal(data?.length || 0)
+        setTotalPages(1)
+        setCurrentPage(1)
+      }
     } catch (error) {
       console.error('Error loading channels:', error)
       toast.error('Failed to load channels')
@@ -123,62 +148,102 @@ function ChannelsList() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
-            {channels.map((channel) => (
-              <div
-                key={channel.youtube_channel_id}
-                onClick={() => handleChannelClick(channel)}
-                className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
-              >
-                <div className="p-6">
-                  <div className="flex items-start gap-4 mb-4">
-                    {channel.thumbnail_url ? (
-                      <img
-                        src={channel.thumbnail_url}
-                        alt={channel.channel_title || 'Channel'}
-                        className="w-16 h-16 rounded-full object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                        <span className="text-muted-foreground text-xl">
-                          {channel.channel_title?.[0]?.toUpperCase() || '?'}
-                        </span>
+          <>
+            {filterType === 'subscribed' && total > 0 && (
+              <div className="mb-4 text-sm text-muted-foreground">
+                Showing {channels.length} of {total} channels
+              </div>
+            )}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+              {channels.map((channel) => (
+                <div
+                  key={channel.youtube_channel_id}
+                  onClick={() => handleChannelClick(channel)}
+                  className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                >
+                  <div className="p-6">
+                    <div className="flex items-start gap-4 mb-4">
+                      {channel.thumbnail_url ? (
+                        <img
+                          src={channel.thumbnail_url}
+                          alt={channel.channel_title || 'Channel'}
+                          className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                          <span className="text-muted-foreground text-xl">
+                            {channel.channel_title?.[0]?.toUpperCase() || '?'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-lg text-foreground truncate">
+                          {channel.channel_title || 'Untitled Channel'}
+                        </h3>
+                        {channel.subscriber_count !== null && (
+                          <p className="text-sm text-muted-foreground">
+                            {formatSubscriberCount(channel.subscriber_count)} subscribers
+                          </p>
+                        )}
                       </div>
+                    </div>
+                    
+                    {channel.description && (
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                        {channel.description}
+                      </p>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg text-foreground truncate">
-                        {channel.channel_title || 'Untitled Channel'}
-                      </h3>
-                      {channel.subscriber_count !== null && (
-                        <p className="text-sm text-muted-foreground">
-                          {formatSubscriberCount(channel.subscriber_count)} subscribers
-                        </p>
+
+                    <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
+                      {'watch_later_count' in channel && (
+                        <span>
+                          {channel.watch_later_count} video{channel.watch_later_count !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {'last_video_date' in channel && channel.last_video_date && (
+                        <span>
+                          Last: {formatDate(channel.last_video_date)}
+                        </span>
                       )}
                     </div>
                   </div>
-                  
-                  {channel.description && (
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {channel.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
-                    {'watch_later_count' in channel && (
-                      <span>
-                        {channel.watch_later_count} video{channel.watch_later_count !== 1 ? 's' : ''}
-                      </span>
-                    )}
-                    {'last_video_date' in channel && channel.last_video_date && (
-                      <span>
-                        Last: {formatDate(channel.last_video_date)}
-                      </span>
-                    )}
-                  </div>
                 </div>
+              ))}
+            </div>
+            {filterType === 'subscribed' && totalPages > 1 && (
+              <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-foreground">Page</span>
+                  <select
+                    value={currentPage}
+                    onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
+                    className="px-3 py-2 border border-border rounded text-sm bg-background"
+                  >
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <option key={page} value={page}>
+                        {page}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-foreground">of {totalPages}</span>
+                </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </main>
     </div>

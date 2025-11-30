@@ -8,18 +8,36 @@ const router = express.Router()
 // Get all channels with optional filter
 router.get('/', (req, res) => {
   try {
-    const { filter } = req.query
+    const { filter, page, limit } = req.query
     
     let filterType: 'subscribed' | 'watch_later' | undefined = undefined
     if (filter === 'subscribed' || filter === 'watch_later') {
       filterType = filter
     }
     
-    // For watch_later filter, get channels with counts
-    if (filterType === 'watch_later') {
+    // For subscribed filter, apply pagination
+    if (filterType === 'subscribed') {
+      const pageNum = page ? parseInt(page as string, 10) : 1
+      const limitNum = limit ? parseInt(limit as string, 10) : 50
+      const offset = (pageNum - 1) * limitNum
+      
+      const channels = channelQueries.getAll(filterType, limitNum, offset)
+      const total = channelQueries.getAllCount(filterType)
+      const totalPages = Math.ceil(total / limitNum)
+      
+      res.json({
+        channels,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      })
+    } else if (filterType === 'watch_later') {
+      // For watch_later filter, get channels with counts (no pagination)
       const channelsWithCounts = channelQueries.getChannelsWithWatchLaterCount()
       res.json(channelsWithCounts)
     } else {
+      // For other filters, return all channels (backward compatibility)
       const channels = channelQueries.getAll(filterType)
       res.json(channels)
     }
