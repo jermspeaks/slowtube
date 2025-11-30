@@ -1,5 +1,5 @@
 import express from 'express'
-import { channelQueries, videoQueries, tagQueries, commentQueries } from '../services/database.js'
+import { channelQueries, videoQueries, tagQueries, commentQueries, videoStateQueries } from '../services/database.js'
 import { fetchLatestVideosFromChannel, fetchSubscribedChannels, fetchChannelDetailsFromYouTube } from '../services/youtube.js'
 import { getAuthenticatedClient } from './auth.js'
 
@@ -95,14 +95,22 @@ router.get('/:channelId/videos', async (req, res) => {
       
       res.json({ videos: videosWithDetails })
     } else if (type === 'latest') {
-      // Fetch latest videos from YouTube API
-      try {
-        const latestVideos = await fetchLatestVideosFromChannel(channelId)
-        res.json({ videos: latestVideos })
-      } catch (error: any) {
-        console.error('Error fetching latest videos:', error)
-        res.status(500).json({ error: 'Failed to fetch latest videos from YouTube API' })
-      }
+      // Get videos from database for this channel (previously fetched videos)
+      const videos = channelQueries.getWatchLaterVideosByChannel(channelId)
+      
+      // Get tags and comments for each video
+      const videosWithDetails = videos.map(video => {
+        const tags = tagQueries.getByVideoId(video.id)
+        const comments = commentQueries.getByVideoId(video.id)
+        
+        return {
+          ...video,
+          tags,
+          comments,
+        }
+      })
+      
+      res.json({ videos: videosWithDetails })
     } else if (type === 'liked') {
       // Placeholder for future implementation
       res.json({ videos: [], message: 'Liked videos feature coming soon' })
@@ -112,6 +120,135 @@ router.get('/:channelId/videos', async (req, res) => {
   } catch (error) {
     console.error('Error fetching channel videos:', error)
     res.status(500).json({ error: 'Failed to fetch channel videos' })
+  }
+})
+
+// Helper function to parse YouTube duration (ISO 8601) to readable format
+function parseDuration(duration: string): string {
+  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
+  if (!match) return duration
+
+  const hours = parseInt(match[1] || '0', 10)
+  const minutes = parseInt(match[2] || '0', 10)
+  const seconds = parseInt(match[3] || '0', 10)
+
+  const parts: string[] = []
+  if (hours > 0) parts.push(`${hours}h`)
+  if (minutes > 0) parts.push(`${minutes}m`)
+  if (seconds > 0) parts.push(`${seconds}s`)
+
+  return parts.join(' ') || '0s'
+}
+
+// Fetch latest videos from a channel and save them to database
+router.post('/:channelId/fetch-latest', async (req, res) => {
+  try {
+    const { channelId } = req.params
+    const { limit } = req.query
+    const fetchLimit = limit ? parseInt(limit as string, 10) : 50
+
+    if (isNaN(fetchLimit) || fetchLimit < 1 || fetchLimit > 50) {
+      return res.status(400).json({ error: 'Invalid limit. Must be between 1 and 50.' })
+    }
+
+    // Verify channel exists
+    const channel = channelQueries.getByChannelId(channelId)
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' })
+    }
+
+    // Fetch latest videos from YouTube API
+    const latestVideos = await fetchLatestVideosFromChannel(channelId, fetchLimit)
+
+    const savedVideos: Array<{
+      id: number
+      youtube_id: string
+      title: string
+      state: 'feed' | 'inbox' | 'archive'
+      isNew: boolean
+    }> = []
+
+    // Process each video
+    for (const videoDetails of latestVideos) {
+      if (!videoDetails.id) continue
+
+      // Check if video already exists
+      const existingVideo = videoQueries.getByYoutubeId(videoDetails.id)
+
+      if (existingVideo) {
+        // Update existing video metadata but preserve state
+        const updateData: any = {
+          title: videoDetails.title,
+          description: videoDetails.description,
+          channel_title: videoDetails.channelTitle,
+          youtube_channel_id: videoDetails.channelId,
+          published_at: videoDetails.publishedAt,
+          duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
+          fetch_status: 'completed',
+          youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+        }
+
+        // Update thumbnail if we got a better one
+        if (videoDetails.thumbnails.medium?.url || videoDetails.thumbnails.high?.url || videoDetails.thumbnails.default?.url) {
+          updateData.thumbnail_url = videoDetails.thumbnails.medium?.url 
+            || videoDetails.thumbnails.high?.url 
+            || videoDetails.thumbnails.default?.url
+        }
+
+        videoQueries.update(existingVideo.id, updateData)
+
+        // Get current state (default to 'feed' if not set)
+        const currentState = videoStateQueries.getByVideoId(existingVideo.id)
+        const state = currentState?.state || 'feed'
+
+        savedVideos.push({
+          id: existingVideo.id,
+          youtube_id: videoDetails.id,
+          title: videoDetails.title,
+          state: state,
+          isNew: false,
+        })
+      } else {
+        // Create new video
+        const videoData = {
+          youtube_id: videoDetails.id,
+          title: videoDetails.title,
+          description: videoDetails.description,
+          thumbnail_url: videoDetails.thumbnails.medium?.url 
+            || videoDetails.thumbnails.high?.url 
+            || videoDetails.thumbnails.default?.url 
+            || null,
+          duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
+          published_at: videoDetails.publishedAt,
+          added_to_playlist_at: null,
+          fetch_status: 'completed' as const,
+          channel_title: videoDetails.channelTitle,
+          youtube_channel_id: videoDetails.channelId,
+          youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+        }
+
+        const videoId = videoQueries.create(videoData)
+
+        // Set default state to 'feed'
+        videoStateQueries.setState(videoId, 'feed')
+
+        savedVideos.push({
+          id: videoId,
+          youtube_id: videoDetails.id,
+          title: videoDetails.title,
+          state: 'feed',
+          isNew: true,
+        })
+      }
+    }
+
+    res.json({
+      message: `Fetched and saved ${savedVideos.length} videos`,
+      videos: savedVideos,
+    })
+  } catch (error: any) {
+    console.error('Error fetching and saving latest videos:', error)
+    res.status(500).json({ error: error.message || 'Failed to fetch and save latest videos' })
   }
 })
 

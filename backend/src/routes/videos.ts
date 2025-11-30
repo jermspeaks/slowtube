@@ -521,6 +521,70 @@ router.patch('/:id/state', (req, res) => {
   }
 })
 
+// Bulk update video states
+router.post('/bulk-state', (req, res) => {
+  try {
+    const { updates } = req.body
+
+    if (!Array.isArray(updates)) {
+      return res.status(400).json({ error: 'Updates must be an array' })
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'Updates array cannot be empty' })
+    }
+
+    const results: Array<{ videoId: number; success: boolean; error?: string }> = []
+    const errors: string[] = []
+
+    for (const update of updates) {
+      const { videoId, state } = update
+
+      if (!videoId || typeof videoId !== 'number') {
+        errors.push(`Invalid videoId: ${videoId}`)
+        results.push({ videoId: videoId || 0, success: false, error: 'Invalid videoId' })
+        continue
+      }
+
+      if (!state || !['feed', 'inbox', 'archive'].includes(state)) {
+        errors.push(`Invalid state for video ${videoId}: ${state}`)
+        results.push({ videoId, success: false, error: 'Invalid state' })
+        continue
+      }
+
+      // Verify video exists
+      const video = videoQueries.getById(videoId)
+      if (!video) {
+        errors.push(`Video not found: ${videoId}`)
+        results.push({ videoId, success: false, error: 'Video not found' })
+        continue
+      }
+
+      try {
+        videoStateQueries.setState(videoId, state as 'feed' | 'inbox' | 'archive')
+        results.push({ videoId, success: true })
+      } catch (error: any) {
+        errors.push(`Failed to update video ${videoId}: ${error.message}`)
+        results.push({ videoId, success: false, error: error.message })
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length
+    const failureCount = results.length - successCount
+
+    res.json({
+      message: `Updated ${successCount} video(s), ${failureCount} failed`,
+      results,
+      successCount,
+      failureCount,
+      errors: errors.length > 0 ? errors : undefined,
+    })
+  } catch (error) {
+    console.error('Error bulk updating video states:', error)
+    res.status(500).json({ error: 'Failed to bulk update video states' })
+  }
+})
+
 // Add tag to video
 router.post('/:id/tags', (req, res) => {
   try {

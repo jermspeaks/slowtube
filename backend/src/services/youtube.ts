@@ -1210,11 +1210,84 @@ export async function backfillChannelIds(batchSize: number = 5, delayBetweenBatc
   }
 }
 
-// Fetch latest videos from a channel (placeholder for future implementation)
-export async function fetchLatestVideosFromChannel(channelId: string, limit: number = 50): Promise<any[]> {
-  // TODO: Implement fetching latest videos from YouTube API
-  // This will use youtube.search.list with channelId filter
-  return []
+// Fetch latest videos from a channel
+export async function fetchLatestVideosFromChannel(channelId: string, limit: number = 50): Promise<YouTubeVideoDetails[]> {
+  try {
+    // Try to get authenticated OAuth client first, fallback to API key
+    let oauthClient: any = null
+    try {
+      oauthClient = await getAuthenticatedClient()
+      console.log('Using OAuth authentication for fetching latest videos')
+    } catch (oauthError: any) {
+      if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
+        console.log('OAuth not available, falling back to API key authentication')
+      } else {
+        console.warn('Error getting OAuth client, falling back to API key:', oauthError.message)
+      }
+    }
+
+    const youtube = getYouTubeClient(oauthClient)
+    if (!youtube) {
+      throw new Error('YouTube API authentication not available. Please configure API key or OAuth.')
+    }
+
+    const videos: YouTubeVideoDetails[] = []
+    let nextPageToken: string | undefined = undefined
+    const maxResults = Math.min(limit, 50) // YouTube API max is 50 per page
+
+    do {
+      // Use search.list to get latest videos from channel
+      const searchResponse = await youtube.search.list({
+        part: ['snippet'],
+        channelId: channelId,
+        type: 'video',
+        order: 'date',
+        maxResults: maxResults,
+        pageToken: nextPageToken,
+      })
+
+      const items = searchResponse.data.items || []
+      
+      if (items.length === 0) {
+        break
+      }
+
+      // Extract video IDs from search results
+      const videoIds = items
+        .map(item => item.id?.videoId)
+        .filter((id): id is string => !!id)
+
+      if (videoIds.length === 0) {
+        break
+      }
+
+      // Fetch full video details using videos.list (includes duration, etc.)
+      const videoDetailsMap = await fetchVideoDetailsFromYouTube(videoIds, oauthClient)
+
+      // Convert to YouTubeVideoDetails array
+      for (const videoId of videoIds) {
+        const details = videoDetailsMap.get(videoId)
+        if (details) {
+          videos.push(details)
+        }
+      }
+
+      // Check if we've reached the limit
+      if (videos.length >= limit) {
+        break
+      }
+
+      nextPageToken = searchResponse.data.nextPageToken || undefined
+    } while (nextPageToken && videos.length < limit)
+
+    // Limit to requested number
+    const result = videos.slice(0, limit)
+    console.log(`Fetched ${result.length} latest videos from channel ${channelId}`)
+    return result
+  } catch (error: any) {
+    console.error('Error fetching latest videos from channel:', error)
+    throw error
+  }
 }
 
 // Fetch subscribed channels from YouTube API

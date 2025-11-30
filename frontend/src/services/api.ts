@@ -70,6 +70,10 @@ export const videosAPI = {
     const response = await api.patch(`/api/videos/${id}/state`, { state })
     return response.data
   },
+  bulkUpdateState: async (updates: Array<{ videoId: number; state: 'feed' | 'inbox' | 'archive' }>) => {
+    const response = await api.post('/api/videos/bulk-state', { updates })
+    return response.data
+  },
   addTag: async (videoId: number, name: string) => {
     const response = await api.post(`/api/videos/${videoId}/tags`, { name })
     return response.data
@@ -142,6 +146,12 @@ export const channelsAPI = {
   },
   syncSubscriptions: async () => {
     const response = await api.post('/api/channels/sync-subscriptions')
+    return response.data
+  },
+  fetchLatest: async (channelId: string, limit?: number) => {
+    const params: Record<string, number> = {}
+    if (limit !== undefined) params.limit = limit
+    const response = await api.post(`/api/channels/${channelId}/fetch-latest`, null, { params })
     return response.data
   },
 }

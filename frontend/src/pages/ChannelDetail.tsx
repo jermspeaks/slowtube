@@ -5,6 +5,7 @@ import { Video } from '../types/video'
 import { channelsAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoDetailModal from '../components/VideoDetailModal'
+import LatestVideosFetcher from '../components/LatestVideosFetcher'
 import { toast } from 'sonner'
 
 function ChannelDetail() {
@@ -221,15 +222,18 @@ function ChannelDetail() {
                 Coming soon - Liked videos will be imported separately
               </p>
             </div>
+          ) : activeTab === 'latest' && videos.length === 0 ? (
+            <LatestVideosFetcher
+              channelId={channelId || ''}
+              onVideosFetched={loadVideos}
+            />
           ) : videos.length === 0 ? (
             <div className="text-center py-[60px] px-5 bg-card rounded-lg">
               <p className="text-lg text-muted-foreground mb-4">
                 No videos found
               </p>
               <p className="text-sm text-muted-foreground">
-                {activeTab === 'watch_later'
-                  ? 'This channel has no videos in your watch later list.'
-                  : 'No latest videos available for this channel.'}
+                This channel has no videos in your watch later list.
               </p>
             </div>
           ) : (
