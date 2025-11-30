@@ -332,6 +332,20 @@ router.post('/import', upload.single('file'), async (req, res) => {
   }
 })
 
+// Get count of videos needing fetch
+router.get('/fetch-details/status', (req, res) => {
+  try {
+    const remaining = videoQueries.countPendingFetch()
+    res.json({
+      remaining,
+      status: remaining > 0 ? 'pending' : 'completed',
+    })
+  } catch (error) {
+    console.error('Error checking fetch status:', error)
+    res.status(500).json({ error: 'Failed to check fetch status' })
+  }
+})
+
 // Fetch video details from YouTube API (background job)
 router.post('/fetch-details', async (req, res) => {
   try {

@@ -25,12 +25,24 @@ function WatchLater() {
   const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
+  const [fetchStatus, setFetchStatus] = useState<{ remaining: number; status: string } | null>(null)
+  const [isFetching, setIsFetching] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     loadChannels()
     loadVideos()
+    loadFetchStatus()
   }, [])
+
+  const loadFetchStatus = async () => {
+    try {
+      const status = await videosAPI.getFetchStatus()
+      setFetchStatus(status)
+    } catch (error) {
+      console.error('Error loading fetch status:', error)
+    }
+  }
 
   const loadChannels = async () => {
     try {
@@ -60,6 +72,8 @@ function WatchLater() {
       if (response.pagination) {
         setTotalPages(response.pagination.totalPages || 1)
       }
+      // Update fetch status after loading videos
+      await loadFetchStatus()
     } catch (error) {
       console.error('Error loading videos:', error)
       toast.error('Failed to load videos')
@@ -96,6 +110,36 @@ function WatchLater() {
     }
     // Reload videos to ensure the list is up to date
     loadVideos()
+  }
+
+  const handleResumeFetching = async () => {
+    try {
+      setIsFetching(true)
+      const result = await videosAPI.fetchDetails()
+      
+      // Update fetch status
+      setFetchStatus({
+        remaining: result.remaining,
+        status: result.status,
+      })
+      
+      // Show success message
+      if (result.processed > 0) {
+        toast.success(`Fetched ${result.processed} video${result.processed !== 1 ? 's' : ''}. ${result.remaining} remaining.`)
+      } else if (result.remaining === 0) {
+        toast.success('All videos have been fetched!')
+      } else {
+        toast.info(`No videos were processed. ${result.remaining} remaining.`)
+      }
+      
+      // Reload videos to show updated data
+      await loadVideos()
+    } catch (error) {
+      console.error('Error resuming fetch:', error)
+      toast.error('Failed to resume fetching videos')
+    } finally {
+      setIsFetching(false)
+    }
   }
 
   // Debounce search query
@@ -148,9 +192,32 @@ function WatchLater() {
             endDate={endDate}
             onEndDateChange={setEndDate}
           />
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-foreground">View As</label>
-            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-foreground">View As</label>
+              <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+            </div>
+            {fetchStatus && fetchStatus.remaining > 0 && (
+              <button
+                onClick={handleResumeFetching}
+                disabled={isFetching}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isFetching ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    <span>Fetching...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Resume Fetching</span>
+                    <span className="text-xs bg-primary-foreground/20 px-2 py-0.5 rounded">
+                      {fetchStatus.remaining} remaining
+                    </span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 

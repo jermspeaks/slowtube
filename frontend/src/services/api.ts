@@ -62,6 +62,10 @@ export const videosAPI = {
     const response = await api.post('/api/videos/fetch-details')
     return response.data
   },
+  getFetchStatus: async () => {
+    const response = await api.get('/api/videos/fetch-details/status')
+    return response.data
+  },
   updateState: async (id: number, state: 'feed' | 'inbox' | 'archive') => {
     const response = await api.patch(`/api/videos/${id}/state`, { state })
     return response.data
