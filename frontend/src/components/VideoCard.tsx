@@ -6,9 +6,10 @@ interface VideoCardProps {
   video: Video
   onClick: () => void
   onStateChange?: (updatedVideo: Video) => void
+  showFeedDate?: boolean
 }
 
-function VideoCard({ video, onClick, onStateChange }: VideoCardProps) {
+function VideoCard({ video, onClick, onStateChange, showFeedDate = false }: VideoCardProps) {
   const getStateColorClasses = (state?: string | null) => {
     switch (state) {
       case 'feed': return 'bg-green-500'
@@ -94,7 +95,12 @@ function VideoCard({ video, onClick, onStateChange }: VideoCardProps) {
               Published: {format(new Date(video.published_at), 'MMM d, yyyy')}
             </div>
           )}
-          {video.added_to_playlist_at && (
+          {showFeedDate && video.created_at && (
+            <div>
+              Added to feed: {format(new Date(video.created_at), 'MMM d, yyyy')}
+            </div>
+          )}
+          {!showFeedDate && video.added_to_playlist_at && (
             <div>
               Added: {format(new Date(video.added_to_playlist_at), 'MMM d, yyyy')}
             </div>

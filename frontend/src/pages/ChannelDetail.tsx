@@ -244,6 +244,7 @@ function ChannelDetail() {
                   video={video}
                   onClick={() => handleVideoClick(video)}
                   onStateChange={handleVideoUpdated}
+                  showFeedDate={activeTab === 'latest'}
                 />
               ))}
             </div>
