@@ -148,9 +148,6 @@ function ChannelDetail() {
     }
   }
 
-  const handleDismiss = async () => {
-    await handleBulkAction('archive')
-  }
 
   const handleFetchLatest = async () => {
     if (!channelId) return
@@ -363,12 +360,13 @@ function ChannelDetail() {
                         Move to Archive ({selectedVideoIds.size})
                       </Button>
                       <Button
-                        onClick={handleDismiss}
+                        onClick={() => handleBulkAction('feed')}
                         disabled={bulkActionLoading}
-                        variant="outline"
+                        variant="default"
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
-                        <X className="mr-2 h-4 w-4" />
-                        Dismiss ({selectedVideoIds.size})
+                        <Rss className="mr-2 h-4 w-4" />
+                        Move to Feed ({selectedVideoIds.size})
                       </Button>
                     </div>
                   )}
