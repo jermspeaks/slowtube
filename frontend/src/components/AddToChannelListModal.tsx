@@ -114,7 +114,7 @@ function AddToChannelListModal({ isOpen, onClose, channelIds, onSuccess }: AddTo
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add to Channel List</DialogTitle>
           <DialogDescription>
@@ -144,7 +144,7 @@ function AddToChannelListModal({ isOpen, onClose, channelIds, onSuccess }: AddTo
                 </Button>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
                 {lists.map(list => (
                   <label
                     key={list.id}

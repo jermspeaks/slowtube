@@ -100,7 +100,7 @@ function ChannelsList() {
     if (e && (e.target as HTMLElement).closest('.add-to-list-button')) {
       return
     }
-    navigate(`/channels/${channel.youtube_channel_id}`)
+    navigate(`/channels/${channel.youtube_channel_id}/watch-later`)
   }
 
   const handleAddToListsClick = (channel: Channel, e: React.MouseEvent) => {

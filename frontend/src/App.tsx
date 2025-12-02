@@ -6,7 +6,9 @@ import Stats from './pages/Stats'
 import GroupedView from './pages/GroupedView'
 import Settings from './pages/Settings'
 import ChannelsList from './pages/ChannelsList'
-import ChannelDetail from './pages/ChannelDetail'
+import ChannelWatchLater from './pages/ChannelWatchLater'
+import ChannelLatest from './pages/ChannelLatest'
+import ChannelLiked from './pages/ChannelLiked'
 import Calendar from './pages/Calendar'
 import MoviesList from './pages/MoviesList'
 import MovieDetail from './pages/MovieDetail'
@@ -52,7 +54,10 @@ function AppContent() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/channels/subscribed" element={<ChannelsList />} />
         <Route path="/channels/watch-later" element={<ChannelsList />} />
-        <Route path="/channels/:channelId" element={<ChannelDetail />} />
+        <Route path="/channels/:channelId/watch-later" element={<ChannelWatchLater />} />
+        <Route path="/channels/:channelId/latest" element={<ChannelLatest />} />
+        <Route path="/channels/:channelId/liked" element={<ChannelLiked />} />
+        <Route path="/channels/:channelId" element={<Navigate to="watch-later" replace />} />
         <Route path="/movies" element={<MoviesList />} />
         <Route path="/movies/:id" element={<MovieDetail />} />
         <Route path="/tv-shows/upcoming" element={<Upcoming />} />
