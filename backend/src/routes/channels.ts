@@ -155,6 +155,110 @@ function parseDuration(duration: string): string {
   return parts.join(' ') || '0s'
 }
 
+// Helper function to process and save latest videos from a channel
+async function processLatestVideosFromChannel(
+  channelId: string,
+  fetchLimit: number = 50
+): Promise<{
+  videos: Array<{
+    id: number
+    youtube_id: string
+    title: string
+    state: 'feed' | 'inbox' | 'archive' | null
+    isNew: boolean
+  }>
+  error?: string
+}> {
+  // Fetch latest videos from YouTube API
+  const latestVideos = await fetchLatestVideosFromChannel(channelId, fetchLimit)
+
+  const savedVideos: Array<{
+    id: number
+    youtube_id: string
+    title: string
+    state: 'feed' | 'inbox' | 'archive' | null
+    isNew: boolean
+  }> = []
+
+  // Process each video
+  for (const videoDetails of latestVideos) {
+    if (!videoDetails.id) continue
+
+    // Check if video already exists
+    const existingVideo = videoQueries.getByYoutubeId(videoDetails.id)
+
+    if (existingVideo) {
+      // Get current state - preserve existing state, don't set default
+      const currentState = videoStateQueries.getByVideoId(existingVideo.id)
+      const state = currentState?.state || null
+
+      // Update existing video metadata but preserve state
+      const updateData: any = {
+        title: videoDetails.title,
+        description: videoDetails.description,
+        channel_title: videoDetails.channelTitle,
+        youtube_channel_id: videoDetails.channelId,
+        published_at: videoDetails.publishedAt,
+        duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
+        fetch_status: 'completed',
+        youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+        added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
+      }
+
+      // Update thumbnail if we got a better one
+      if (videoDetails.thumbnails.medium?.url || videoDetails.thumbnails.high?.url || videoDetails.thumbnails.default?.url) {
+        updateData.thumbnail_url = videoDetails.thumbnails.medium?.url 
+          || videoDetails.thumbnails.high?.url 
+          || videoDetails.thumbnails.default?.url
+      }
+
+      videoQueries.update(existingVideo.id, updateData)
+
+      savedVideos.push({
+        id: existingVideo.id,
+        youtube_id: videoDetails.id,
+        title: videoDetails.title,
+        state: state,
+        isNew: false,
+      })
+    } else {
+      // Create new video
+      const videoData = {
+        youtube_id: videoDetails.id,
+        title: videoDetails.title,
+        description: videoDetails.description,
+        thumbnail_url: videoDetails.thumbnails.medium?.url 
+          || videoDetails.thumbnails.high?.url 
+          || videoDetails.thumbnails.default?.url 
+          || null,
+        duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
+        published_at: videoDetails.publishedAt,
+        added_to_playlist_at: null,
+        fetch_status: 'completed' as const,
+        channel_title: videoDetails.channelTitle,
+        youtube_channel_id: videoDetails.channelId,
+        youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+        added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
+      }
+
+      const videoId = videoQueries.create(videoData)
+
+      // Don't set state - leave it null so it appears in latest videos
+      // State will be set when user moves video to inbox/archive
+
+      savedVideos.push({
+        id: videoId,
+        youtube_id: videoDetails.id,
+        title: videoDetails.title,
+        state: null,
+        isNew: true,
+      })
+    }
+  }
+
+  return { videos: savedVideos }
+}
+
 // Fetch latest videos from a channel and save them to database
 router.post('/:channelId/fetch-latest', async (req, res) => {
   try {
@@ -172,104 +276,15 @@ router.post('/:channelId/fetch-latest', async (req, res) => {
       return res.status(404).json({ error: 'Channel not found' })
     }
 
-    // Fetch latest videos from YouTube API
-    const latestVideos = await fetchLatestVideosFromChannel(channelId, fetchLimit)
+    const result = await processLatestVideosFromChannel(channelId, fetchLimit)
 
-    const savedVideos: Array<{
-      id: number
-      youtube_id: string
-      title: string
-      state: 'feed' | 'inbox' | 'archive' | null
-      isNew: boolean
-    }> = []
-
-    // Process each video
-    for (const videoDetails of latestVideos) {
-      if (!videoDetails.id) continue
-
-      // Check if video already exists
-      const existingVideo = videoQueries.getByYoutubeId(videoDetails.id)
-
-      if (existingVideo) {
-        // Get current state - preserve existing state, don't set default
-        const currentState = videoStateQueries.getByVideoId(existingVideo.id)
-        const state = currentState?.state || null
-
-        // Update existing video metadata but preserve state
-        const updateData: any = {
-          title: videoDetails.title,
-          description: videoDetails.description,
-          channel_title: videoDetails.channelTitle,
-          youtube_channel_id: videoDetails.channelId,
-          published_at: videoDetails.publishedAt,
-          duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
-          fetch_status: 'completed',
-          youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
-          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
-        }
-
-        // Update thumbnail if we got a better one
-        if (videoDetails.thumbnails.medium?.url || videoDetails.thumbnails.high?.url || videoDetails.thumbnails.default?.url) {
-          updateData.thumbnail_url = videoDetails.thumbnails.medium?.url 
-            || videoDetails.thumbnails.high?.url 
-            || videoDetails.thumbnails.default?.url
-        }
-
-        videoQueries.update(existingVideo.id, updateData)
-
-        // Only set state if video already has a state (preserve existing state)
-        // If no state exists, leave it null so it appears in latest videos
-        if (currentState) {
-          // State already exists, keep it
-        } else {
-          // No state exists, leave it null for latest videos
-        }
-
-        savedVideos.push({
-          id: existingVideo.id,
-          youtube_id: videoDetails.id,
-          title: videoDetails.title,
-          state: state,
-          isNew: false,
-        })
-      } else {
-        // Create new video
-        const videoData = {
-          youtube_id: videoDetails.id,
-          title: videoDetails.title,
-          description: videoDetails.description,
-          thumbnail_url: videoDetails.thumbnails.medium?.url 
-            || videoDetails.thumbnails.high?.url 
-            || videoDetails.thumbnails.default?.url 
-            || null,
-          duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
-          published_at: videoDetails.publishedAt,
-          added_to_playlist_at: null,
-          fetch_status: 'completed' as const,
-          channel_title: videoDetails.channelTitle,
-          youtube_channel_id: videoDetails.channelId,
-          youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
-          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
-        }
-
-        const videoId = videoQueries.create(videoData)
-
-        // Don't set state - leave it null so it appears in latest videos
-        // State will be set when user moves video to inbox/archive
-
-        savedVideos.push({
-          id: videoId,
-          youtube_id: videoDetails.id,
-          title: videoDetails.title,
-          state: 'feed' as 'feed' | 'inbox' | 'archive',
-          isNew: true,
-        })
-      }
+    if (result.error) {
+      return res.status(500).json({ error: result.error })
     }
 
     res.json({
-      message: `Fetched and saved ${savedVideos.length} videos`,
-      videos: savedVideos,
+      message: `Fetched and saved ${result.videos.length} videos`,
+      videos: result.videos,
     })
   } catch (error: any) {
     console.error('Error fetching and saving latest videos:', error)
@@ -424,6 +439,128 @@ router.post('/sync-subscriptions', async (req, res) => {
       })
     }
     res.status(500).json({ error: 'Failed to sync subscriptions' })
+  }
+})
+
+// Fetch latest videos from all subscribed channels
+router.post('/fetch-latest-all', async (req, res) => {
+  try {
+    // Check if authenticated first
+    try {
+      await getAuthenticatedClient()
+    } catch (authError: any) {
+      if (authError.code === 'AUTHENTICATION_REQUIRED') {
+        return res.status(401).json({ 
+          error: 'YouTube authentication required',
+          message: 'Please connect your YouTube account in Settings to refresh latest videos.',
+          requiresAuth: true,
+          settingsUrl: '/settings'
+        })
+      }
+      throw authError
+    }
+
+    const { limit } = req.query
+    const fetchLimit = limit ? parseInt(limit as string, 10) : 50
+
+    if (isNaN(fetchLimit) || fetchLimit < 1 || fetchLimit > 50) {
+      return res.status(400).json({ error: 'Invalid limit. Must be between 1 and 50.' })
+    }
+
+    // Get all subscribed channels
+    const subscribedChannels = channelQueries.getAll('subscribed')
+    
+    if (subscribedChannels.length === 0) {
+      return res.json({
+        message: 'No subscribed channels found',
+        channelsProcessed: 0,
+        totalVideos: 0,
+        newVideos: 0,
+        existingVideos: 0,
+        results: [],
+      })
+    }
+
+    const results: Array<{
+      channelId: string
+      channelTitle: string
+      videosFetched: number
+      newVideos: number
+      existingVideos: number
+      error?: string
+    }> = []
+
+    let totalVideos = 0
+    let totalNewVideos = 0
+    let totalExistingVideos = 0
+
+    // Process each channel sequentially
+    for (const channel of subscribedChannels) {
+      try {
+        const result = await processLatestVideosFromChannel(channel.youtube_channel_id, fetchLimit)
+        
+        if (result.error) {
+          results.push({
+            channelId: channel.youtube_channel_id,
+            channelTitle: channel.channel_title || 'Unknown Channel',
+            videosFetched: 0,
+            newVideos: 0,
+            existingVideos: 0,
+            error: result.error,
+          })
+          continue
+        }
+
+        const newVideos = result.videos.filter(v => v.isNew).length
+        const existingVideos = result.videos.filter(v => !v.isNew).length
+
+        results.push({
+          channelId: channel.youtube_channel_id,
+          channelTitle: channel.channel_title || 'Unknown Channel',
+          videosFetched: result.videos.length,
+          newVideos,
+          existingVideos,
+        })
+
+        totalVideos += result.videos.length
+        totalNewVideos += newVideos
+        totalExistingVideos += existingVideos
+      } catch (error: any) {
+        console.error(`Error fetching latest videos for channel ${channel.youtube_channel_id}:`, error)
+        results.push({
+          channelId: channel.youtube_channel_id,
+          channelTitle: channel.channel_title || 'Unknown Channel',
+          videosFetched: 0,
+          newVideos: 0,
+          existingVideos: 0,
+          error: error.message || 'Failed to fetch videos',
+        })
+      }
+    }
+
+    const channelsWithErrors = results.filter(r => r.error).length
+    const channelsProcessed = results.length
+
+    res.json({
+      message: `Processed ${channelsProcessed} channels: ${totalVideos} videos fetched (${totalNewVideos} new, ${totalExistingVideos} existing)${channelsWithErrors > 0 ? `, ${channelsWithErrors} channel(s) had errors` : ''}`,
+      channelsProcessed,
+      totalVideos,
+      newVideos: totalNewVideos,
+      existingVideos: totalExistingVideos,
+      channelsWithErrors,
+      results,
+    })
+  } catch (error: any) {
+    console.error('Error fetching latest videos from all subscribed channels:', error)
+    if (error.code === 'AUTHENTICATION_REQUIRED') {
+      return res.status(401).json({ 
+        error: 'YouTube authentication required',
+        message: 'Please connect your YouTube account in Settings to refresh latest videos.',
+        requiresAuth: true,
+        settingsUrl: '/settings'
+      })
+    }
+    res.status(500).json({ error: error.message || 'Failed to fetch latest videos from all subscribed channels' })
   }
 })
 

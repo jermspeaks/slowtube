@@ -162,6 +162,12 @@ export const channelsAPI = {
     const response = await api.post(`/api/channels/${channelId}/fetch-latest`, null, { params })
     return response.data
   },
+  fetchLatestAll: async (limit?: number) => {
+    const params: Record<string, number> = {}
+    if (limit !== undefined) params.limit = limit
+    const response = await api.post('/api/channels/fetch-latest-all', null, { params })
+    return response.data
+  },
 }
 
 // TV Shows API

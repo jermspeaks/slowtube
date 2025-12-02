@@ -12,6 +12,7 @@ function ChannelsList() {
   const [channels, setChannels] = useState<ChannelWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   
   // Pagination state (only for subscribed channels)
   const [currentPage, setCurrentPage] = useState(1)
@@ -139,6 +140,58 @@ function ChannelsList() {
     }
   }
 
+  const handleRefreshLatestVideos = async () => {
+    try {
+      setRefreshing(true)
+      const result = await channelsAPI.fetchLatestAll(50)
+      
+      // Build detailed success message
+      let message = `Processed ${result.channelsProcessed || 0} channels: ${result.totalVideos || 0} videos fetched`
+      if (result.newVideos !== undefined && result.existingVideos !== undefined) {
+        message += ` (${result.newVideos} new, ${result.existingVideos} existing)`
+      }
+      if (result.channelsWithErrors > 0) {
+        message += `, ${result.channelsWithErrors} channel(s) had errors`
+      }
+      
+      toast.success(message, {
+        duration: 5000,
+      })
+      
+      // If there were errors, show details in console or additional toast
+      if (result.results && result.results.length > 0) {
+        const errorChannels = result.results.filter((r: any) => r.error)
+        if (errorChannels.length > 0) {
+          console.warn('Channels with errors:', errorChannels)
+          // Optionally show a detailed toast for errors
+          if (errorChannels.length <= 5) {
+            const errorList = errorChannels.map((r: any) => r.channelTitle).join(', ')
+            toast.error(`Errors in: ${errorList}`, { duration: 7000 })
+          }
+        }
+      }
+      
+      // Refresh the channel list to show updated counts
+      await loadChannels()
+    } catch (error: any) {
+      console.error('Error refreshing latest videos:', error)
+      
+      if (error.response?.status === 401 || error.response?.data?.requiresAuth) {
+        toast.error('YouTube authentication required. Please connect your YouTube account in Settings.', {
+          action: {
+            label: 'Go to Settings',
+            onClick: () => navigate('/settings')
+          }
+        })
+      } else {
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to refresh latest videos'
+        toast.error(errorMessage)
+      }
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
@@ -174,14 +227,25 @@ function ChannelsList() {
               </select>
             </div>
             {filterType === 'subscribed' && (
-              <Button
-                onClick={handleSyncSubscriptions}
-                disabled={syncing}
-                className="gap-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                {syncing ? 'Syncing...' : 'Sync Subscriptions'}
-              </Button>
+              <>
+                <Button
+                  onClick={handleRefreshLatestVideos}
+                  disabled={refreshing || syncing}
+                  className="gap-2"
+                  variant="outline"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh Latest Videos'}
+                </Button>
+                <Button
+                  onClick={handleSyncSubscriptions}
+                  disabled={syncing || refreshing}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                  {syncing ? 'Syncing...' : 'Sync Subscriptions'}
+                </Button>
+              </>
             )}
           </div>
         </div>
