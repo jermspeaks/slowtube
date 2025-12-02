@@ -7,6 +7,8 @@ import VideoCard from '../components/VideoCard'
 import VideoDetailModal from '../components/VideoDetailModal'
 import LatestVideosFetcher from '../components/LatestVideosFetcher'
 import { toast } from 'sonner'
+import { Button } from '../components/ui/button'
+import { Loader2 } from 'lucide-react'
 
 function ChannelDetail() {
   const navigate = useNavigate()
@@ -17,6 +19,7 @@ function ChannelDetail() {
   const [videos, setVideos] = useState<Video[]>([])
   const [videosLoading, setVideosLoading] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  const [fetching, setFetching] = useState(false)
 
   useEffect(() => {
     if (!channelId) {
@@ -94,6 +97,23 @@ function ChannelDetail() {
     setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
     if (selectedVideo?.id === updatedVideo.id) {
       setSelectedVideo(updatedVideo)
+    }
+  }
+
+  const handleFetchLatest = async () => {
+    if (!channelId) return
+
+    try {
+      setFetching(true)
+      const response = await channelsAPI.fetchLatest(channelId, 50)
+      toast.success(`Fetched ${response.videos?.length || 0} videos`)
+      // Refresh the video list to show newly fetched videos
+      await loadVideos()
+    } catch (error: any) {
+      console.error('Error fetching latest videos:', error)
+      toast.error(error.response?.data?.error || 'Failed to fetch latest videos')
+    } finally {
+      setFetching(false)
     }
   }
 
@@ -237,17 +257,37 @@ function ChannelDetail() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
-              {videos.map((video) => (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  onClick={() => handleVideoClick(video)}
-                  onStateChange={handleVideoUpdated}
-                  showFeedDate={activeTab === 'latest'}
-                />
-              ))}
-            </div>
+            <>
+              {activeTab === 'latest' && (
+                <div className="mb-4 flex justify-end">
+                  <Button
+                    onClick={handleFetchLatest}
+                    disabled={fetching}
+                    variant="default"
+                  >
+                    {fetching ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Fetching...
+                      </>
+                    ) : (
+                      'Fetch New Videos'
+                    )}
+                  </Button>
+                </div>
+              )}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+                {videos.map((video) => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    onClick={() => handleVideoClick(video)}
+                    onStateChange={handleVideoUpdated}
+                    showFeedDate={activeTab === 'latest'}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </main>
