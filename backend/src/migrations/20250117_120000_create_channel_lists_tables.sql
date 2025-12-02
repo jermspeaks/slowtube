@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS channel_lists (
 );
 
 -- Channel List Items table
+-- Note: Foreign key to channels table is added in a later migration (20251105_203350)
+-- because the channels table is created after this migration
 CREATE TABLE IF NOT EXISTS channel_list_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   list_id INTEGER NOT NULL,
@@ -20,7 +22,6 @@ CREATE TABLE IF NOT EXISTS channel_list_items (
   position INTEGER NOT NULL,
   added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (list_id) REFERENCES channel_lists(id) ON DELETE CASCADE,
-  FOREIGN KEY (youtube_channel_id) REFERENCES channels(youtube_channel_id) ON DELETE CASCADE,
   UNIQUE(list_id, youtube_channel_id)
 );
 
