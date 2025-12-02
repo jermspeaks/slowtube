@@ -699,12 +699,17 @@ export const statsQueries = {
 
 // Channel operations
 export const channelQueries = {
-  getAll: (filterType?: 'subscribed' | 'watch_later', limit?: number, offset?: number) => {
+  getAll: (filterType?: 'subscribed' | 'watch_later', limit?: number, offset?: number, sortBy?: 'channel_title' | 'updated_at', sortOrder?: 'asc' | 'desc') => {
     let query = ''
     const params: any[] = []
 
+    // Validate and set default sort values
+    const validSortBy = (sortBy === 'channel_title' || sortBy === 'updated_at') ? sortBy : 'channel_title'
+    const validSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'asc'
+    const orderBy = `${validSortBy} ${validSortOrder}`
+
     if (filterType === 'subscribed') {
-      query = 'SELECT * FROM channels WHERE is_subscribed = 1 ORDER BY channel_title ASC'
+      query = `SELECT * FROM channels WHERE is_subscribed = 1 ORDER BY ${orderBy}`
       // Apply pagination only for subscribed filter
       if (limit !== undefined && offset !== undefined) {
         query += ' LIMIT ? OFFSET ?'
@@ -717,10 +722,10 @@ export const channelQueries = {
         FROM channels c
         INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
         WHERE v.youtube_channel_id IS NOT NULL
-        ORDER BY c.channel_title ASC
+        ORDER BY c.${orderBy}
       `
     } else {
-      query = 'SELECT * FROM channels ORDER BY channel_title ASC'
+      query = `SELECT * FROM channels ORDER BY ${orderBy}`
     }
 
     return db.prepare(query).all(...params) as Channel[]
@@ -808,7 +813,23 @@ export const channelQueries = {
     return stmt.run(...values).changes
   },
 
-  getChannelsWithWatchLaterCount: () => {
+  getChannelsWithWatchLaterCount: (sortBy?: 'channel_title' | 'updated_at' | 'last_video_date', sortOrder?: 'asc' | 'desc') => {
+    // Validate and set default sort values
+    const validSortBy = (sortBy === 'channel_title' || sortBy === 'updated_at' || sortBy === 'last_video_date') ? sortBy : 'channel_title'
+    const validSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'asc'
+    
+    // Map sortBy to actual column name in query
+    let orderByColumn = 'c.channel_title'
+    if (validSortBy === 'updated_at') {
+      orderByColumn = 'c.updated_at'
+    } else if (validSortBy === 'last_video_date') {
+      orderByColumn = 'MAX(v.added_to_playlist_at)'
+    } else {
+      orderByColumn = 'c.channel_title'
+    }
+    
+    const orderBy = `${orderByColumn} ${validSortOrder}`
+    
     return db.prepare(`
       SELECT 
         c.*,
@@ -818,7 +839,7 @@ export const channelQueries = {
       INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
       WHERE v.youtube_channel_id IS NOT NULL
       GROUP BY c.youtube_channel_id
-      ORDER BY c.channel_title ASC
+      ORDER BY ${orderBy}
     `).all() as (Channel & { watch_later_count: number; last_video_date: string | null })[]
   },
 

@@ -19,32 +19,44 @@ function ChannelsList() {
   const [total, setTotal] = useState(0)
   const limit = 50
 
+  // Sort state
+  const [sortBy, setSortBy] = useState<'channel_title' | 'updated_at' | 'last_video_date'>('channel_title')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+
   // Determine filter type from route
   const filterType = location.pathname.includes('/subscribed') ? 'subscribed' : 'watch_later'
 
   useEffect(() => {
     // Reset to page 1 when filter type changes
     setCurrentPage(1)
+    // Reset sort to default when filter type changes
+    setSortBy('channel_title')
+    setSortOrder('asc')
   }, [location.pathname])
 
   useEffect(() => {
     loadChannels()
-  }, [location.pathname, currentPage])
+  }, [location.pathname, currentPage, sortBy, sortOrder])
 
   const loadChannels = async () => {
     try {
       setLoading(true)
       
+      // For subscribed channels, only allow channel_title and updated_at sorting
+      const validSortBy = filterType === 'subscribed' 
+        ? (sortBy === 'channel_title' || sortBy === 'updated_at' ? sortBy : 'channel_title')
+        : sortBy
+      
       if (filterType === 'subscribed') {
         // For subscribed channels, use pagination
-        const data = await channelsAPI.getAll(filterType, currentPage, limit)
+        const data = await channelsAPI.getAll(filterType, currentPage, limit, validSortBy, sortOrder)
         setChannels(data.channels || [])
         setTotal(data.total || 0)
         setTotalPages(data.totalPages || 1)
         setCurrentPage(data.page || 1)
       } else {
         // For watch_later channels, get all (no pagination)
-        const data = await channelsAPI.getAll(filterType)
+        const data = await channelsAPI.getAll(filterType, undefined, undefined, validSortBy, sortOrder)
         setChannels(data || [])
         setTotal(data?.length || 0)
         setTotalPages(1)
@@ -55,6 +67,27 @@ function ChannelsList() {
       toast.error('Failed to load channels')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSortChange = (value: string) => {
+    if (value === 'none') {
+      setSortBy('channel_title')
+      setSortOrder('asc')
+    } else {
+      const lastUnderscoreIndex = value.lastIndexOf('_')
+      if (lastUnderscoreIndex !== -1) {
+        const by = value.substring(0, lastUnderscoreIndex) as 'channel_title' | 'updated_at' | 'last_video_date'
+        const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
+        if ((by === 'channel_title' || by === 'updated_at' || by === 'last_video_date') && (order === 'asc' || order === 'desc')) {
+          setSortBy(by)
+          setSortOrder(order)
+        }
+      }
+    }
+    // Reset to page 1 when sort changes
+    if (filterType === 'subscribed') {
+      setCurrentPage(1)
     }
   }
 
@@ -120,16 +153,37 @@ function ChannelsList() {
                 : 'Channels with videos in your watch later list'}
             </p>
           </div>
-          {filterType === 'subscribed' && (
-            <Button
-              onClick={handleSyncSubscriptions}
-              disabled={syncing}
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync Subscriptions'}
-            </Button>
-          )}
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex gap-2 items-center">
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
+              <select
+                value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                onChange={(e) => handleSortChange(e.target.value)}
+                className="px-3 py-2 border border-border rounded text-sm bg-background"
+              >
+                <option value="channel_title_asc">Alphabetical (A-Z)</option>
+                <option value="channel_title_desc">Alphabetical (Z-A)</option>
+                <option value="updated_at_desc">Last Updated (Newest)</option>
+                <option value="updated_at_asc">Last Updated (Oldest)</option>
+                {filterType === 'watch_later' && (
+                  <>
+                    <option value="last_video_date_desc">Last Video Uploaded (Newest)</option>
+                    <option value="last_video_date_asc">Last Video Uploaded (Oldest)</option>
+                  </>
+                )}
+              </select>
+            </div>
+            {filterType === 'subscribed' && (
+              <Button
+                onClick={handleSyncSubscriptions}
+                disabled={syncing}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Syncing...' : 'Sync Subscriptions'}
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (

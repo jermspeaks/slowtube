@@ -116,7 +116,9 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
                 {video.published_at ? format(new Date(video.published_at), 'MMM d, yyyy') : '-'}
               </td>
               <td className="p-3 text-muted-foreground text-xs">
-                {video.added_to_playlist_at ? format(new Date(video.added_to_playlist_at), 'MMM d, yyyy') : '-'}
+                {video.added_to_playlist_at 
+                  ? format(new Date(video.added_to_playlist_at), 'MMM d, yyyy')
+                  : '-'}
               </td>
             </tr>
           ))}

@@ -118,11 +118,19 @@ export const videosAPI = {
 
 // Channels API
 export const channelsAPI = {
-  getAll: async (filter?: 'subscribed' | 'watch_later', page?: number, limit?: number) => {
+  getAll: async (
+    filter?: 'subscribed' | 'watch_later',
+    page?: number,
+    limit?: number,
+    sortBy?: 'channel_title' | 'updated_at' | 'last_video_date',
+    sortOrder?: 'asc' | 'desc'
+  ) => {
     const params: Record<string, string | number> = {}
     if (filter) params.filter = filter
     if (page !== undefined) params.page = page
     if (limit !== undefined) params.limit = limit
+    if (sortBy) params.sortBy = sortBy
+    if (sortOrder) params.sortOrder = sortOrder
     const response = await api.get('/api/channels', { params })
     return response.data
   },
