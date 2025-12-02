@@ -110,8 +110,8 @@ router.get('/:channelId/videos', async (req, res) => {
       
       res.json({ videos: videosWithDetails })
     } else if (type === 'latest') {
-      // Get videos from database for this channel (previously fetched videos)
-      const videos = channelQueries.getWatchLaterVideosByChannel(channelId)
+      // Get latest videos for this channel (videos with added_to_latest_at set and no state)
+      const videos = channelQueries.getLatestVideosByChannel(channelId)
       
       // Get tags and comments for each video
       const videosWithDetails = videos.map(video => {
@@ -179,7 +179,7 @@ router.post('/:channelId/fetch-latest', async (req, res) => {
       id: number
       youtube_id: string
       title: string
-      state: 'feed' | 'inbox' | 'archive'
+      state: 'feed' | 'inbox' | 'archive' | null
       isNew: boolean
     }> = []
 
@@ -191,6 +191,10 @@ router.post('/:channelId/fetch-latest', async (req, res) => {
       const existingVideo = videoQueries.getByYoutubeId(videoDetails.id)
 
       if (existingVideo) {
+        // Get current state - preserve existing state, don't set default
+        const currentState = videoStateQueries.getByVideoId(existingVideo.id)
+        const state = currentState?.state || null
+
         // Update existing video metadata but preserve state
         const updateData: any = {
           title: videoDetails.title,
@@ -201,6 +205,7 @@ router.post('/:channelId/fetch-latest', async (req, res) => {
           duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
           fetch_status: 'completed',
           youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
         }
 
         // Update thumbnail if we got a better one
@@ -212,9 +217,13 @@ router.post('/:channelId/fetch-latest', async (req, res) => {
 
         videoQueries.update(existingVideo.id, updateData)
 
-        // Get current state (default to 'feed' if not set)
-        const currentState = videoStateQueries.getByVideoId(existingVideo.id)
-        const state = currentState?.state || 'feed'
+        // Only set state if video already has a state (preserve existing state)
+        // If no state exists, leave it null so it appears in latest videos
+        if (currentState) {
+          // State already exists, keep it
+        } else {
+          // No state exists, leave it null for latest videos
+        }
 
         savedVideos.push({
           id: existingVideo.id,
@@ -240,18 +249,19 @@ router.post('/:channelId/fetch-latest', async (req, res) => {
           channel_title: videoDetails.channelTitle,
           youtube_channel_id: videoDetails.channelId,
           youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
         }
 
         const videoId = videoQueries.create(videoData)
 
-        // Set default state to 'feed'
-        videoStateQueries.setState(videoId, 'feed')
+        // Don't set state - leave it null so it appears in latest videos
+        // State will be set when user moves video to inbox/archive
 
         savedVideos.push({
           id: videoId,
           youtube_id: videoDetails.id,
           title: videoDetails.title,
-          state: 'feed',
+          state: 'feed' as 'feed' | 'inbox' | 'archive',
           isNew: true,
         })
       }

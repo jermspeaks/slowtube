@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Channel, ChannelVideoType } from '../types/channel'
 import { Video } from '../types/video'
-import { channelsAPI } from '../services/api'
+import { channelsAPI, videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoDetailModal from '../components/VideoDetailModal'
 import LatestVideosFetcher from '../components/LatestVideosFetcher'
 import { toast } from 'sonner'
 import { Button } from '../components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Archive, Inbox, X } from 'lucide-react'
 
 function ChannelDetail() {
   const navigate = useNavigate()
@@ -20,6 +20,8 @@ function ChannelDetail() {
   const [videosLoading, setVideosLoading] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [fetching, setFetching] = useState(false)
+  const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set())
+  const [bulkActionLoading, setBulkActionLoading] = useState(false)
 
   useEffect(() => {
     if (!channelId) {
@@ -33,6 +35,8 @@ function ChannelDetail() {
   useEffect(() => {
     if (channel && activeTab) {
       loadVideos()
+      // Clear selection when switching tabs
+      setSelectedVideoIds(new Set())
     }
   }, [channel, activeTab])
 
@@ -98,6 +102,54 @@ function ChannelDetail() {
     if (selectedVideo?.id === updatedVideo.id) {
       setSelectedVideo(updatedVideo)
     }
+  }
+
+  const handleVideoSelect = (videoId: number, selected: boolean) => {
+    setSelectedVideoIds(prev => {
+      const next = new Set(prev)
+      if (selected) {
+        next.add(videoId)
+      } else {
+        next.delete(videoId)
+      }
+      return next
+    })
+  }
+
+  const handleSelectAll = () => {
+    if (selectedVideoIds.size === videos.length) {
+      setSelectedVideoIds(new Set())
+    } else {
+      setSelectedVideoIds(new Set(videos.map(v => v.id)))
+    }
+  }
+
+  const handleBulkAction = async (state: 'inbox' | 'archive') => {
+    if (selectedVideoIds.size === 0) return
+
+    try {
+      setBulkActionLoading(true)
+      const updates = Array.from(selectedVideoIds).map(videoId => ({
+        videoId,
+        state,
+      }))
+
+      await videosAPI.bulkUpdateState(updates)
+      toast.success(`Moved ${updates.length} video(s) to ${state}`)
+      
+      // Clear selection and refresh videos
+      setSelectedVideoIds(new Set())
+      await loadVideos()
+    } catch (error: any) {
+      console.error('Error performing bulk action:', error)
+      toast.error(error.response?.data?.error || 'Failed to update videos')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleDismiss = async () => {
+    await handleBulkAction('archive')
   }
 
   const handleFetchLatest = async () => {
@@ -259,21 +311,67 @@ function ChannelDetail() {
           ) : (
             <>
               {activeTab === 'latest' && (
-                <div className="mb-4 flex justify-end">
-                  <Button
-                    onClick={handleFetchLatest}
-                    disabled={fetching}
-                    variant="default"
-                  >
-                    {fetching ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Fetching...
-                      </>
-                    ) : (
-                      'Fetch New Videos'
-                    )}
-                  </Button>
+                <div className="mb-4 flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <Button
+                        onClick={handleSelectAll}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {selectedVideoIds.size === videos.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                      {selectedVideoIds.size > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          {selectedVideoIds.size} video{selectedVideoIds.size !== 1 ? 's' : ''} selected
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleFetchLatest}
+                      disabled={fetching}
+                      variant="default"
+                    >
+                      {fetching ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Fetching...
+                        </>
+                      ) : (
+                        'Fetch New Videos'
+                      )}
+                    </Button>
+                  </div>
+                  {selectedVideoIds.size > 0 && (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleBulkAction('inbox')}
+                        disabled={bulkActionLoading}
+                        variant="default"
+                        className="bg-yellow-600 hover:bg-yellow-700"
+                      >
+                        <Inbox className="mr-2 h-4 w-4" />
+                        Move to Inbox ({selectedVideoIds.size})
+                      </Button>
+                      <Button
+                        onClick={() => handleBulkAction('archive')}
+                        disabled={bulkActionLoading}
+                        variant="default"
+                        className="bg-gray-600 hover:bg-gray-700"
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        Move to Archive ({selectedVideoIds.size})
+                      </Button>
+                      <Button
+                        onClick={handleDismiss}
+                        disabled={bulkActionLoading}
+                        variant="outline"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Dismiss ({selectedVideoIds.size})
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
@@ -284,6 +382,9 @@ function ChannelDetail() {
                     onClick={() => handleVideoClick(video)}
                     onStateChange={handleVideoUpdated}
                     showFeedDate={activeTab === 'latest'}
+                    selectable={activeTab === 'latest'}
+                    selected={selectedVideoIds.has(video.id)}
+                    onSelectChange={(selected) => handleVideoSelect(video.id, selected)}
                   />
                 ))}
               </div>

@@ -9,6 +9,7 @@ export interface Video {
   duration: string | null
   published_at: string | null
   added_to_playlist_at: string | null
+  added_to_latest_at: string | null
   fetch_status: 'pending' | 'completed' | 'unavailable' | 'failed' | null
   channel_title: string | null
   youtube_channel_id: string | null
@@ -230,8 +231,8 @@ export const videoQueries = {
 
   create: (video: Omit<Video, 'id' | 'created_at' | 'updated_at'>) => {
     const stmt = db.prepare(`
-      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, fetch_status, channel_title, youtube_channel_id, youtube_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, added_to_latest_at, fetch_status, channel_title, youtube_channel_id, youtube_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const result = stmt.run(
       video.youtube_id,
@@ -241,6 +242,7 @@ export const videoQueries = {
       video.duration,
       video.published_at,
       video.added_to_playlist_at,
+      video.added_to_latest_at || null,
       video.fetch_status || 'pending',
       video.channel_title,
       video.youtube_channel_id || null,
@@ -823,7 +825,7 @@ export const channelQueries = {
     if (validSortBy === 'updated_at') {
       orderByColumn = 'c.updated_at'
     } else if (validSortBy === 'last_video_date') {
-      orderByColumn = 'MAX(v.added_to_playlist_at)'
+      orderByColumn = 'last_video_date' // Use the alias from SELECT clause
     } else {
       orderByColumn = 'c.channel_title'
     }
@@ -850,6 +852,18 @@ export const channelQueries = {
       LEFT JOIN video_states vs ON v.id = vs.video_id
       WHERE v.youtube_channel_id = ?
       ORDER BY v.added_to_playlist_at DESC
+    `).all(channelId) as (Video & { state: string | null })[]
+  },
+
+  getLatestVideosByChannel: (channelId: string) => {
+    return db.prepare(`
+      SELECT v.*, vs.state 
+      FROM videos v
+      LEFT JOIN video_states vs ON v.id = vs.video_id
+      WHERE v.youtube_channel_id = ?
+        AND v.added_to_latest_at IS NOT NULL
+        AND vs.state IS NULL
+      ORDER BY v.added_to_latest_at DESC
     `).all(channelId) as (Video & { state: string | null })[]
   },
 

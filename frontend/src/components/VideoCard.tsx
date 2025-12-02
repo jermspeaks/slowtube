@@ -7,9 +7,12 @@ interface VideoCardProps {
   onClick: () => void
   onStateChange?: (updatedVideo: Video) => void
   showFeedDate?: boolean
+  selectable?: boolean
+  selected?: boolean
+  onSelectChange?: (selected: boolean) => void
 }
 
-function VideoCard({ video, onClick, onStateChange, showFeedDate = false }: VideoCardProps) {
+function VideoCard({ video, onClick, onStateChange, showFeedDate = false, selectable = false, selected = false, onSelectChange }: VideoCardProps) {
   const getStateColorClasses = (state?: string | null) => {
     switch (state) {
       case 'feed': return 'bg-green-500'
@@ -26,7 +29,23 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false }: Vide
   }
 
   return (
-    <div className="bg-card rounded-lg overflow-hidden shadow-md transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+    <div className="bg-card rounded-lg overflow-hidden shadow-md transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-lg relative">
+      {selectable && (
+        <div className="absolute top-2 left-2 z-10">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(e) => {
+              e.stopPropagation()
+              if (onSelectChange) {
+                onSelectChange(e.target.checked)
+              }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-5 h-5 cursor-pointer"
+          />
+        </div>
+      )}
       {video.thumbnail_url && (
         <div
           onClick={onClick}

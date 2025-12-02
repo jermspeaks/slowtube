@@ -514,6 +514,8 @@ router.patch('/:id/state', (req, res) => {
     }
 
     videoStateQueries.setState(id, state as 'feed' | 'inbox' | 'archive')
+    // Clear added_to_latest_at when video is moved to a state (removes from latest view)
+    videoQueries.update(id, { added_to_latest_at: null })
     res.json({ message: 'State updated successfully', state })
   } catch (error) {
     console.error('Error updating video state:', error)
@@ -562,6 +564,8 @@ router.post('/bulk-state', (req, res) => {
 
       try {
         videoStateQueries.setState(videoId, state as 'feed' | 'inbox' | 'archive')
+        // Clear added_to_latest_at when video is moved to a state (removes from latest view)
+        videoQueries.update(videoId, { added_to_latest_at: null })
         results.push({ videoId, success: true })
       } catch (error: any) {
         errors.push(`Failed to update video ${videoId}: ${error.message}`)
