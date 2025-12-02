@@ -2044,7 +2044,7 @@ export const channelListQueries = {
       FROM channel_lists cl
       LEFT JOIN channel_list_items cli ON cl.id = cli.list_id
       GROUP BY cl.id
-      ORDER BY cl.sort_order ASC, cl.created_at ASC
+      ORDER BY cl.name ASC
     `
     return db.prepare(query).all() as (ChannelList & { channel_count: number })[]
   },

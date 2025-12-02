@@ -110,6 +110,14 @@ function executeMigrationWithSafety(db: Database.Database, migrationSQL: string)
     .filter(line => line.length > 0)
     .join('\n')
 
+  // Check if SQL contains CREATE TRIGGER statements
+  // Triggers with BEGIN...END blocks can't be safely split by semicolon
+  // Since CREATE TRIGGER IF NOT EXISTS is safe, execute the full SQL
+  if (sqlWithoutComments.match(/CREATE\s+TRIGGER/i)) {
+    db.exec(sqlWithoutComments)
+    return
+  }
+
   // Split SQL into individual statements
   const statements = sqlWithoutComments
     .split(';')
