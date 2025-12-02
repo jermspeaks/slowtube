@@ -364,6 +364,54 @@ export const moviePlaylistsAPI = {
   },
 }
 
+// Channel Lists API
+export const channelListsAPI = {
+  getAll: async () => {
+    const response = await api.get('/api/channel-lists')
+    return response.data
+  },
+  getById: async (id: number) => {
+    const response = await api.get(`/api/channel-lists/${id}`)
+    return response.data
+  },
+  create: async (name: string, description?: string | null, color?: string | null) => {
+    const response = await api.post('/api/channel-lists', { name, description, color })
+    return response.data
+  },
+  update: async (id: number, updates: { name?: string; description?: string | null; color?: string | null }) => {
+    const response = await api.patch(`/api/channel-lists/${id}`, updates)
+    return response.data
+  },
+  delete: async (id: number) => {
+    const response = await api.delete(`/api/channel-lists/${id}`)
+    return response.data
+  },
+  addChannel: async (listId: number, channelId: string) => {
+    const response = await api.post(`/api/channel-lists/${listId}/channels`, { channelId })
+    return response.data
+  },
+  addChannels: async (listId: number, channelIds: string[]) => {
+    const response = await api.post(`/api/channel-lists/${listId}/channels`, { channelIds })
+    return response.data
+  },
+  removeChannel: async (listId: number, channelId: string) => {
+    const response = await api.delete(`/api/channel-lists/${listId}/channels/${channelId}`)
+    return response.data
+  },
+  refresh: async (listId: number, limit?: number) => {
+    const params: Record<string, number> = {}
+    if (limit !== undefined) params.limit = limit
+    const response = await api.post(`/api/channel-lists/${listId}/refresh`, null, { params })
+    return response.data
+  },
+  getVideos: async (listId: number, type: 'watch_later' | 'latest' | 'liked') => {
+    const response = await api.get(`/api/channel-lists/${listId}/videos`, {
+      params: { type },
+    })
+    return response.data
+  },
+}
+
 // Calendar API
 export const calendarAPI = {
   getEpisodes: async (startDate: string, endDate: string, hideArchived?: boolean) => {

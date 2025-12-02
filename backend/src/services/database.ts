@@ -1927,3 +1927,209 @@ export const moviePlaylistQueries = {
   },
 }
 
+// Channel List interfaces
+export interface ChannelList {
+  id: number
+  name: string
+  description: string | null
+  color: string | null
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ChannelListItem {
+  id: number
+  list_id: number
+  youtube_channel_id: string
+  position: number
+  added_at: string
+}
+
+export interface ChannelListWithChannels extends ChannelList {
+  channels: (Channel & { position: number; added_at: string })[]
+  channel_count: number
+}
+
+// Channel List operations
+export const channelListQueries = {
+  create: (name: string, description?: string | null, color?: string | null): number => {
+    const stmt = db.prepare(`
+      INSERT INTO channel_lists (name, description, color, sort_order, created_at, updated_at)
+      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `)
+    const result = stmt.run(name, description || null, color || null)
+    return result.lastInsertRowid as number
+  },
+
+  getAll: (): (ChannelList & { channel_count: number })[] => {
+    const query = `
+      SELECT 
+        cl.*,
+        COUNT(cli.id) as channel_count
+      FROM channel_lists cl
+      LEFT JOIN channel_list_items cli ON cl.id = cli.list_id
+      GROUP BY cl.id
+      ORDER BY cl.sort_order ASC, cl.created_at ASC
+    `
+    return db.prepare(query).all() as (ChannelList & { channel_count: number })[]
+  },
+
+  getById: (id: number): ChannelListWithChannels | undefined => {
+    const list = db.prepare('SELECT * FROM channel_lists WHERE id = ?').get(id) as ChannelList | undefined
+    if (!list) return undefined
+
+    const channels = db.prepare(`
+      SELECT 
+        c.*,
+        cli.position,
+        cli.added_at
+      FROM channel_list_items cli
+      INNER JOIN channels c ON cli.youtube_channel_id = c.youtube_channel_id
+      WHERE cli.list_id = ?
+      ORDER BY cli.position ASC, cli.added_at ASC
+    `).all(id) as (Channel & { position: number; added_at: string })[]
+
+    return {
+      ...list,
+      channels,
+      channel_count: channels.length,
+    }
+  },
+
+  update: (id: number, updates: { name?: string; description?: string | null; color?: string | null }): number => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    if (updates.name !== undefined) {
+      fields.push('name = ?')
+      values.push(updates.name)
+    }
+    if (updates.description !== undefined) {
+      fields.push('description = ?')
+      values.push(updates.description)
+    }
+    if (updates.color !== undefined) {
+      fields.push('color = ?')
+      values.push(updates.color)
+    }
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(id)
+
+    const stmt = db.prepare(`UPDATE channel_lists SET ${fields.join(', ')} WHERE id = ?`)
+    return stmt.run(...values).changes
+  },
+
+  delete: (id: number): number => {
+    return db.prepare('DELETE FROM channel_lists WHERE id = ?').run(id).changes
+  },
+
+  addChannel: (listId: number, youtubeChannelId: string): number => {
+    // Get the current max position for this list
+    const maxPosition = db.prepare(`
+      SELECT COALESCE(MAX(position), -1) as max_pos
+      FROM channel_list_items
+      WHERE list_id = ?
+    `).get(listId) as { max_pos: number } | undefined
+
+    const nextPosition = (maxPosition?.max_pos ?? -1) + 1
+
+    const stmt = db.prepare(`
+      INSERT INTO channel_list_items (list_id, youtube_channel_id, position, added_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(list_id, youtube_channel_id) DO NOTHING
+    `)
+    const result = stmt.run(listId, youtubeChannelId, nextPosition)
+    return result.changes
+  },
+
+  addChannels: (listId: number, youtubeChannelIds: string[]): number => {
+    if (youtubeChannelIds.length === 0) return 0
+
+    // Get the current max position for this list
+    const maxPosition = db.prepare(`
+      SELECT COALESCE(MAX(position), -1) as max_pos
+      FROM channel_list_items
+      WHERE list_id = ?
+    `).get(listId) as { max_pos: number } | undefined
+
+    let currentPosition = (maxPosition?.max_pos ?? -1) + 1
+    let addedCount = 0
+
+    const stmt = db.prepare(`
+      INSERT INTO channel_list_items (list_id, youtube_channel_id, position, added_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(list_id, youtube_channel_id) DO NOTHING
+    `)
+
+    for (const youtubeChannelId of youtubeChannelIds) {
+      const result = stmt.run(listId, youtubeChannelId, currentPosition)
+      if (result.changes > 0) {
+        addedCount++
+        currentPosition++
+      }
+    }
+
+    return addedCount
+  },
+
+  removeChannel: (listId: number, youtubeChannelId: string): number => {
+    const stmt = db.prepare('DELETE FROM channel_list_items WHERE list_id = ? AND youtube_channel_id = ?')
+    return stmt.run(listId, youtubeChannelId).changes
+  },
+
+  getChannelsInList: (listId: number): Channel[] => {
+    return db.prepare(`
+      SELECT c.*
+      FROM channel_list_items cli
+      INNER JOIN channels c ON cli.youtube_channel_id = c.youtube_channel_id
+      WHERE cli.list_id = ?
+      ORDER BY cli.position ASC, cli.added_at ASC
+    `).all(listId) as Channel[]
+  },
+
+  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked'): (Video & { state: string | null })[] => {
+    // Get channel IDs in this list
+    const channelIds = db.prepare(`
+      SELECT youtube_channel_id
+      FROM channel_list_items
+      WHERE list_id = ?
+    `).all(listId) as { youtube_channel_id: string }[]
+
+    if (channelIds.length === 0) {
+      return []
+    }
+
+    const placeholders = channelIds.map(() => '?').join(',')
+    const channelIdValues = channelIds.map(c => c.youtube_channel_id)
+
+    if (type === 'watch_later') {
+      // Get all videos from channels in the list (watch later videos)
+      return db.prepare(`
+        SELECT v.*, vs.state 
+        FROM videos v
+        LEFT JOIN video_states vs ON v.id = vs.video_id
+        WHERE v.youtube_channel_id IN (${placeholders})
+        ORDER BY v.added_to_playlist_at DESC
+      `).all(...channelIdValues) as (Video & { state: string | null })[]
+    } else if (type === 'latest') {
+      // Get latest videos (with added_to_latest_at and no state)
+      return db.prepare(`
+        SELECT v.*, vs.state 
+        FROM videos v
+        LEFT JOIN video_states vs ON v.id = vs.video_id
+        WHERE v.youtube_channel_id IN (${placeholders})
+          AND v.added_to_latest_at IS NOT NULL
+          AND vs.state IS NULL
+        ORDER BY v.added_to_latest_at DESC
+      `).all(...channelIdValues) as (Video & { state: string | null })[]
+    } else {
+      // Liked videos - placeholder for future implementation
+      return []
+    }
+  },
+}
+

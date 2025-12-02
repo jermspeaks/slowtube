@@ -3,8 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Channel, ChannelWithCount } from '../types/channel'
 import { channelsAPI } from '../services/api'
 import { toast } from 'sonner'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import AddToChannelListModal from '../components/AddToChannelListModal'
 
 function ChannelsList() {
   const location = useLocation()
@@ -13,6 +14,8 @@ function ChannelsList() {
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false)
+  const [selectedChannelIds, setSelectedChannelIds] = useState<Set<string>>(new Set())
   
   // Pagination state (only for subscribed channels)
   const [currentPage, setCurrentPage] = useState(1)
@@ -92,8 +95,22 @@ function ChannelsList() {
     }
   }
 
-  const handleChannelClick = (channel: Channel) => {
+  const handleChannelClick = (channel: Channel, e?: React.MouseEvent) => {
+    // Don't navigate if clicking on the add to list button
+    if (e && (e.target as HTMLElement).closest('.add-to-list-button')) {
+      return
+    }
     navigate(`/channels/${channel.youtube_channel_id}`)
+  }
+
+  const handleAddToListsClick = (channel: Channel, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSelectedChannelIds(new Set([channel.youtube_channel_id]))
+    setIsAddToListModalOpen(true)
+  }
+
+  const handleAddToListsSuccess = () => {
+    setSelectedChannelIds(new Set())
   }
 
   const formatDate = (dateString: string | null) => {
@@ -276,8 +293,8 @@ function ChannelsList() {
               {channels.map((channel) => (
                 <div
                   key={channel.youtube_channel_id}
-                  onClick={() => handleChannelClick(channel)}
-                  className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden"
+                  onClick={(e) => handleChannelClick(channel, e)}
+                  className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden relative"
                 >
                   <div className="p-6">
                     <div className="flex items-start gap-4 mb-4">
@@ -285,10 +302,10 @@ function ChannelsList() {
                         <img
                           src={channel.thumbnail_url}
                           alt={channel.channel_title || 'Channel'}
-                          className="w-16 h-16 rounded-full object-cover flex-shrink-0"
+                          className="w-16 h-16 rounded-full object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center shrink-0">
                           <span className="text-muted-foreground text-xl">
                             {channel.channel_title?.[0]?.toUpperCase() || '?'}
                           </span>
@@ -325,6 +342,15 @@ function ChannelsList() {
                       )}
                     </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2 add-to-list-button"
+                    onClick={(e) => handleAddToListsClick(channel, e)}
+                    title="Add to list"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
             </div>
@@ -364,6 +390,16 @@ function ChannelsList() {
           </>
         )}
       </main>
+
+      <AddToChannelListModal
+        isOpen={isAddToListModalOpen}
+        onClose={() => {
+          setIsAddToListModalOpen(false)
+          setSelectedChannelIds(new Set())
+        }}
+        channelIds={Array.from(selectedChannelIds)}
+        onSuccess={handleAddToListsSuccess}
+      />
     </div>
   )
 }

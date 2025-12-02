@@ -1,0 +1,423 @@
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { channelListsAPI, videosAPI } from '../services/api'
+import { ChannelListWithChannels } from '../types/channel-list'
+import { Video } from '../types/video'
+import { ChannelVideoType } from '../types/channel'
+import VideoCard from '../components/VideoCard'
+import VideoDetailModal from '../components/VideoDetailModal'
+import ChannelListForm from '../components/ChannelListForm'
+import { toast } from 'sonner'
+import { Button } from '../components/ui/button'
+import { Loader2, Archive, Inbox, X, Edit, ArrowLeft, RefreshCw } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog'
+
+function ChannelListDetail() {
+  const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const [list, setList] = useState<ChannelListWithChannels | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<ChannelVideoType>('watch_later')
+  const [videos, setVideos] = useState<Video[]>([])
+  const [videosLoading, setVideosLoading] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  const [fetching, setFetching] = useState(false)
+  const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set())
+  const [bulkActionLoading, setBulkActionLoading] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  useEffect(() => {
+    if (id) {
+      loadList()
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (list && activeTab) {
+      loadVideos()
+      // Clear selection when switching tabs
+      setSelectedVideoIds(new Set())
+    }
+  }, [list, activeTab])
+
+  const loadList = async () => {
+    if (!id) return
+
+    try {
+      setLoading(true)
+      const data = await channelListsAPI.getById(parseInt(id, 10))
+      setList(data)
+    } catch (error: any) {
+      console.error('Error loading channel list:', error)
+      toast.error(error.response?.data?.error || 'Failed to load channel list')
+      if (error.response?.status === 404) {
+        navigate('/channel-lists')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadVideos = async () => {
+    if (!id || !activeTab) return
+
+    try {
+      setVideosLoading(true)
+      const data = await channelListsAPI.getVideos(parseInt(id, 10), activeTab)
+      setVideos(data.videos || [])
+    } catch (error) {
+      console.error('Error loading videos:', error)
+      setVideos([])
+    } finally {
+      setVideosLoading(false)
+    }
+  }
+
+  const handleVideoClick = async (video: Video) => {
+    try {
+      setSelectedVideo(video)
+    } catch (error) {
+      console.error('Error loading video details:', error)
+      setSelectedVideo(video)
+    }
+  }
+
+  const handleVideoUpdated = (updatedVideo: Video) => {
+    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
+    if (selectedVideo?.id === updatedVideo.id) {
+      setSelectedVideo(updatedVideo)
+    }
+  }
+
+  const handleVideoSelect = (videoId: number, selected: boolean) => {
+    setSelectedVideoIds(prev => {
+      const next = new Set(prev)
+      if (selected) {
+        next.add(videoId)
+      } else {
+        next.delete(videoId)
+      }
+      return next
+    })
+  }
+
+  const handleSelectAll = () => {
+    if (selectedVideoIds.size === videos.length) {
+      setSelectedVideoIds(new Set())
+    } else {
+      setSelectedVideoIds(new Set(videos.map(v => v.id)))
+    }
+  }
+
+  const handleBulkAction = async (state: 'inbox' | 'archive') => {
+    if (selectedVideoIds.size === 0) return
+
+    try {
+      setBulkActionLoading(true)
+      const updates = Array.from(selectedVideoIds).map(videoId => ({
+        videoId,
+        state,
+      }))
+
+      await videosAPI.bulkUpdateState(updates)
+      toast.success(`Moved ${updates.length} video(s) to ${state}`)
+      
+      // Clear selection and refresh videos
+      setSelectedVideoIds(new Set())
+      await loadVideos()
+    } catch (error: any) {
+      console.error('Error performing bulk action:', error)
+      toast.error(error.response?.data?.error || 'Failed to update videos')
+    } finally {
+      setBulkActionLoading(false)
+    }
+  }
+
+  const handleDismiss = async () => {
+    await handleBulkAction('archive')
+  }
+
+  const handleRefresh = async () => {
+    if (!id) return
+
+    try {
+      setFetching(true)
+      const response = await channelListsAPI.refresh(parseInt(id, 10), 50)
+      toast.success(response.message || `Refreshed ${response.totalVideos || 0} videos`)
+      // Refresh the video list to show newly fetched videos
+      await loadVideos()
+    } catch (error: any) {
+      console.error('Error refreshing list:', error)
+      
+      if (error.response?.status === 401 || error.response?.data?.requiresAuth) {
+        toast.error('YouTube authentication required. Please connect your YouTube account in Settings.', {
+          action: {
+            label: 'Go to Settings',
+            onClick: () => navigate('/settings')
+          }
+        })
+      } else {
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to refresh list'
+        toast.error(errorMessage)
+      }
+    } finally {
+      setFetching(false)
+    }
+  }
+
+  const handleUpdate = async (data: { name: string; description: string | null; color: string | null }) => {
+    if (!list) return
+
+    try {
+      const updated = await channelListsAPI.update(list.id, data)
+      setList(updated)
+      toast.success('Channel list updated successfully')
+      setIsEditModalOpen(false)
+    } catch (error: any) {
+      console.error('Error updating channel list:', error)
+      toast.error(error.response?.data?.error || 'Failed to update channel list')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="max-w-[1400px] mx-auto px-6 py-6">
+          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-lg text-muted-foreground">Loading channel list...</div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (!list) {
+    return (
+      <div className="min-h-screen bg-background">
+        <main className="max-w-[1400px] mx-auto px-6 py-6">
+          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-lg text-muted-foreground mb-4">Channel list not found</p>
+            <Button onClick={() => navigate('/channel-lists')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Channel Lists
+            </Button>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <main className="max-w-[1400px] mx-auto px-6 py-6">
+        {/* List Header */}
+        <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
+          <div className="flex items-start justify-between gap-6">
+            <div className="flex items-start gap-4 flex-1 min-w-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/channel-lists')}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  {list.color && (
+                    <div
+                      className="w-4 h-4 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: list.color }}
+                    />
+                  )}
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {list.name}
+                  </h1>
+                </div>
+                {list.description && (
+                  <p className="text-muted-foreground mb-2">
+                    {list.description}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {list.channel_count} {list.channel_count === 1 ? 'channel' : 'channels'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={fetching}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${fetching ? 'animate-spin' : ''}`} />
+                {fetching ? 'Refreshing...' : 'Refresh List'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditModalOpen(true)}
+                className="gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-card rounded-lg shadow-sm mb-6">
+          <div className="border-b border-border">
+            <nav className="flex -mb-px">
+              {(['watch_later', 'latest', 'liked'] as ChannelVideoType[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`
+                    px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                    ${
+                      activeTab === tab
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                    }
+                  `}
+                >
+                  {tab === 'watch_later' && 'Watch Later Videos'}
+                  {tab === 'latest' && 'Latest Videos'}
+                  {tab === 'liked' && 'Liked Videos'}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Videos Content */}
+        <div>
+          {videosLoading ? (
+            <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
+              <div className="text-lg text-muted-foreground">Loading videos...</div>
+            </div>
+          ) : activeTab === 'liked' ? (
+            <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+              <p className="text-lg text-muted-foreground mb-4">
+                Coming soon - Liked videos will be imported separately
+              </p>
+            </div>
+          ) : videos.length === 0 ? (
+            <div className="text-center py-[60px] px-5 bg-card rounded-lg">
+              <p className="text-lg text-muted-foreground mb-4">
+                No videos found
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {activeTab === 'watch_later' 
+                  ? 'This list has no watch later videos from its channels.'
+                  : 'This list has no latest videos pending review from its channels.'}
+              </p>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'latest' && (
+                <div className="mb-4 flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                      <Button
+                        onClick={handleSelectAll}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {selectedVideoIds.size === videos.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                      {selectedVideoIds.size > 0 && (
+                        <span className="text-sm text-muted-foreground">
+                          {selectedVideoIds.size} video{selectedVideoIds.size !== 1 ? 's' : ''} selected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {selectedVideoIds.size > 0 && (
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleBulkAction('inbox')}
+                        disabled={bulkActionLoading}
+                        variant="default"
+                        className="bg-yellow-600 hover:bg-yellow-700"
+                      >
+                        <Inbox className="mr-2 h-4 w-4" />
+                        Move to Inbox ({selectedVideoIds.size})
+                      </Button>
+                      <Button
+                        onClick={() => handleBulkAction('archive')}
+                        disabled={bulkActionLoading}
+                        variant="default"
+                        className="bg-gray-600 hover:bg-gray-700"
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        Move to Archive ({selectedVideoIds.size})
+                      </Button>
+                      <Button
+                        onClick={handleDismiss}
+                        disabled={bulkActionLoading}
+                        variant="outline"
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Dismiss ({selectedVideoIds.size})
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+                {videos.map((video) => (
+                  <VideoCard
+                    key={video.id}
+                    video={video}
+                    onClick={() => handleVideoClick(video)}
+                    onStateChange={handleVideoUpdated}
+                    showFeedDate={activeTab === 'latest'}
+                    selectable={activeTab === 'latest'}
+                    selected={selectedVideoIds.has(video.id)}
+                    onSelectChange={(selected) => handleVideoSelect(video.id, selected)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+
+      {selectedVideo && (
+        <VideoDetailModal
+          video={selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+          onVideoUpdated={handleVideoUpdated}
+        />
+      )}
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Channel List</DialogTitle>
+            <DialogDescription>
+              Update channel list details.
+            </DialogDescription>
+          </DialogHeader>
+          <ChannelListForm
+            list={list}
+            onSubmit={handleUpdate}
+            onCancel={() => setIsEditModalOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+export default ChannelListDetail
+

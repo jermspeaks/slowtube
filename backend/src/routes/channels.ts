@@ -156,7 +156,7 @@ function parseDuration(duration: string): string {
 }
 
 // Helper function to process and save latest videos from a channel
-async function processLatestVideosFromChannel(
+export async function processLatestVideosFromChannel(
   channelId: string,
   fetchLimit: number = 50
 ): Promise<{

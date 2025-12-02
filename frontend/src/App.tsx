@@ -18,6 +18,8 @@ import WatchNext from './pages/WatchNext'
 import Tags from './pages/Tags'
 import MoviePlaylists from './pages/MoviePlaylists'
 import MoviePlaylistDetail from './pages/MoviePlaylistDetail'
+import ChannelLists from './pages/ChannelLists'
+import ChannelListDetail from './pages/ChannelListDetail'
 import { Navbar } from './components/Navbar'
 import { useTheme } from './hooks/useTheme'
 import { Toaster } from './components/ui/sonner'
@@ -63,6 +65,8 @@ function AppContent() {
         <Route path="/tags" element={<Tags />} />
         <Route path="/playlists" element={<MoviePlaylists />} />
         <Route path="/playlists/:id" element={<MoviePlaylistDetail />} />
+        <Route path="/channel-lists" element={<ChannelLists />} />
+        <Route path="/channel-lists/:id" element={<ChannelListDetail />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       <Toaster position={toastPosition} />
