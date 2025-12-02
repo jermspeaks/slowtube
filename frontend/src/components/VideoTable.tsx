@@ -6,9 +6,23 @@ interface VideoTableProps {
   videos: Video[]
   onVideoClick: (video: Video) => void
   onStateChange?: (updatedVideo: Video) => void
+  selectable?: boolean
+  selectedVideoIds?: Set<number>
+  onSelectionChange?: (videoId: number, selected: boolean) => void
+  onSelectAll?: () => void
+  showFeedDate?: boolean
 }
 
-function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
+function VideoTable({ 
+  videos, 
+  onVideoClick, 
+  onStateChange,
+  selectable = false,
+  selectedVideoIds = new Set(),
+  onSelectionChange,
+  onSelectAll,
+  showFeedDate = false
+}: VideoTableProps) {
   const getStateColorClasses = (state?: string | null) => {
     switch (state) {
       case 'feed': return 'bg-green-500'
@@ -24,11 +38,39 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
     }
   }
 
+  const allSelected = selectable && videos.length > 0 && selectedVideoIds.size === videos.length
+  const someSelected = selectable && selectedVideoIds.size > 0 && selectedVideoIds.size < videos.length
+
+  const handleSelectAll = () => {
+    if (onSelectAll) {
+      onSelectAll()
+    }
+  }
+
+  const handleRowSelect = (videoId: number, selected: boolean) => {
+    if (onSelectionChange) {
+      onSelectionChange(videoId, selected)
+    }
+  }
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse bg-card rounded-lg overflow-hidden">
         <thead>
           <tr className="bg-muted">
+            {selectable && (
+              <th className="p-3 text-left border-b-2 border-border w-12">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  ref={(input) => {
+                    if (input) input.indeterminate = someSelected && !allSelected
+                  }}
+                  onChange={handleSelectAll}
+                  className="cursor-pointer"
+                />
+              </th>
+            )}
             <th className="p-3 text-left border-b-2 border-border">Thumbnail</th>
             <th className="p-3 text-left border-b-2 border-border">Title</th>
             <th className="p-3 text-left border-b-2 border-border">Channel</th>
@@ -36,7 +78,11 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
             <th className="p-3 text-left border-b-2 border-border">Tags</th>
             <th className="p-3 text-left border-b-2 border-border">Duration</th>
             <th className="p-3 text-left border-b-2 border-border">Published</th>
-            <th className="p-3 text-left border-b-2 border-border">Added</th>
+            {showFeedDate ? (
+              <th className="p-3 text-left border-b-2 border-border">Added to Latest</th>
+            ) : (
+              <th className="p-3 text-left border-b-2 border-border">Added</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -45,6 +91,17 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
               key={video.id}
               className="border-b border-border hover:bg-accent transition-colors"
             >
+              {selectable && (
+                <td className="p-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedVideoIds.has(video.id)}
+                    onChange={(e) => handleRowSelect(video.id, e.target.checked)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="cursor-pointer"
+                  />
+                </td>
+              )}
               <td
                 className="p-2 cursor-pointer"
                 onClick={() => onVideoClick(video)}
@@ -116,7 +173,9 @@ function VideoTable({ videos, onVideoClick, onStateChange }: VideoTableProps) {
                 {video.published_at ? format(new Date(video.published_at), 'MMM d, yyyy') : '-'}
               </td>
               <td className="p-3 text-muted-foreground text-xs">
-                {video.added_to_playlist_at 
+                {showFeedDate && video.added_to_latest_at
+                  ? format(new Date(video.added_to_latest_at), 'MMM d, yyyy')
+                  : !showFeedDate && video.added_to_playlist_at
                   ? format(new Date(video.added_to_playlist_at), 'MMM d, yyyy')
                   : '-'}
               </td>

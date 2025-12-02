@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { channelListsAPI, videosAPI } from '../services/api'
 import { ChannelListWithChannels } from '../types/channel-list'
-import { Video } from '../types/video'
+import { Video, ViewMode } from '../types/video'
 import { ChannelVideoType } from '../types/channel'
 import VideoCard from '../components/VideoCard'
+import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
 import ChannelListForm from '../components/ChannelListForm'
+import ViewToggle from '../components/ViewToggle'
 import { toast } from 'sonner'
 import { Button } from '../components/ui/button'
 import { Loader2, Archive, Inbox, X, Edit, ArrowLeft, RefreshCw } from 'lucide-react'
@@ -31,6 +33,7 @@ function ChannelListDetail() {
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('card')
 
   useEffect(() => {
     if (id) {
@@ -322,70 +325,82 @@ function ChannelListDetail() {
             </div>
           ) : (
             <>
-              {activeTab === 'latest' && (
-                <div className="mb-4 flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                      <Button
-                        onClick={handleSelectAll}
-                        variant="outline"
-                        size="sm"
-                      >
-                        {selectedVideoIds.size === videos.length ? 'Deselect All' : 'Select All'}
-                      </Button>
-                      {selectedVideoIds.size > 0 && (
-                        <span className="text-sm text-muted-foreground">
-                          {selectedVideoIds.size} video{selectedVideoIds.size !== 1 ? 's' : ''} selected
-                        </span>
-                      )}
-                    </div>
+              <div className="mb-4 flex justify-between items-center">
+                {activeTab === 'latest' && (
+                  <div className="flex items-center gap-4">
+                    <Button
+                      onClick={handleSelectAll}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {selectedVideoIds.size === videos.length ? 'Deselect All' : 'Select All'}
+                    </Button>
+                    {selectedVideoIds.size > 0 && (
+                      <span className="text-sm text-muted-foreground">
+                        {selectedVideoIds.size} video{selectedVideoIds.size !== 1 ? 's' : ''} selected
+                      </span>
+                    )}
                   </div>
-                  {selectedVideoIds.size > 0 && (
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => handleBulkAction('inbox')}
-                        disabled={bulkActionLoading}
-                        variant="default"
-                        className="bg-yellow-600 hover:bg-yellow-700"
-                      >
-                        <Inbox className="mr-2 h-4 w-4" />
-                        Move to Inbox ({selectedVideoIds.size})
-                      </Button>
-                      <Button
-                        onClick={() => handleBulkAction('archive')}
-                        disabled={bulkActionLoading}
-                        variant="default"
-                        className="bg-gray-600 hover:bg-gray-700"
-                      >
-                        <Archive className="mr-2 h-4 w-4" />
-                        Move to Archive ({selectedVideoIds.size})
-                      </Button>
-                      <Button
-                        onClick={handleDismiss}
-                        disabled={bulkActionLoading}
-                        variant="outline"
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Dismiss ({selectedVideoIds.size})
-                      </Button>
-                    </div>
-                  )}
+                )}
+                <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+              </div>
+              {activeTab === 'latest' && selectedVideoIds.size > 0 && (
+                <div className="mb-4 flex gap-2">
+                  <Button
+                    onClick={() => handleBulkAction('inbox')}
+                    disabled={bulkActionLoading}
+                    variant="default"
+                    className="bg-yellow-600 hover:bg-yellow-700"
+                  >
+                    <Inbox className="mr-2 h-4 w-4" />
+                    Move to Inbox ({selectedVideoIds.size})
+                  </Button>
+                  <Button
+                    onClick={() => handleBulkAction('archive')}
+                    disabled={bulkActionLoading}
+                    variant="default"
+                    className="bg-gray-600 hover:bg-gray-700"
+                  >
+                    <Archive className="mr-2 h-4 w-4" />
+                    Move to Archive ({selectedVideoIds.size})
+                  </Button>
+                  <Button
+                    onClick={handleDismiss}
+                    disabled={bulkActionLoading}
+                    variant="outline"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Dismiss ({selectedVideoIds.size})
+                  </Button>
                 </div>
               )}
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
-                {videos.map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    video={video}
-                    onClick={() => handleVideoClick(video)}
-                    onStateChange={handleVideoUpdated}
-                    showFeedDate={activeTab === 'latest'}
-                    selectable={activeTab === 'latest'}
-                    selected={selectedVideoIds.has(video.id)}
-                    onSelectChange={(selected) => handleVideoSelect(video.id, selected)}
-                  />
-                ))}
-              </div>
+              {viewMode === 'card' ? (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+                  {videos.map((video) => (
+                    <VideoCard
+                      key={video.id}
+                      video={video}
+                      onClick={() => handleVideoClick(video)}
+                      onStateChange={handleVideoUpdated}
+                      showFeedDate={activeTab === 'latest'}
+                      selectable={activeTab === 'latest'}
+                      selected={selectedVideoIds.has(video.id)}
+                      onSelectChange={(selected) => handleVideoSelect(video.id, selected)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <VideoTable
+                  videos={videos}
+                  onVideoClick={handleVideoClick}
+                  onStateChange={handleVideoUpdated}
+                  selectable={activeTab === 'latest'}
+                  selectedVideoIds={selectedVideoIds}
+                  onSelectionChange={handleVideoSelect}
+                  onSelectAll={handleSelectAll}
+                  showFeedDate={activeTab === 'latest'}
+                />
+              )}
             </>
           )}
         </div>
