@@ -701,7 +701,7 @@ export const statsQueries = {
 
 // Channel operations
 export const channelQueries = {
-  getAll: (filterType?: 'subscribed' | 'watch_later', limit?: number, offset?: number, sortBy?: 'channel_title' | 'updated_at', sortOrder?: 'asc' | 'desc') => {
+  getAll: (filterType?: 'subscribed' | 'watch_later', limit?: number, offset?: number, sortBy?: 'channel_title' | 'updated_at', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean) => {
     let query = ''
     const params: any[] = []
 
@@ -711,7 +711,17 @@ export const channelQueries = {
     const orderBy = `${validSortBy} ${validSortOrder}`
 
     if (filterType === 'subscribed') {
-      query = `SELECT * FROM channels WHERE is_subscribed = 1 ORDER BY ${orderBy}`
+      if (notInAnyList) {
+        // Get subscribed channels that are not in any list
+        query = `
+          SELECT c.*
+          FROM channels c
+          LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          WHERE c.is_subscribed = 1 AND cli.id IS NULL
+          ORDER BY c.${orderBy}`
+      } else {
+        query = `SELECT * FROM channels WHERE is_subscribed = 1 ORDER BY ${orderBy}`
+      }
       // Apply pagination only for subscribed filter
       if (limit !== undefined && offset !== undefined) {
         query += ' LIMIT ? OFFSET ?'
@@ -719,35 +729,84 @@ export const channelQueries = {
       }
     } else if (filterType === 'watch_later') {
       // Get channels that have videos in watch later
-      query = `
-        SELECT DISTINCT c.*
-        FROM channels c
-        INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
-        WHERE v.youtube_channel_id IS NOT NULL
-        ORDER BY c.${orderBy}
-      `
+      if (notInAnyList) {
+        query = `
+          SELECT DISTINCT c.*
+          FROM channels c
+          INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+          LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          WHERE v.youtube_channel_id IS NOT NULL AND cli.id IS NULL
+          ORDER BY c.${orderBy}
+        `
+      } else {
+        query = `
+          SELECT DISTINCT c.*
+          FROM channels c
+          INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+          WHERE v.youtube_channel_id IS NOT NULL
+          ORDER BY c.${orderBy}
+        `
+      }
     } else {
-      query = `SELECT * FROM channels ORDER BY ${orderBy}`
+      if (notInAnyList) {
+        query = `
+          SELECT c.*
+          FROM channels c
+          LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          WHERE cli.id IS NULL
+          ORDER BY c.${orderBy}
+        `
+      } else {
+        query = `SELECT * FROM channels ORDER BY ${orderBy}`
+      }
     }
 
     return db.prepare(query).all(...params) as Channel[]
   },
 
-  getAllCount: (filterType?: 'subscribed' | 'watch_later') => {
+  getAllCount: (filterType?: 'subscribed' | 'watch_later', notInAnyList?: boolean) => {
     let query = ''
     const params: any[] = []
 
     if (filterType === 'subscribed') {
-      query = 'SELECT COUNT(*) as count FROM channels WHERE is_subscribed = 1'
+      if (notInAnyList) {
+        query = `
+          SELECT COUNT(*) as count
+          FROM channels c
+          LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          WHERE c.is_subscribed = 1 AND cli.id IS NULL
+        `
+      } else {
+        query = 'SELECT COUNT(*) as count FROM channels WHERE is_subscribed = 1'
+      }
     } else if (filterType === 'watch_later') {
-      query = `
-        SELECT COUNT(DISTINCT c.youtube_channel_id) as count
-        FROM channels c
-        INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
-        WHERE v.youtube_channel_id IS NOT NULL
-      `
+      if (notInAnyList) {
+        query = `
+          SELECT COUNT(DISTINCT c.youtube_channel_id) as count
+          FROM channels c
+          INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+          LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          WHERE v.youtube_channel_id IS NOT NULL AND cli.id IS NULL
+        `
+      } else {
+        query = `
+          SELECT COUNT(DISTINCT c.youtube_channel_id) as count
+          FROM channels c
+          INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+          WHERE v.youtube_channel_id IS NOT NULL
+        `
+      }
     } else {
-      query = 'SELECT COUNT(*) as count FROM channels'
+      if (notInAnyList) {
+        query = `
+          SELECT COUNT(*) as count
+          FROM channels c
+          LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          WHERE cli.id IS NULL
+        `
+      } else {
+        query = 'SELECT COUNT(*) as count FROM channels'
+      }
     }
 
     const result = db.prepare(query).get(...params) as { count: number }
@@ -815,7 +874,7 @@ export const channelQueries = {
     return stmt.run(...values).changes
   },
 
-  getChannelsWithWatchLaterCount: (sortBy?: 'channel_title' | 'updated_at' | 'last_video_date', sortOrder?: 'asc' | 'desc') => {
+  getChannelsWithWatchLaterCount: (sortBy?: 'channel_title' | 'updated_at' | 'last_video_date', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean) => {
     // Validate and set default sort values
     const validSortBy = (sortBy === 'channel_title' || sortBy === 'updated_at' || sortBy === 'last_video_date') ? sortBy : 'channel_title'
     const validSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'asc'
@@ -832,17 +891,32 @@ export const channelQueries = {
     
     const orderBy = `${orderByColumn} ${validSortOrder}`
     
-    return db.prepare(`
-      SELECT 
-        c.*,
-        COUNT(v.id) as watch_later_count,
-        MAX(v.added_to_playlist_at) as last_video_date
-      FROM channels c
-      INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
-      WHERE v.youtube_channel_id IS NOT NULL
-      GROUP BY c.youtube_channel_id
-      ORDER BY ${orderBy}
-    `).all() as (Channel & { watch_later_count: number; last_video_date: string | null })[]
+    if (notInAnyList) {
+      return db.prepare(`
+        SELECT 
+          c.*,
+          COUNT(v.id) as watch_later_count,
+          MAX(v.added_to_playlist_at) as last_video_date
+        FROM channels c
+        INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+        LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+        WHERE v.youtube_channel_id IS NOT NULL AND cli.id IS NULL
+        GROUP BY c.youtube_channel_id
+        ORDER BY ${orderBy}
+      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null })[]
+    } else {
+      return db.prepare(`
+        SELECT 
+          c.*,
+          COUNT(v.id) as watch_later_count,
+          MAX(v.added_to_playlist_at) as last_video_date
+        FROM channels c
+        INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+        WHERE v.youtube_channel_id IS NOT NULL
+        GROUP BY c.youtube_channel_id
+        ORDER BY ${orderBy}
+      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null })[]
+    }
   },
 
   getWatchLaterVideosByChannel: (channelId: string) => {

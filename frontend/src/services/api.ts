@@ -123,14 +123,16 @@ export const channelsAPI = {
     page?: number,
     limit?: number,
     sortBy?: 'channel_title' | 'updated_at' | 'last_video_date',
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
+    notInAnyList?: boolean
   ) => {
-    const params: Record<string, string | number> = {}
+    const params: Record<string, string | number | boolean> = {}
     if (filter) params.filter = filter
     if (page !== undefined) params.page = page
     if (limit !== undefined) params.limit = limit
     if (sortBy) params.sortBy = sortBy
     if (sortOrder) params.sortOrder = sortOrder
+    if (notInAnyList !== undefined) params.notInAnyList = notInAnyList
     const response = await api.get('/api/channels', { params })
     return response.data
   },

@@ -117,7 +117,7 @@ router.delete('/:id', (req, res) => {
     if (deleted > 0) {
       res.json({ message: 'List deleted successfully' })
     } else {
-      res.status(500).json({ error: 'Failed to delete list' })
+      return res.status(500).json({ error: 'Failed to delete list' })
     }
   } catch (error) {
     console.error('Error deleting channel list:', error)
@@ -192,7 +192,7 @@ router.delete('/:id/channels/:channelId', (req, res) => {
       const updatedList = channelListQueries.getById(id)
       res.json(updatedList)
     } else {
-      res.status(404).json({ error: 'Channel not found in list' })
+      return res.status(404).json({ error: 'Channel not found in list' })
     }
   } catch (error) {
     console.error('Error removing channel from list:', error)
@@ -380,7 +380,7 @@ router.get('/:id/videos', (req, res) => {
       // Placeholder for future implementation
       res.json({ videos: [], message: 'Liked videos feature coming soon' })
     } else {
-      res.status(400).json({ error: 'Invalid type. Must be watch_later, latest, or liked' })
+      return res.status(400).json({ error: 'Invalid type. Must be watch_later, latest, or liked' })
     }
   } catch (error) {
     console.error('Error fetching list videos:', error)

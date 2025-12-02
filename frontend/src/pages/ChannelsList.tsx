@@ -27,6 +27,9 @@ function ChannelsList() {
   const [sortBy, setSortBy] = useState<'channel_title' | 'updated_at' | 'last_video_date'>('channel_title')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
+  // Filter state
+  const [notInAnyList, setNotInAnyList] = useState(false)
+
   // Determine filter type from route
   const filterType = location.pathname.includes('/subscribed') ? 'subscribed' : 'watch_later'
 
@@ -36,11 +39,13 @@ function ChannelsList() {
     // Reset sort to default when filter type changes
     setSortBy('channel_title')
     setSortOrder('asc')
+    // Reset filter when filter type changes
+    setNotInAnyList(false)
   }, [location.pathname])
 
   useEffect(() => {
     loadChannels()
-  }, [location.pathname, currentPage, sortBy, sortOrder])
+  }, [location.pathname, currentPage, sortBy, sortOrder, notInAnyList])
 
   const loadChannels = async () => {
     try {
@@ -53,14 +58,14 @@ function ChannelsList() {
       
       if (filterType === 'subscribed') {
         // For subscribed channels, use pagination
-        const data = await channelsAPI.getAll(filterType, currentPage, limit, validSortBy, sortOrder)
+        const data = await channelsAPI.getAll(filterType, currentPage, limit, validSortBy, sortOrder, notInAnyList)
         setChannels(data.channels || [])
         setTotal(data.total || 0)
         setTotalPages(data.totalPages || 1)
         setCurrentPage(data.page || 1)
       } else {
         // For watch_later channels, get all (no pagination)
-        const data = await channelsAPI.getAll(filterType, undefined, undefined, validSortBy, sortOrder)
+        const data = await channelsAPI.getAll(filterType, undefined, undefined, validSortBy, sortOrder, notInAnyList)
         setChannels(data || [])
         setTotal(data?.length || 0)
         setTotalPages(1)
@@ -223,48 +228,110 @@ function ChannelsList() {
                 : 'Channels with videos in your watch later list'}
             </p>
           </div>
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex gap-2 items-center">
+          {filterType === 'subscribed' && (
+            <div className="flex items-center gap-4 flex-wrap">
+              <Button
+                onClick={handleRefreshLatestVideos}
+                disabled={refreshing || syncing}
+                className="gap-2"
+                variant="outline"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh Latest Videos'}
+              </Button>
+              <Button
+                onClick={handleSyncSubscriptions}
+                disabled={syncing || refreshing}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Syncing...' : 'Sync Subscriptions'}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Filters and Sort Panel */}
+        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+          {/* Always visible section */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+            <div className="flex gap-2 items-center w-full sm:w-auto">
               <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
               <select
                 value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="px-3 py-2 border border-border rounded text-sm bg-background"
+                className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
               >
                 <option value="channel_title_asc">Alphabetical (A-Z)</option>
                 <option value="channel_title_desc">Alphabetical (Z-A)</option>
                 <option value="updated_at_desc">Last Updated (Newest)</option>
-                <option value="updated_at_asc">Last Updated (Oldest)</option>
                 {filterType === 'watch_later' && (
                   <>
                     <option value="last_video_date_desc">Last Video Uploaded (Newest)</option>
-                    <option value="last_video_date_asc">Last Video Uploaded (Oldest)</option>
                   </>
                 )}
               </select>
             </div>
-            {filterType === 'subscribed' && (
-              <>
-                <Button
-                  onClick={handleRefreshLatestVideos}
-                  disabled={refreshing || syncing}
-                  className="gap-2"
-                  variant="outline"
-                >
-                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                  {refreshing ? 'Refreshing...' : 'Refresh Latest Videos'}
-                </Button>
-                <Button
-                  onClick={handleSyncSubscriptions}
-                  disabled={syncing || refreshing}
-                  className="gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? 'Syncing...' : 'Sync Subscriptions'}
-                </Button>
-              </>
-            )}
           </div>
+
+          {/* Collapsible section */}
+          <details className="mt-4">
+            <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground font-medium transition-colors list-none [&::-webkit-details-marker]:hidden">
+              <div className="flex items-center gap-2">
+                <span>More options</span>
+                <svg
+                  className="w-4 h-4 transition-transform details-open:rotate-180"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </summary>
+            <div className="mt-4 pt-4 border-t border-border space-y-4">
+              {/* Additional sort options */}
+              <div className="flex gap-2 items-center">
+                <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
+                <select
+                  value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="px-3 py-2 border border-border rounded text-sm bg-background"
+                >
+                  <option value="channel_title_asc">Alphabetical (A-Z)</option>
+                  <option value="channel_title_desc">Alphabetical (Z-A)</option>
+                  <option value="updated_at_desc">Last Updated (Newest)</option>
+                  <option value="updated_at_asc">Last Updated (Oldest)</option>
+                  {filterType === 'watch_later' && (
+                    <>
+                      <option value="last_video_date_desc">Last Video Uploaded (Newest)</option>
+                      <option value="last_video_date_asc">Last Video Uploaded (Oldest)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              {/* Filters */}
+              <div className="flex gap-2 items-center">
+                <input
+                  type="checkbox"
+                  id="notInAnyList"
+                  checked={notInAnyList}
+                  onChange={(e) => {
+                    setNotInAnyList(e.target.checked)
+                    if (filterType === 'subscribed') {
+                      setCurrentPage(1)
+                    }
+                  }}
+                  className="w-4 h-4 rounded border-border"
+                />
+                <label htmlFor="notInAnyList" className="text-sm text-foreground cursor-pointer">
+                  Channels not in any list
+                </label>
+              </div>
+            </div>
+          </details>
         </div>
 
         {loading ? (

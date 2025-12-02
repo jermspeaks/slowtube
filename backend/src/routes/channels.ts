@@ -8,7 +8,7 @@ const router = express.Router()
 // Get all channels with optional filter
 router.get('/', (req, res) => {
   try {
-    const { filter, page, limit, sortBy, sortOrder } = req.query
+    const { filter, page, limit, sortBy, sortOrder, notInAnyList } = req.query
     
     let filterType: 'subscribed' | 'watch_later' | undefined = undefined
     if (filter === 'subscribed' || filter === 'watch_later') {
@@ -26,6 +26,9 @@ router.get('/', (req, res) => {
       validSortOrder = sortOrder
     }
     
+    // Parse notInAnyList filter
+    const notInAnyListFilter = notInAnyList === 'true' || notInAnyList === true
+    
     // For subscribed filter, apply pagination
     if (filterType === 'subscribed') {
       const pageNum = page ? parseInt(page as string, 10) : 1
@@ -35,8 +38,8 @@ router.get('/', (req, res) => {
       // For subscribed channels, only allow channel_title and updated_at
       const subscribedSortBy = (validSortBy === 'channel_title' || validSortBy === 'updated_at') ? validSortBy : undefined
       
-      const channels = channelQueries.getAll(filterType, limitNum, offset, subscribedSortBy, validSortOrder)
-      const total = channelQueries.getAllCount(filterType)
+      const channels = channelQueries.getAll(filterType, limitNum, offset, subscribedSortBy, validSortOrder, notInAnyListFilter)
+      const total = channelQueries.getAllCount(filterType, notInAnyListFilter)
       const totalPages = Math.ceil(total / limitNum)
       
       res.json({
@@ -48,12 +51,12 @@ router.get('/', (req, res) => {
       })
     } else if (filterType === 'watch_later') {
       // For watch_later filter, get channels with counts (no pagination)
-      const channelsWithCounts = channelQueries.getChannelsWithWatchLaterCount(validSortBy, validSortOrder)
+      const channelsWithCounts = channelQueries.getChannelsWithWatchLaterCount(validSortBy, validSortOrder, notInAnyListFilter)
       res.json(channelsWithCounts)
     } else {
       // For other filters, return all channels (backward compatibility)
       const otherSortBy = (validSortBy === 'channel_title' || validSortBy === 'updated_at') ? validSortBy : undefined
-      const channels = channelQueries.getAll(filterType, undefined, undefined, otherSortBy, validSortOrder)
+      const channels = channelQueries.getAll(filterType, undefined, undefined, otherSortBy, validSortOrder, notInAnyListFilter)
       res.json(channels)
     }
   } catch (error) {
