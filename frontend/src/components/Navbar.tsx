@@ -67,7 +67,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    ['/dashboard', '/movies', '/tv-shows', '/channels', '/youtube'].some(path =>
+                    ['/dashboard', '/movies', '/tv-shows', '/channels', '/youtube', '/channel-lists'].some(path =>
                       location.pathname.startsWith(path)
                     )
                       ? 'bg-accent'
@@ -135,6 +135,12 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link to="/channels/watch-later" className="w-full">
                         Watch Later Channels
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/channel-lists" className="w-full flex items-center gap-2">
+                        <List className="h-4 w-4" />
+                        Channel Lists
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
@@ -288,6 +294,9 @@ export function Navbar() {
                     </MobileNavLink>
                     <MobileNavLink to="/channels/watch-later" icon={Radio}>
                       Watch Later Channels
+                    </MobileNavLink>
+                    <MobileNavLink to="/channel-lists" icon={List}>
+                      Channel Lists
                     </MobileNavLink>
                   </div>
                 </div>
