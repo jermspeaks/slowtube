@@ -169,94 +169,103 @@ async function processLatestVideosFromChannel(
   }>
   error?: string
 }> {
-  // Fetch latest videos from YouTube API
-  const latestVideos = await fetchLatestVideosFromChannel(channelId, fetchLimit)
+  try {
+    // Fetch latest videos from YouTube API
+    const latestVideos = await fetchLatestVideosFromChannel(channelId, fetchLimit)
 
-  const savedVideos: Array<{
-    id: number
-    youtube_id: string
-    title: string
-    state: 'feed' | 'inbox' | 'archive' | null
-    isNew: boolean
-  }> = []
+    const savedVideos: Array<{
+      id: number
+      youtube_id: string
+      title: string
+      state: 'feed' | 'inbox' | 'archive' | null
+      isNew: boolean
+    }> = []
 
-  // Process each video
-  for (const videoDetails of latestVideos) {
-    if (!videoDetails.id) continue
+    // Process each video
+    for (const videoDetails of latestVideos) {
+      if (!videoDetails.id) continue
 
-    // Check if video already exists
-    const existingVideo = videoQueries.getByYoutubeId(videoDetails.id)
+      // Check if video already exists
+      const existingVideo = videoQueries.getByYoutubeId(videoDetails.id)
 
-    if (existingVideo) {
-      // Get current state - preserve existing state, don't set default
-      const currentState = videoStateQueries.getByVideoId(existingVideo.id)
-      const state = currentState?.state || null
+      if (existingVideo) {
+        // Get current state - preserve existing state, don't set default
+        const currentState = videoStateQueries.getByVideoId(existingVideo.id)
+        const state = currentState?.state || null
 
-      // Update existing video metadata but preserve state
-      const updateData: any = {
-        title: videoDetails.title,
-        description: videoDetails.description,
-        channel_title: videoDetails.channelTitle,
-        youtube_channel_id: videoDetails.channelId,
-        published_at: videoDetails.publishedAt,
-        duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
-        fetch_status: 'completed',
-        youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
-        added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
+        // Update existing video metadata but preserve state
+        const updateData: any = {
+          title: videoDetails.title,
+          description: videoDetails.description,
+          channel_title: videoDetails.channelTitle,
+          youtube_channel_id: videoDetails.channelId,
+          published_at: videoDetails.publishedAt,
+          duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
+          fetch_status: 'completed',
+          youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
+        }
+
+        // Update thumbnail if we got a better one
+        if (videoDetails.thumbnails.medium?.url || videoDetails.thumbnails.high?.url || videoDetails.thumbnails.default?.url) {
+          updateData.thumbnail_url = videoDetails.thumbnails.medium?.url 
+            || videoDetails.thumbnails.high?.url 
+            || videoDetails.thumbnails.default?.url
+        }
+
+        videoQueries.update(existingVideo.id, updateData)
+
+        savedVideos.push({
+          id: existingVideo.id,
+          youtube_id: videoDetails.id,
+          title: videoDetails.title,
+          state: state,
+          isNew: false,
+        })
+      } else {
+        // Create new video
+        const videoData = {
+          youtube_id: videoDetails.id,
+          title: videoDetails.title,
+          description: videoDetails.description,
+          thumbnail_url: videoDetails.thumbnails.medium?.url 
+            || videoDetails.thumbnails.high?.url 
+            || videoDetails.thumbnails.default?.url 
+            || null,
+          duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
+          published_at: videoDetails.publishedAt,
+          added_to_playlist_at: null,
+          fetch_status: 'completed' as const,
+          channel_title: videoDetails.channelTitle,
+          youtube_channel_id: videoDetails.channelId,
+          youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
+          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
+        }
+
+        const videoId = videoQueries.create(videoData)
+
+        // Don't set state - leave it null so it appears in latest videos
+        // State will be set when user moves video to inbox/archive
+
+        savedVideos.push({
+          id: videoId,
+          youtube_id: videoDetails.id,
+          title: videoDetails.title,
+          state: null,
+          isNew: true,
+        })
       }
+    }
 
-      // Update thumbnail if we got a better one
-      if (videoDetails.thumbnails.medium?.url || videoDetails.thumbnails.high?.url || videoDetails.thumbnails.default?.url) {
-        updateData.thumbnail_url = videoDetails.thumbnails.medium?.url 
-          || videoDetails.thumbnails.high?.url 
-          || videoDetails.thumbnails.default?.url
-      }
-
-      videoQueries.update(existingVideo.id, updateData)
-
-      savedVideos.push({
-        id: existingVideo.id,
-        youtube_id: videoDetails.id,
-        title: videoDetails.title,
-        state: state,
-        isNew: false,
-      })
-    } else {
-      // Create new video
-      const videoData = {
-        youtube_id: videoDetails.id,
-        title: videoDetails.title,
-        description: videoDetails.description,
-        thumbnail_url: videoDetails.thumbnails.medium?.url 
-          || videoDetails.thumbnails.high?.url 
-          || videoDetails.thumbnails.default?.url 
-          || null,
-        duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
-        published_at: videoDetails.publishedAt,
-        added_to_playlist_at: null,
-        fetch_status: 'completed' as const,
-        channel_title: videoDetails.channelTitle,
-        youtube_channel_id: videoDetails.channelId,
-        youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
-        added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
-      }
-
-      const videoId = videoQueries.create(videoData)
-
-      // Don't set state - leave it null so it appears in latest videos
-      // State will be set when user moves video to inbox/archive
-
-      savedVideos.push({
-        id: videoId,
-        youtube_id: videoDetails.id,
-        title: videoDetails.title,
-        state: null,
-        isNew: true,
-      })
+    return { videos: savedVideos }
+  } catch (error: any) {
+    // Catch errors and return them in the error field instead of throwing
+    console.error(`Error processing latest videos for channel ${channelId}:`, error)
+    return {
+      videos: [],
+      error: error.message || 'Failed to fetch and process latest videos',
     }
   }
-
-  return { videos: savedVideos }
 }
 
 // Fetch latest videos from a channel and save them to database

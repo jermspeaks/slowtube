@@ -8,7 +8,7 @@ import VideoDetailModal from '../components/VideoDetailModal'
 import LatestVideosFetcher from '../components/LatestVideosFetcher'
 import { toast } from 'sonner'
 import { Button } from '../components/ui/button'
-import { Loader2, Archive, Inbox, X } from 'lucide-react'
+import { Loader2, Archive, Inbox, Rss } from 'lucide-react'
 
 function ChannelDetail() {
   const navigate = useNavigate()
@@ -124,7 +124,7 @@ function ChannelDetail() {
     }
   }
 
-  const handleBulkAction = async (state: 'inbox' | 'archive') => {
+  const handleBulkAction = async (state: 'inbox' | 'archive' | 'feed') => {
     if (selectedVideoIds.size === 0) return
 
     try {
