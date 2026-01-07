@@ -342,7 +342,7 @@ router.get('/:id/videos', (req, res) => {
       return res.status(404).json({ error: 'List not found' })
     }
 
-    const { type } = req.query
+    const { type, sortBy, sortOrder } = req.query
     
     if (type === 'watch_later') {
       const videos = channelListQueries.getVideosForList(id, 'watch_later')
@@ -361,7 +361,18 @@ router.get('/:id/videos', (req, res) => {
       
       res.json({ videos: videosWithDetails })
     } else if (type === 'latest') {
-      const videos = channelListQueries.getVideosForList(id, 'latest')
+      // Validate sortBy and sortOrder for latest videos
+      let validSortBy: 'title' | 'added_to_latest_at' | 'published_at' | undefined = undefined
+      if (sortBy === 'title' || sortBy === 'added_to_latest_at' || sortBy === 'published_at') {
+        validSortBy = sortBy
+      }
+      
+      let validSortOrder: 'asc' | 'desc' | undefined = undefined
+      if (sortOrder === 'asc' || sortOrder === 'desc') {
+        validSortOrder = sortOrder
+      }
+      
+      const videos = channelListQueries.getVideosForList(id, 'latest', validSortBy, validSortOrder)
       
       // Get tags and comments for each video
       const videosWithDetails = videos.map(video => {

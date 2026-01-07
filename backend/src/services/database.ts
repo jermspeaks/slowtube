@@ -929,7 +929,23 @@ export const channelQueries = {
     `).all(channelId) as (Video & { state: string | null })[]
   },
 
-  getLatestVideosByChannel: (channelId: string) => {
+  getLatestVideosByChannel: (channelId: string, sortBy?: 'title' | 'added_to_latest_at' | 'published_at', sortOrder?: 'asc' | 'desc') => {
+    // Build ORDER BY clause
+    let orderBy = 'ORDER BY v.added_to_latest_at DESC' // Default sort
+    if (sortBy && (sortBy === 'title' || sortBy === 'added_to_latest_at' || sortBy === 'published_at')) {
+      const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
+      // Handle NULL values - put them at the end
+      if (sortBy === 'title') {
+        orderBy = `ORDER BY 
+          CASE WHEN v.title IS NULL THEN 1 ELSE 0 END,
+          v.title ${order}`
+      } else {
+        orderBy = `ORDER BY 
+          CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,
+          v.${sortBy} ${order}`
+      }
+    }
+
     return db.prepare(`
       SELECT v.*, vs.state 
       FROM videos v
@@ -937,7 +953,7 @@ export const channelQueries = {
       WHERE v.youtube_channel_id = ?
         AND v.added_to_latest_at IS NOT NULL
         AND vs.state IS NULL
-      ORDER BY v.added_to_latest_at DESC
+      ${orderBy}
     `).all(channelId) as (Video & { state: string | null })[]
   },
 
@@ -2165,7 +2181,7 @@ export const channelListQueries = {
     `).all(listId) as Channel[]
   },
 
-  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked'): (Video & { state: string | null })[] => {
+  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked', sortBy?: 'title' | 'added_to_latest_at' | 'published_at', sortOrder?: 'asc' | 'desc'): (Video & { state: string | null })[] => {
     // Get channel IDs in this list
     const channelIds = db.prepare(`
       SELECT youtube_channel_id
@@ -2190,6 +2206,22 @@ export const channelListQueries = {
         ORDER BY v.added_to_playlist_at DESC
       `).all(...channelIdValues) as (Video & { state: string | null })[]
     } else if (type === 'latest') {
+      // Build ORDER BY clause for latest videos
+      let orderBy = 'ORDER BY v.added_to_latest_at DESC' // Default sort
+      if (sortBy && (sortBy === 'title' || sortBy === 'added_to_latest_at' || sortBy === 'published_at')) {
+        const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
+        // Handle NULL values - put them at the end
+        if (sortBy === 'title') {
+          orderBy = `ORDER BY 
+            CASE WHEN v.title IS NULL THEN 1 ELSE 0 END,
+            v.title ${order}`
+        } else {
+          orderBy = `ORDER BY 
+            CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,
+            v.${sortBy} ${order}`
+        }
+      }
+      
       // Get latest videos (with added_to_latest_at and no state)
       return db.prepare(`
         SELECT v.*, vs.state 
@@ -2198,7 +2230,7 @@ export const channelListQueries = {
         WHERE v.youtube_channel_id IN (${placeholders})
           AND v.added_to_latest_at IS NOT NULL
           AND vs.state IS NULL
-        ORDER BY v.added_to_latest_at DESC
+        ${orderBy}
       `).all(...channelIdValues) as (Video & { state: string | null })[]
     } else {
       // Liked videos - placeholder for future implementation

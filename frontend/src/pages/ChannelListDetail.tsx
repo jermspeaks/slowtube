@@ -11,7 +11,7 @@ import ChannelListForm from '../components/ChannelListForm'
 import ViewToggle from '../components/ViewToggle'
 import { toast } from 'sonner'
 import { Button } from '../components/ui/button'
-import { Loader2, Archive, Inbox, X, Edit, ArrowLeft, RefreshCw } from 'lucide-react'
+import { Archive, Inbox, X, Edit, ArrowLeft, RefreshCw } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,10 @@ function ChannelListDetail() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
+  
+  // Sort state - default to Date Added (Newest) to match current behavior (only for latest tab)
+  const [sortBy, setSortBy] = useState<'title' | 'added_to_latest_at' | 'published_at'>('added_to_latest_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     if (id) {
@@ -47,7 +51,7 @@ function ChannelListDetail() {
       // Clear selection when switching tabs
       setSelectedVideoIds(new Set())
     }
-  }, [list, activeTab])
+  }, [list, activeTab, sortBy, sortOrder])
 
   const loadList = async () => {
     if (!id) return
@@ -72,13 +76,31 @@ function ChannelListDetail() {
 
     try {
       setVideosLoading(true)
-      const data = await channelListsAPI.getVideos(parseInt(id, 10), activeTab)
+      // Only pass sort parameters for latest tab
+      const data = await channelListsAPI.getVideos(
+        parseInt(id, 10),
+        activeTab,
+        activeTab === 'latest' ? sortBy : undefined,
+        activeTab === 'latest' ? sortOrder : undefined
+      )
       setVideos(data.videos || [])
     } catch (error) {
       console.error('Error loading videos:', error)
       setVideos([])
     } finally {
       setVideosLoading(false)
+    }
+  }
+
+  const handleSortChange = (value: string) => {
+    const lastUnderscoreIndex = value.lastIndexOf('_')
+    if (lastUnderscoreIndex !== -1) {
+      const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'added_to_latest_at' | 'published_at'
+      const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
+      if ((by === 'title' || by === 'added_to_latest_at' || by === 'published_at') && (order === 'asc' || order === 'desc')) {
+        setSortBy(by)
+        setSortOrder(order)
+      }
     }
   }
 
@@ -325,6 +347,29 @@ function ChannelListDetail() {
             </div>
           ) : (
             <>
+              {/* Sort Panel - only show for latest tab */}
+              {activeTab === 'latest' && (
+                <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                    <div className="flex gap-2 items-center w-full sm:w-auto">
+                      <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
+                      <select
+                        value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                        className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                      >
+                        <option value="title_asc">Title (A-Z)</option>
+                        <option value="title_desc">Title (Z-A)</option>
+                        <option value="added_to_latest_at_desc">Date Added (Newest)</option>
+                        <option value="added_to_latest_at_asc">Date Added (Oldest)</option>
+                        <option value="published_at_desc">Date Published (Newest)</option>
+                        <option value="published_at_asc">Date Published (Oldest)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="mb-4 flex justify-between items-center">
                 {activeTab === 'latest' && (
                   <div className="flex items-center gap-4">

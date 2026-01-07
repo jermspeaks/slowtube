@@ -140,10 +140,16 @@ export const channelsAPI = {
     const response = await api.get(`/api/channels/${channelId}`)
     return response.data
   },
-  getVideos: async (channelId: string, type: 'watch_later' | 'latest' | 'liked') => {
-    const response = await api.get(`/api/channels/${channelId}/videos`, {
-      params: { type },
-    })
+  getVideos: async (
+    channelId: string,
+    type: 'watch_later' | 'latest' | 'liked',
+    sortBy?: 'title' | 'added_to_latest_at' | 'published_at',
+    sortOrder?: 'asc' | 'desc'
+  ) => {
+    const params: Record<string, string> = { type }
+    if (sortBy) params.sortBy = sortBy
+    if (sortOrder) params.sortOrder = sortOrder
+    const response = await api.get(`/api/channels/${channelId}/videos`, { params })
     return response.data
   },
   subscribe: async (channelId: string) => {
@@ -406,10 +412,16 @@ export const channelListsAPI = {
     const response = await api.post(`/api/channel-lists/${listId}/refresh`, null, { params })
     return response.data
   },
-  getVideos: async (listId: number, type: 'watch_later' | 'latest' | 'liked') => {
-    const response = await api.get(`/api/channel-lists/${listId}/videos`, {
-      params: { type },
-    })
+  getVideos: async (
+    listId: number,
+    type: 'watch_later' | 'latest' | 'liked',
+    sortBy?: 'title' | 'added_to_latest_at' | 'published_at',
+    sortOrder?: 'asc' | 'desc'
+  ) => {
+    const params: Record<string, string> = { type }
+    if (sortBy) params.sortBy = sortBy
+    if (sortOrder) params.sortOrder = sortOrder
+    const response = await api.get(`/api/channel-lists/${listId}/videos`, { params })
     return response.data
   },
 }

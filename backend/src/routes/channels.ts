@@ -87,7 +87,7 @@ router.get('/:channelId', (req, res) => {
 router.get('/:channelId/videos', async (req, res) => {
   try {
     const { channelId } = req.params
-    const { type } = req.query
+    const { type, sortBy, sortOrder } = req.query
     
     // Verify channel exists
     const channel = channelQueries.getByChannelId(channelId)
@@ -113,8 +113,19 @@ router.get('/:channelId/videos', async (req, res) => {
       
       res.json({ videos: videosWithDetails })
     } else if (type === 'latest') {
+      // Validate sortBy and sortOrder for latest videos
+      let validSortBy: 'title' | 'added_to_latest_at' | 'published_at' | undefined = undefined
+      if (sortBy === 'title' || sortBy === 'added_to_latest_at' || sortBy === 'published_at') {
+        validSortBy = sortBy
+      }
+      
+      let validSortOrder: 'asc' | 'desc' | undefined = undefined
+      if (sortOrder === 'asc' || sortOrder === 'desc') {
+        validSortOrder = sortOrder
+      }
+      
       // Get latest videos for this channel (videos with added_to_latest_at set and no state)
-      const videos = channelQueries.getLatestVideosByChannel(channelId)
+      const videos = channelQueries.getLatestVideosByChannel(channelId, validSortBy, validSortOrder)
       
       // Get tags and comments for each video
       const videosWithDetails = videos.map(video => {
