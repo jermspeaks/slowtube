@@ -79,11 +79,15 @@ router.post('/', async (req, res) => {
       // Continue even if episodes fail
     }
 
+    // Initialize tv_show_states with is_started = false
+    tvShowStateQueries.setStarted(tvShowId, false)
+
     const tvShow = tvShowQueries.getById(tvShowId)
     const state = tvShowStateQueries.getByTVShowId(tvShowId)
     res.status(201).json({
       ...tvShow,
       is_archived: state?.is_archived === 1 || false,
+      is_started: state?.is_started === 1 || false,
     })
   } catch (error: any) {
     console.error('Error creating TV show:', error)
@@ -140,12 +144,13 @@ router.get('/', (req, res) => {
     const total = tvShowQueries.getCount(includeArchived, search, status, archiveFilter, completionFilter)
     const totalPages = Math.ceil(total / limit)
     
-    // Add archived status to each TV show
+    // Add archived and started status to each TV show
     const tvShowsWithState = tvShows.map(tvShow => {
       const state = tvShowStateQueries.getByTVShowId(tvShow.id)
       return {
         ...tvShow,
         is_archived: state?.is_archived === 1 || false,
+        is_started: state?.is_started === 1 || false,
       }
     })
     
@@ -235,6 +240,7 @@ router.get('/:id', (req, res) => {
     res.json({
       ...tvShow,
       is_archived: state?.is_archived === 1 || false,
+      is_started: state?.is_started === 1 || false,
     })
   } catch (error) {
     console.error('Error fetching TV show:', error)
@@ -317,6 +323,34 @@ router.patch('/:id/archive', (req, res) => {
   }
 })
 
+// Set/unset started status for TV show
+router.patch('/:id/started', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid TV show ID' })
+    }
+
+    const { isStarted } = req.body
+    if (typeof isStarted !== 'boolean') {
+      return res.status(400).json({ error: 'isStarted must be a boolean' })
+    }
+
+    const tvShow = tvShowQueries.getById(id)
+    if (!tvShow) {
+      return res.status(404).json({ error: 'TV show not found' })
+    }
+
+    // Set started state
+    tvShowStateQueries.setStarted(id, isStarted)
+
+    res.json({ message: `TV show ${isStarted ? 'marked as started' : 'marked as not started'} successfully`, isStarted })
+  } catch (error) {
+    console.error('Error setting started status:', error)
+    res.status(500).json({ error: 'Failed to set started status' })
+  }
+})
+
 // Mark episode as watched
 router.post('/:id/episodes/:episodeId/watched', (req, res) => {
   try {
@@ -337,7 +371,17 @@ router.post('/:id/episodes/:episodeId/watched', (req, res) => {
       return res.status(404).json({ error: 'Episode not found' })
     }
 
+    // Check if this is the first episode being watched
+    const watchedCountBefore = episodeQueries.getWatchedCount(tvShowId)
+    const wasUnwatched = episode.is_watched === 0
+
     episodeQueries.markAsWatched(episodeId)
+    
+    // If this was the first episode watched, set is_started = true
+    if (wasUnwatched && watchedCountBefore === 0) {
+      tvShowStateQueries.setStarted(tvShowId, true)
+    }
+    
     const updatedEpisode = episodeQueries.getById(episodeId)
     
     res.json(updatedEpisode)
@@ -361,6 +405,12 @@ router.post('/:id/episodes/watched-all', (req, res) => {
     }
 
     const updatedCount = episodeQueries.markAllAsWatched(id)
+    
+    // Set is_started = true if any episodes were marked as watched
+    if (updatedCount > 0) {
+      tvShowStateQueries.setStarted(id, true)
+    }
+    
     res.json({ message: 'All episodes marked as watched', updatedCount })
   } catch (error) {
     console.error('Error marking all episodes as watched:', error)
@@ -413,7 +463,16 @@ router.post('/:id/seasons/:seasonNumber/watched', (req, res) => {
       return res.status(404).json({ error: 'TV show not found' })
     }
 
+    // Check if this is the first episode being watched
+    const watchedCountBefore = episodeQueries.getWatchedCount(tvShowId)
+    
     const updatedCount = episodeQueries.markSeasonAsWatched(tvShowId, seasonNumber)
+    
+    // If this was the first episode watched, set is_started = true
+    if (updatedCount > 0 && watchedCountBefore === 0) {
+      tvShowStateQueries.setStarted(tvShowId, true)
+    }
+    
     res.json({ message: `All episodes in season ${seasonNumber} marked as watched`, updatedCount })
   } catch (error) {
     console.error('Error marking season episodes as watched:', error)

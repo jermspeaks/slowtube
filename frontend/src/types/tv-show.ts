@@ -12,6 +12,7 @@ export interface TVShow {
   created_at: string
   updated_at: string
   is_archived?: boolean
+  is_started?: boolean
   watched_count?: number
   total_episodes?: number
   next_episode_date?: string | null

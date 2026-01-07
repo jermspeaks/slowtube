@@ -1018,6 +1018,8 @@ export interface TVShowState {
   tv_show_id: number
   is_archived: number // 0 or 1 (boolean as integer in SQLite)
   archived_at: string | null
+  is_started: number // 0 or 1 (boolean as integer in SQLite)
+  started_at: string | null
   updated_at: string
 }
 
@@ -1169,7 +1171,8 @@ export const tvShowQueries = {
         next_ep.air_date as next_episode_date,
         last_ep.air_date as last_episode_date,
         COALESCE(wp.watched_count, 0) as watched_count,
-        COALESCE(wp.total_episodes, 0) as total_episodes
+        COALESCE(wp.total_episodes, 0) as total_episodes,
+        COALESCE(tss.is_started, 0) as is_started
       FROM tv_shows ts
       LEFT JOIN tv_show_states tss ON ts.id = tss.tv_show_id
       LEFT JOIN (${nextEpisodeSubquery}) next_ep ON ts.id = next_ep.tv_show_id
@@ -1185,6 +1188,7 @@ export const tvShowQueries = {
       last_episode_date: string | null
       watched_count: number
       total_episodes: number
+      is_started: number
     })[]
     
     // Convert to TVShow format with additional fields
@@ -1194,6 +1198,7 @@ export const tvShowQueries = {
       last_episode_date: r.last_episode_date || null,
       watched_count: r.watched_count || 0,
       total_episodes: r.total_episodes || 0,
+      is_started: r.is_started === 1,
     })) as any[]
   },
 
@@ -1284,7 +1289,14 @@ export const tvShowQueries = {
   },
 
   getById: (id: number) => {
-    return db.prepare('SELECT * FROM tv_shows WHERE id = ?').get(id) as TVShow | undefined
+    const tvShow = db.prepare('SELECT * FROM tv_shows WHERE id = ?').get(id) as TVShow | undefined
+    if (!tvShow) return undefined
+    
+    const state = tvShowStateQueries.getByTVShowId(id)
+    return {
+      ...tvShow,
+      is_started: state?.is_started === 1 || false,
+    } as TVShow & { is_started: boolean }
   },
 
   getByTmdbId: (tmdbId: number) => {
@@ -1754,6 +1766,15 @@ export const episodeQueries = {
     `).run(tvShowId, seasonNumber).changes
   },
 
+  getWatchedCount: (tvShowId: number): number => {
+    const result = db.prepare(`
+      SELECT COUNT(*) as count 
+      FROM episodes 
+      WHERE tv_show_id = ? AND is_watched = 1
+    `).get(tvShowId) as { count: number } | undefined
+    return result?.count || 0
+  },
+
   delete: (id: number) => {
     return db.prepare('DELETE FROM episodes WHERE id = ?').run(id).changes
   },
@@ -1767,19 +1788,46 @@ export const tvShowStateQueries = {
 
   setArchived: (tvShowId: number, isArchived: boolean) => {
     const stmt = db.prepare(`
-      INSERT INTO tv_show_states (tv_show_id, is_archived, archived_at, updated_at)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO tv_show_states (tv_show_id, is_archived, archived_at, is_started, started_at, updated_at)
+      VALUES (?, ?, ?, COALESCE((SELECT is_started FROM tv_show_states WHERE tv_show_id = ?), 0), 
+              COALESCE((SELECT started_at FROM tv_show_states WHERE tv_show_id = ?), NULL), CURRENT_TIMESTAMP)
       ON CONFLICT(tv_show_id) DO UPDATE SET
         is_archived = excluded.is_archived,
         archived_at = excluded.archived_at,
+        is_started = COALESCE(excluded.is_started, (SELECT is_started FROM tv_show_states WHERE tv_show_id = excluded.tv_show_id), 0),
+        started_at = COALESCE(excluded.started_at, (SELECT started_at FROM tv_show_states WHERE tv_show_id = excluded.tv_show_id), NULL),
         updated_at = CURRENT_TIMESTAMP
     `)
-    return stmt.run(tvShowId, isArchived ? 1 : 0, isArchived ? new Date().toISOString() : null).changes
+    return stmt.run(tvShowId, isArchived ? 1 : 0, isArchived ? new Date().toISOString() : null, tvShowId, tvShowId).changes
   },
 
   isArchived: (tvShowId: number): boolean => {
     const state = db.prepare('SELECT is_archived FROM tv_show_states WHERE tv_show_id = ?').get(tvShowId) as { is_archived: number } | undefined
     return state?.is_archived === 1
+  },
+
+  setStarted: (tvShowId: number, isStarted: boolean) => {
+    const stmt = db.prepare(`
+      INSERT INTO tv_show_states (tv_show_id, is_archived, archived_at, is_started, started_at, updated_at)
+      VALUES (?, COALESCE((SELECT is_archived FROM tv_show_states WHERE tv_show_id = ?), 0),
+              COALESCE((SELECT archived_at FROM tv_show_states WHERE tv_show_id = ?), NULL), ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(tv_show_id) DO UPDATE SET
+        is_started = excluded.is_started,
+        started_at = excluded.started_at,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    return stmt.run(
+      tvShowId, 
+      tvShowId, 
+      tvShowId, 
+      isStarted ? 1 : 0, 
+      isStarted ? new Date().toISOString() : null
+    ).changes
+  },
+
+  isStarted: (tvShowId: number): boolean => {
+    const state = db.prepare('SELECT is_started FROM tv_show_states WHERE tv_show_id = ?').get(tvShowId) as { is_started: number } | undefined
+    return state?.is_started === 1
   },
 }
 

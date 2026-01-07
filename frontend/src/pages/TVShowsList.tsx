@@ -469,16 +469,21 @@ function TVShowsList() {
             <div className="mb-4 text-sm text-muted-foreground">
               Showing {tvShows.length} of {total} TV shows
             </div>
-            <TVShowTable tvShows={tvShows} onDelete={handleDelete} onArchive={async (tvShow, isArchived) => {
-              try {
-                await tvShowsAPI.archive(tvShow.id, isArchived)
-                loadTVShows()
-                toast.success(`TV show ${isArchived ? 'archived' : 'unarchived'} successfully`)
-              } catch (error) {
-                console.error('Error archiving TV show:', error)
-                toast.error('Failed to archive TV show')
-              }
-            }} />
+            <TVShowTable 
+              tvShows={tvShows} 
+              onDelete={handleDelete} 
+              onArchive={async (tvShow, isArchived) => {
+                try {
+                  await tvShowsAPI.archive(tvShow.id, isArchived)
+                  loadTVShows()
+                  toast.success(`TV show ${isArchived ? 'archived' : 'unarchived'} successfully`)
+                } catch (error) {
+                  console.error('Error archiving TV show:', error)
+                  toast.error('Failed to archive TV show')
+                }
+              }}
+              onStartedChange={loadTVShows}
+            />
             {totalPages > 1 && (
               <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
                 <button

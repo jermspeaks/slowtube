@@ -17,7 +17,9 @@ import {
   DialogTitle,
 } from './ui/dialog'
 import { Button } from './ui/button'
-import { MoreVertical, Trash2, Archive, ArchiveRestore } from 'lucide-react'
+import { MoreVertical, Trash2, Archive, ArchiveRestore, Play, PlayCircle } from 'lucide-react'
+import { tvShowsAPI } from '../services/api'
+import { toast } from 'sonner'
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -25,9 +27,10 @@ interface TVShowTableProps {
   tvShows: TVShow[]
   onDelete: (tvShow: TVShow) => void
   onArchive: (tvShow: TVShow, isArchived: boolean) => void
+  onStartedChange?: () => void
 }
 
-function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
+function TVShowTable({ tvShows, onDelete, onArchive, onStartedChange }: TVShowTableProps) {
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [tvShowToDelete, setTvShowToDelete] = useState<TVShow | null>(null)
@@ -54,6 +57,19 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
     onArchive(tvShow, !tvShow.is_archived)
   }
 
+  const handleStartedClick = async (tvShow: TVShow) => {
+    try {
+      await tvShowsAPI.setStarted(tvShow.id, !tvShow.is_started)
+      toast.success(`TV show ${!tvShow.is_started ? 'marked as started' : 'marked as not started'}`)
+      if (onStartedChange) {
+        onStartedChange()
+      }
+    } catch (error) {
+      console.error('Error setting started status:', error)
+      toast.error('Failed to update started status')
+    }
+  }
+
   const getWatchedProgress = (tvShow: TVShow) => {
     const watched = tvShow.watched_count || 0
     const total = tvShow.total_episodes || 0
@@ -73,6 +89,7 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
               <th className="p-3 text-left border-b-2 border-border hidden md:table-cell">Overview</th>
               <th className="p-3 text-left border-b-2 border-border hidden lg:table-cell">Status</th>
               <th className="p-3 text-left border-b-2 border-border hidden md:table-cell">Watched</th>
+              <th className="p-3 text-left border-b-2 border-border hidden md:table-cell">Started</th>
               <th className="p-3 text-left border-b-2 border-border">Last Aired</th>
               <th className="p-3 text-left border-b-2 border-border">Actions</th>
             </tr>
@@ -130,6 +147,29 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                   <td className="p-3 text-muted-foreground text-sm hidden md:table-cell">
                     {getWatchedProgress(tvShow)}
                   </td>
+                  <td className="p-3 hidden md:table-cell">
+                    <button
+                      onClick={() => handleStartedClick(tvShow)}
+                      className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors ${
+                        tvShow.is_started
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={tvShow.is_started ? 'Mark as not started' : 'Mark as started'}
+                    >
+                      {tvShow.is_started ? (
+                        <>
+                          <PlayCircle className="h-3 w-3" />
+                          Started
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-3 w-3" />
+                          New
+                        </>
+                      )}
+                    </button>
+                  </td>
                   <td className="p-3 text-muted-foreground text-sm">
                     {tvShow.last_episode_date ? (
                       format(new Date(tvShow.last_episode_date), 'MMM d, yyyy')
@@ -145,6 +185,22 @@ function TVShowTable({ tvShows, onDelete, onArchive }: TVShowTableProps) {
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleStartedClick(tvShow)}
+                          className="cursor-pointer"
+                        >
+                          {tvShow.is_started ? (
+                            <>
+                              <Play className="mr-2 h-4 w-4" />
+                              Mark as New
+                            </>
+                          ) : (
+                            <>
+                              <PlayCircle className="mr-2 h-4 w-4" />
+                              Mark as Started
+                            </>
+                          )}
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleArchiveClick(tvShow)}
                           className="cursor-pointer"
