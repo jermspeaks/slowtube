@@ -512,6 +512,13 @@ function parseDurationToSeconds(duration: string): number {
   return totalSeconds
 }
 
+// Check if a video is a YouTube Short (≤60 seconds)
+function isShortVideo(duration: string | null): boolean {
+  if (!duration || typeof duration !== 'string') return false
+  const seconds = parseDurationToSeconds(duration)
+  return seconds > 0 && seconds <= 60
+}
+
 // Stats operations
 export const statsQueries = {
   getChannelRankings: (
@@ -2229,7 +2236,7 @@ export const channelListQueries = {
     `).all(listId) as Channel[]
   },
 
-  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked', sortBy?: 'title' | 'added_to_latest_at' | 'published_at', sortOrder?: 'asc' | 'desc'): (Video & { state: string | null })[] => {
+  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked', sortBy?: 'title' | 'added_to_latest_at' | 'published_at', sortOrder?: 'asc' | 'desc', stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive', shortsFilter?: 'all' | 'exclude' | 'only'): (Video & { state: string | null })[] => {
     // Get channel IDs in this list
     const channelIds = db.prepare(`
       SELECT youtube_channel_id
@@ -2245,14 +2252,39 @@ export const channelListQueries = {
     const channelIdValues = channelIds.map(c => c.youtube_channel_id)
 
     if (type === 'watch_later') {
-      // Get all videos from channels in the list (watch later videos)
-      return db.prepare(`
+      // Build state filter condition
+      let stateCondition = ''
+      if (stateFilter === 'exclude_archived') {
+        // Default: show videos with no state, feed, or inbox (exclude archived)
+        stateCondition = 'AND (vs.state IS NULL OR vs.state IN (\'feed\', \'inbox\'))'
+      } else if (stateFilter === 'feed') {
+        stateCondition = 'AND vs.state = \'feed\''
+      } else if (stateFilter === 'inbox') {
+        stateCondition = 'AND vs.state = \'inbox\''
+      } else if (stateFilter === 'archive') {
+        stateCondition = 'AND vs.state = \'archive\''
+      }
+      // If stateFilter is 'all' or undefined, show all videos (no state condition)
+
+      // Get videos from channels in the list (watch later videos) with optional state filtering
+      let videos = db.prepare(`
         SELECT v.*, vs.state 
         FROM videos v
         LEFT JOIN video_states vs ON v.id = vs.video_id
         WHERE v.youtube_channel_id IN (${placeholders})
+        ${stateCondition}
         ORDER BY v.added_to_playlist_at DESC
       `).all(...channelIdValues) as (Video & { state: string | null })[]
+
+      // Apply shorts filter if specified
+      if (shortsFilter === 'exclude') {
+        videos = videos.filter(v => !isShortVideo(v.duration))
+      } else if (shortsFilter === 'only') {
+        videos = videos.filter(v => isShortVideo(v.duration))
+      }
+      // If shortsFilter is 'all' or undefined, show all videos
+
+      return videos
     } else if (type === 'latest') {
       // Build ORDER BY clause for latest videos
       let orderBy = 'ORDER BY v.added_to_latest_at DESC' // Default sort
@@ -2271,7 +2303,7 @@ export const channelListQueries = {
       }
       
       // Get latest videos (with added_to_latest_at and no state)
-      return db.prepare(`
+      let videos = db.prepare(`
         SELECT v.*, vs.state 
         FROM videos v
         LEFT JOIN video_states vs ON v.id = vs.video_id
@@ -2280,6 +2312,16 @@ export const channelListQueries = {
           AND vs.state IS NULL
         ${orderBy}
       `).all(...channelIdValues) as (Video & { state: string | null })[]
+
+      // Apply shorts filter if specified
+      if (shortsFilter === 'exclude') {
+        videos = videos.filter(v => !isShortVideo(v.duration))
+      } else if (shortsFilter === 'only') {
+        videos = videos.filter(v => isShortVideo(v.duration))
+      }
+      // If shortsFilter is 'all' or undefined, show all videos
+
+      return videos
     } else {
       // Liked videos - placeholder for future implementation
       return []

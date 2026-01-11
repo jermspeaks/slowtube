@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { channelListsAPI, videosAPI } from '../services/api'
 import { ChannelListWithChannels } from '../types/channel-list'
 import { Video, ViewMode } from '../types/video'
@@ -22,10 +22,16 @@ import {
 
 function ChannelListDetail() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { id } = useParams<{ id: string }>()
   const [list, setList] = useState<ChannelListWithChannels | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<ChannelVideoType>('watch_later')
+  
+  // Determine active tab from route
+  const activeTab: ChannelVideoType = location.pathname.includes('/latest') ? 'latest' : 
+                                      location.pathname.includes('/liked') ? 'liked' : 
+                                      'watch_later'
+  
   const [videos, setVideos] = useState<Video[]>([])
   const [videosLoading, setVideosLoading] = useState(false)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
@@ -38,6 +44,13 @@ function ChannelListDetail() {
   // Sort state - default to Date Added (Newest) to match current behavior (only for latest tab)
   const [sortBy, setSortBy] = useState<'title' | 'added_to_latest_at' | 'published_at'>('added_to_latest_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  
+  // State filter for watch later videos (default: exclude archived)
+  const [stateFilter, setStateFilter] = useState<'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'>('exclude_archived')
+  const [showArchived, setShowArchived] = useState(false)
+  
+  // Shorts filter for latest videos (default: exclude shorts)
+  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('exclude')
 
   useEffect(() => {
     if (id) {
@@ -51,7 +64,7 @@ function ChannelListDetail() {
       // Clear selection when switching tabs
       setSelectedVideoIds(new Set())
     }
-  }, [list, activeTab, sortBy, sortOrder])
+  }, [list, activeTab, sortBy, sortOrder, stateFilter, showArchived, shortsFilter])
 
   const loadList = async () => {
     if (!id) return
@@ -76,12 +89,31 @@ function ChannelListDetail() {
 
     try {
       setVideosLoading(true)
-      // Only pass sort parameters for latest tab
+      // Determine state filter for watch later videos
+      let effectiveStateFilter: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive' | undefined = undefined
+      if (activeTab === 'watch_later') {
+        // If stateFilter is a specific state (feed, inbox, archive), use that directly
+        if (stateFilter === 'feed' || stateFilter === 'inbox' || stateFilter === 'archive') {
+          effectiveStateFilter = stateFilter
+        }
+        // If stateFilter is 'all' and showArchived is checked, show all videos
+        else if (stateFilter === 'all' && showArchived) {
+          effectiveStateFilter = 'all'
+        }
+        // Default: exclude archived (either 'exclude_archived' or 'all' with showArchived unchecked)
+        else {
+          effectiveStateFilter = 'exclude_archived'
+        }
+      }
+      
+      // Only pass sort parameters for latest tab, state filter for watch later tab, shorts filter for latest tab
       const data = await channelListsAPI.getVideos(
         parseInt(id, 10),
         activeTab,
         activeTab === 'latest' ? sortBy : undefined,
-        activeTab === 'latest' ? sortOrder : undefined
+        activeTab === 'latest' ? sortOrder : undefined,
+        activeTab === 'watch_later' ? effectiveStateFilter : undefined,
+        activeTab === 'latest' ? shortsFilter : undefined
       )
       setVideos(data.videos || [])
     } catch (error) {
@@ -137,6 +169,44 @@ function ChannelListDetail() {
       setSelectedVideoIds(new Set())
     } else {
       setSelectedVideoIds(new Set(videos.map(v => v.id)))
+    }
+  }
+
+  // Helper function to check if a video is a short (≤60 seconds)
+  const isShortVideo = (duration: string | null): boolean => {
+    if (!duration || typeof duration !== 'string') return false
+    
+    let totalSeconds = 0
+    const hourMatch = duration.match(/(\d+)h/)
+    const minuteMatch = duration.match(/(\d+)m/)
+    const secondMatch = duration.match(/(\d+)s/)
+    
+    if (hourMatch) totalSeconds += parseInt(hourMatch[1], 10) * 3600
+    if (minuteMatch) totalSeconds += parseInt(minuteMatch[1], 10) * 60
+    if (secondMatch) totalSeconds += parseInt(secondMatch[1], 10)
+    
+    return totalSeconds > 0 && totalSeconds <= 60
+  }
+
+  const handleSelectAllShorts = () => {
+    const shorts = videos.filter(v => isShortVideo(v.duration))
+    const shortsIds = new Set(shorts.map(v => v.id))
+    
+    // If all shorts are already selected, deselect them
+    const allShortsSelected = shorts.length > 0 && shorts.every(v => selectedVideoIds.has(v.id))
+    if (allShortsSelected) {
+      setSelectedVideoIds(prev => {
+        const next = new Set(prev)
+        shortsIds.forEach(id => next.delete(id))
+        return next
+      })
+    } else {
+      // Select all shorts
+      setSelectedVideoIds(prev => {
+        const next = new Set(prev)
+        shortsIds.forEach(id => next.add(id))
+        return next
+      })
     }
   }
 
@@ -296,34 +366,137 @@ function ChannelListDetail() {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Navigation Tabs */}
         <div className="bg-card rounded-lg shadow-sm mb-6">
           <div className="border-b border-border">
             <nav className="flex -mb-px">
-              {(['watch_later', 'latest', 'liked'] as ChannelVideoType[]).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`
-                    px-6 py-4 text-sm font-medium border-b-2 transition-colors
-                    ${
-                      activeTab === tab
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-                    }
-                  `}
-                >
-                  {tab === 'watch_later' && 'Watch Later Videos'}
-                  {tab === 'latest' && 'Latest Videos'}
-                  {tab === 'liked' && 'Liked Videos'}
-                </button>
-              ))}
+              <button
+                onClick={() => navigate(`/channel-lists/${id}/watch-later`)}
+                className={`
+                  px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeTab === 'watch_later'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }
+                `}
+              >
+                Watch Later Videos
+              </button>
+              <button
+                onClick={() => navigate(`/channel-lists/${id}/latest`)}
+                className={`
+                  px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeTab === 'latest'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }
+                `}
+              >
+                Latest Videos
+              </button>
+              <button
+                onClick={() => navigate(`/channel-lists/${id}/liked`)}
+                className={`
+                  px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeTab === 'liked'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }
+                `}
+              >
+                Liked Videos
+              </button>
             </nav>
           </div>
         </div>
 
         {/* Videos Content */}
         <div>
+          {/* Filter Panel - only show for watch later tab, always visible */}
+          {activeTab === 'watch_later' && !videosLoading && (
+            <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="flex gap-2 items-center w-full sm:w-auto">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
+                  <select
+                    value={stateFilter}
+                    onChange={(e) => {
+                      const newFilter = e.target.value as 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'
+                      setStateFilter(newFilter)
+                      // If selecting archive, automatically check show archived
+                      if (newFilter === 'archive') {
+                        setShowArchived(true)
+                      }
+                      // If selecting a specific state other than archive, uncheck show archived
+                      else if (newFilter === 'feed' || newFilter === 'inbox') {
+                        setShowArchived(false)
+                      }
+                    }}
+                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                  >
+                    <option value="exclude_archived">All (Exclude Archived)</option>
+                    <option value="all">All</option>
+                    <option value="feed">Feed</option>
+                    <option value="inbox">Inbox</option>
+                    <option value="archive">Archive</option>
+                  </select>
+                </div>
+                {stateFilter === 'all' && (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="checkbox"
+                      id="show-archived"
+                      checked={showArchived}
+                      onChange={(e) => setShowArchived(e.target.checked)}
+                      className="w-4 h-4 rounded border-border"
+                    />
+                    <label htmlFor="show-archived" className="text-sm text-foreground cursor-pointer">
+                      Show archived
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Sort Panel - only show for latest tab, always visible */}
+          {activeTab === 'latest' && !videosLoading && (
+            <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="flex gap-2 items-center w-full sm:w-auto">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
+                  <select
+                    value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                  >
+                    <option value="title_asc">Title (A-Z)</option>
+                    <option value="title_desc">Title (Z-A)</option>
+                    <option value="added_to_latest_at_desc">Date Added (Newest)</option>
+                    <option value="added_to_latest_at_asc">Date Added (Oldest)</option>
+                    <option value="published_at_desc">Date Published (Newest)</option>
+                    <option value="published_at_asc">Date Published (Oldest)</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 items-center w-full sm:w-auto">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Shorts:</label>
+                  <select
+                    value={shortsFilter}
+                    onChange={(e) => setShortsFilter(e.target.value as 'all' | 'exclude' | 'only')}
+                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                  >
+                    <option value="all">All Videos</option>
+                    <option value="exclude">Exclude Shorts</option>
+                    <option value="only">Shorts Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
           {videosLoading ? (
             <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
               <div className="text-lg text-muted-foreground">Loading videos...</div>
@@ -341,34 +514,12 @@ function ChannelListDetail() {
               </p>
               <p className="text-sm text-muted-foreground">
                 {activeTab === 'watch_later' 
-                  ? 'This list has no watch later videos from its channels.'
+                  ? 'This list has no watch later videos from its channels matching the current filter.'
                   : 'This list has no latest videos pending review from its channels.'}
               </p>
             </div>
           ) : (
             <>
-              {/* Sort Panel - only show for latest tab */}
-              {activeTab === 'latest' && (
-                <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
-                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                    <div className="flex gap-2 items-center w-full sm:w-auto">
-                      <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
-                      <select
-                        value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
-                        onChange={(e) => handleSortChange(e.target.value)}
-                        className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-                      >
-                        <option value="title_asc">Title (A-Z)</option>
-                        <option value="title_desc">Title (Z-A)</option>
-                        <option value="added_to_latest_at_desc">Date Added (Newest)</option>
-                        <option value="added_to_latest_at_asc">Date Added (Oldest)</option>
-                        <option value="published_at_desc">Date Published (Newest)</option>
-                        <option value="published_at_asc">Date Published (Oldest)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="mb-4 flex justify-between items-center">
                 {activeTab === 'latest' && (
@@ -380,6 +531,19 @@ function ChannelListDetail() {
                     >
                       {selectedVideoIds.size === videos.length ? 'Deselect All' : 'Select All'}
                     </Button>
+                    {(shortsFilter === 'all' || shortsFilter === 'only') && (
+                      <Button
+                        onClick={handleSelectAllShorts}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {(() => {
+                          const shorts = videos.filter(v => isShortVideo(v.duration))
+                          const allShortsSelected = shorts.length > 0 && shorts.every(v => selectedVideoIds.has(v.id))
+                          return allShortsSelected ? 'Deselect All Shorts' : 'Select All Shorts'
+                        })()}
+                      </Button>
+                    )}
                     {selectedVideoIds.size > 0 && (
                       <span className="text-sm text-muted-foreground">
                         {selectedVideoIds.size} video{selectedVideoIds.size !== 1 ? 's' : ''} selected

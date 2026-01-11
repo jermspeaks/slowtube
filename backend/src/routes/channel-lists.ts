@@ -342,10 +342,22 @@ router.get('/:id/videos', (req, res) => {
       return res.status(404).json({ error: 'List not found' })
     }
 
-    const { type, sortBy, sortOrder } = req.query
+    const { type, sortBy, sortOrder, stateFilter, shortsFilter } = req.query
+    
+    // Validate shortsFilter
+    let validShortsFilter: 'all' | 'exclude' | 'only' | undefined = undefined
+    if (shortsFilter === 'all' || shortsFilter === 'exclude' || shortsFilter === 'only') {
+      validShortsFilter = shortsFilter
+    }
     
     if (type === 'watch_later') {
-      const videos = channelListQueries.getVideosForList(id, 'watch_later')
+      // Validate stateFilter for watch_later
+      let validStateFilter: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive' | undefined = undefined
+      if (stateFilter === 'all' || stateFilter === 'exclude_archived' || stateFilter === 'feed' || stateFilter === 'inbox' || stateFilter === 'archive') {
+        validStateFilter = stateFilter
+      }
+      
+      const videos = channelListQueries.getVideosForList(id, 'watch_later', undefined, undefined, validStateFilter, validShortsFilter)
       
       // Get tags and comments for each video
       const videosWithDetails = videos.map(video => {
@@ -372,7 +384,10 @@ router.get('/:id/videos', (req, res) => {
         validSortOrder = sortOrder
       }
       
-      const videos = channelListQueries.getVideosForList(id, 'latest', validSortBy, validSortOrder)
+      // Default to 'exclude' for latest videos if not specified
+      const effectiveShortsFilter = validShortsFilter || 'exclude'
+      
+      const videos = channelListQueries.getVideosForList(id, 'latest', validSortBy, validSortOrder, undefined, effectiveShortsFilter)
       
       // Get tags and comments for each video
       const videosWithDetails = videos.map(video => {

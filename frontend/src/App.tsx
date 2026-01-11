@@ -71,7 +71,10 @@ function AppContent() {
         <Route path="/playlists" element={<MoviePlaylists />} />
         <Route path="/playlists/:id" element={<MoviePlaylistDetail />} />
         <Route path="/channel-lists" element={<ChannelLists />} />
-        <Route path="/channel-lists/:id" element={<ChannelListDetail />} />
+        <Route path="/channel-lists/:id/watch-later" element={<ChannelListDetail />} />
+        <Route path="/channel-lists/:id/latest" element={<ChannelListDetail />} />
+        <Route path="/channel-lists/:id/liked" element={<ChannelListDetail />} />
+        <Route path="/channel-lists/:id" element={<Navigate to="watch-later" replace />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       <Toaster position={toastPosition} />

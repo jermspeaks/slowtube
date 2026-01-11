@@ -420,11 +420,15 @@ export const channelListsAPI = {
     listId: number,
     type: 'watch_later' | 'latest' | 'liked',
     sortBy?: 'title' | 'added_to_latest_at' | 'published_at',
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
+    stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive',
+    shortsFilter?: 'all' | 'exclude' | 'only'
   ) => {
     const params: Record<string, string> = { type }
     if (sortBy) params.sortBy = sortBy
     if (sortOrder) params.sortOrder = sortOrder
+    if (stateFilter) params.stateFilter = stateFilter
+    if (shortsFilter) params.shortsFilter = shortsFilter
     const response = await api.get(`/api/channel-lists/${listId}/videos`, { params })
     return response.data
   },
