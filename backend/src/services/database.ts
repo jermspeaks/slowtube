@@ -959,7 +959,7 @@ export const channelQueries = {
       LEFT JOIN video_states vs ON v.id = vs.video_id
       WHERE v.youtube_channel_id = ?
         AND v.added_to_latest_at IS NOT NULL
-        AND vs.state IS NULL
+        AND (vs.state IS NULL OR vs.state = 'feed')
       ${orderBy}
     `).all(channelId) as (Video & { state: string | null })[]
   },
@@ -2302,14 +2302,14 @@ export const channelListQueries = {
         }
       }
       
-      // Get latest videos (with added_to_latest_at and no state)
+      // Get latest videos (with added_to_latest_at and feed state or no state)
       let videos = db.prepare(`
         SELECT v.*, vs.state 
         FROM videos v
         LEFT JOIN video_states vs ON v.id = vs.video_id
         WHERE v.youtube_channel_id IN (${placeholders})
           AND v.added_to_latest_at IS NOT NULL
-          AND vs.state IS NULL
+          AND (vs.state IS NULL OR vs.state = 'feed')
         ${orderBy}
       `).all(...channelIdValues) as (Video & { state: string | null })[]
 

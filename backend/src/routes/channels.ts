@@ -203,9 +203,15 @@ export async function processLatestVideosFromChannel(
       const existingVideo = videoQueries.getByYoutubeId(videoDetails.id)
 
       if (existingVideo) {
-        // Get current state - preserve existing state, don't set default
+        // Get current state - preserve existing state, but set to 'feed' if null
         const currentState = videoStateQueries.getByVideoId(existingVideo.id)
-        const state = currentState?.state || null
+        let state = currentState?.state || null
+        
+        // If video has no state, set it to 'feed' when refreshing latest videos
+        if (state === null) {
+          videoStateQueries.setState(existingVideo.id, 'feed')
+          state = 'feed'
+        }
 
         // Update existing video metadata but preserve state
         const updateData: any = {
@@ -258,14 +264,14 @@ export async function processLatestVideosFromChannel(
 
         const videoId = videoQueries.create(videoData)
 
-        // Don't set state - leave it null so it appears in latest videos
-        // State will be set when user moves video to inbox/archive
+        // Set state to 'feed' for new videos fetched from latest
+        videoStateQueries.setState(videoId, 'feed')
 
         savedVideos.push({
           id: videoId,
           youtube_id: videoDetails.id,
           title: videoDetails.title,
-          state: null,
+          state: 'feed',
           isNew: true,
         })
       }
