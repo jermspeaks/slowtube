@@ -357,7 +357,18 @@ router.get('/:id/videos', (req, res) => {
         validStateFilter = stateFilter
       }
       
-      const videos = channelListQueries.getVideosForList(id, 'watch_later', undefined, undefined, validStateFilter, validShortsFilter)
+      // Validate sortBy and sortOrder for watch_later videos
+      let validSortBy: 'title' | 'added_to_playlist_at' | 'published_at' | undefined = undefined
+      if (sortBy === 'title' || sortBy === 'added_to_playlist_at' || sortBy === 'published_at') {
+        validSortBy = sortBy
+      }
+      
+      let validSortOrder: 'asc' | 'desc' | undefined = undefined
+      if (sortOrder === 'asc' || sortOrder === 'desc') {
+        validSortOrder = sortOrder
+      }
+      
+      const videos = channelListQueries.getVideosForList(id, 'watch_later', validSortBy, validSortOrder, validStateFilter, validShortsFilter)
       
       // Get tags and comments for each video
       const videosWithDetails = videos.map(video => {

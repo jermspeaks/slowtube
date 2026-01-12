@@ -41,8 +41,16 @@ function ChannelListDetail() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   
-  // Sort state - default to Date Added (Newest) to match current behavior (only for latest tab)
-  const [sortBy, setSortBy] = useState<'title' | 'added_to_latest_at' | 'published_at'>('added_to_latest_at')
+  // Sort state - separate defaults for watch_later and latest tabs
+  const [sortBy, setSortBy] = useState<'title' | 'added_to_latest_at' | 'published_at' | 'added_to_playlist_at'>(() => {
+    // Initialize based on current active tab
+    if (location.pathname.includes('/latest')) {
+      return 'added_to_latest_at'
+    } else if (location.pathname.includes('/watch-later') || !location.pathname.includes('/latest') && !location.pathname.includes('/liked')) {
+      return 'added_to_playlist_at'
+    }
+    return 'added_to_latest_at'
+  })
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   
   // State filter for watch later videos (default: exclude archived)
@@ -60,6 +68,13 @@ function ChannelListDetail() {
 
   useEffect(() => {
     if (list && activeTab) {
+      // Reset sort to default when switching tabs
+      if (activeTab === 'watch_later') {
+        setSortBy('added_to_playlist_at')
+      } else if (activeTab === 'latest') {
+        setSortBy('added_to_latest_at')
+      }
+      setSortOrder('desc')
       loadVideos()
       // Clear selection when switching tabs
       setSelectedVideoIds(new Set())
@@ -106,12 +121,12 @@ function ChannelListDetail() {
         }
       }
       
-      // Only pass sort parameters for latest tab, state filter for watch later tab, shorts filter for latest tab
+      // Pass sort parameters for latest and watch_later tabs, state filter for watch later tab, shorts filter for latest tab
       const data = await channelListsAPI.getVideos(
         parseInt(id, 10),
         activeTab,
-        activeTab === 'latest' ? sortBy : undefined,
-        activeTab === 'latest' ? sortOrder : undefined,
+        (activeTab === 'latest' || activeTab === 'watch_later') ? sortBy : undefined,
+        (activeTab === 'latest' || activeTab === 'watch_later') ? sortOrder : undefined,
         activeTab === 'watch_later' ? effectiveStateFilter : undefined,
         activeTab === 'latest' ? shortsFilter : undefined
       )
@@ -127,11 +142,19 @@ function ChannelListDetail() {
   const handleSortChange = (value: string) => {
     const lastUnderscoreIndex = value.lastIndexOf('_')
     if (lastUnderscoreIndex !== -1) {
-      const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'added_to_latest_at' | 'published_at'
+      const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'added_to_latest_at' | 'published_at' | 'added_to_playlist_at'
       const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
-      if ((by === 'title' || by === 'added_to_latest_at' || by === 'published_at') && (order === 'asc' || order === 'desc')) {
-        setSortBy(by)
-        setSortOrder(order)
+      // Validate based on active tab
+      if (activeTab === 'watch_later') {
+        if ((by === 'title' || by === 'added_to_playlist_at' || by === 'published_at') && (order === 'asc' || order === 'desc')) {
+          setSortBy(by)
+          setSortOrder(order)
+        }
+      } else if (activeTab === 'latest') {
+        if ((by === 'title' || by === 'added_to_latest_at' || by === 'published_at') && (order === 'asc' || order === 'desc')) {
+          setSortBy(by)
+          setSortOrder(order)
+        }
       }
     }
   }
@@ -333,15 +356,15 @@ function ChannelListDetail() {
                   <h1 className="text-2xl font-bold text-foreground">
                     {list.name}
                   </h1>
+                  <span className="text-sm text-muted-foreground">
+                    • {list.channel_count} {list.channel_count === 1 ? 'channel' : 'channels'}
+                  </span>
                 </div>
                 {list.description && (
                   <p className="text-muted-foreground mb-2">
                     {list.description}
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground">
-                  {list.channel_count} {list.channel_count === 1 ? 'channel' : 'channels'}
-                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -415,51 +438,72 @@ function ChannelListDetail() {
 
         {/* Videos Content */}
         <div>
-          {/* Filter Panel - only show for watch later tab, always visible */}
+          {/* Filter and Sort Panel - only show for watch later tab, always visible */}
           {activeTab === 'watch_later' && !videosLoading && (
-            <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="flex gap-2 items-center w-full sm:w-auto">
-                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
-                  <select
-                    value={stateFilter}
-                    onChange={(e) => {
-                      const newFilter = e.target.value as 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'
-                      setStateFilter(newFilter)
-                      // If selecting archive, automatically check show archived
-                      if (newFilter === 'archive') {
-                        setShowArchived(true)
-                      }
-                      // If selecting a specific state other than archive, uncheck show archived
-                      else if (newFilter === 'feed' || newFilter === 'inbox') {
-                        setShowArchived(false)
-                      }
-                    }}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-                  >
-                    <option value="exclude_archived">All (Exclude Archived)</option>
-                    <option value="all">All</option>
-                    <option value="feed">Feed</option>
-                    <option value="inbox">Inbox</option>
-                    <option value="archive">Archive</option>
-                  </select>
-                </div>
-                {stateFilter === 'all' && (
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="checkbox"
-                      id="show-archived"
-                      checked={showArchived}
-                      onChange={(e) => setShowArchived(e.target.checked)}
-                      className="w-4 h-4 rounded border-border"
-                    />
-                    <label htmlFor="show-archived" className="text-sm text-foreground cursor-pointer">
-                      Show archived
-                    </label>
+            <>
+              <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <div className="flex gap-2 items-center w-full sm:w-auto">
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
+                    <select
+                      value={stateFilter}
+                      onChange={(e) => {
+                        const newFilter = e.target.value as 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'
+                        setStateFilter(newFilter)
+                        // If selecting archive, automatically check show archived
+                        if (newFilter === 'archive') {
+                          setShowArchived(true)
+                        }
+                        // If selecting a specific state other than archive, uncheck show archived
+                        else if (newFilter === 'feed' || newFilter === 'inbox') {
+                          setShowArchived(false)
+                        }
+                      }}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                    >
+                      <option value="exclude_archived">All (Exclude Archived)</option>
+                      <option value="all">All</option>
+                      <option value="feed">Feed</option>
+                      <option value="inbox">Inbox</option>
+                      <option value="archive">Archive</option>
+                    </select>
                   </div>
-                )}
+                  {stateFilter === 'all' && (
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="checkbox"
+                        id="show-archived"
+                        checked={showArchived}
+                        onChange={(e) => setShowArchived(e.target.checked)}
+                        className="w-4 h-4 rounded border-border"
+                      />
+                      <label htmlFor="show-archived" className="text-sm text-foreground cursor-pointer">
+                        Show archived
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+              <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <div className="flex gap-2 items-center w-full sm:w-auto">
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
+                    <select
+                      value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                      onChange={(e) => handleSortChange(e.target.value)}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                    >
+                      <option value="title_asc">Title (A-Z)</option>
+                      <option value="title_desc">Title (Z-A)</option>
+                      <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
+                      <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
+                      <option value="published_at_desc">Date Published (Newest)</option>
+                      <option value="published_at_asc">Date Published (Oldest)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Sort Panel - only show for latest tab, always visible */}

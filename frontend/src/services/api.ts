@@ -419,7 +419,7 @@ export const channelListsAPI = {
   getVideos: async (
     listId: number,
     type: 'watch_later' | 'latest' | 'liked',
-    sortBy?: 'title' | 'added_to_latest_at' | 'published_at',
+    sortBy?: 'title' | 'added_to_latest_at' | 'published_at' | 'added_to_playlist_at',
     sortOrder?: 'asc' | 'desc',
     stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive',
     shortsFilter?: 'all' | 'exclude' | 'only'

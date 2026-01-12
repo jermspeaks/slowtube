@@ -2236,7 +2236,7 @@ export const channelListQueries = {
     `).all(listId) as Channel[]
   },
 
-  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked', sortBy?: 'title' | 'added_to_latest_at' | 'published_at', sortOrder?: 'asc' | 'desc', stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive', shortsFilter?: 'all' | 'exclude' | 'only'): (Video & { state: string | null })[] => {
+  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked', sortBy?: 'title' | 'added_to_latest_at' | 'published_at' | 'added_to_playlist_at', sortOrder?: 'asc' | 'desc', stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive', shortsFilter?: 'all' | 'exclude' | 'only'): (Video & { state: string | null })[] => {
     // Get channel IDs in this list
     const channelIds = db.prepare(`
       SELECT youtube_channel_id
@@ -2266,6 +2266,22 @@ export const channelListQueries = {
       }
       // If stateFilter is 'all' or undefined, show all videos (no state condition)
 
+      // Build ORDER BY clause for watch later videos
+      let orderBy = 'ORDER BY v.added_to_playlist_at DESC' // Default sort
+      if (sortBy && (sortBy === 'title' || sortBy === 'added_to_playlist_at' || sortBy === 'published_at')) {
+        const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
+        // Handle NULL values - put them at the end
+        if (sortBy === 'title') {
+          orderBy = `ORDER BY 
+            CASE WHEN v.title IS NULL THEN 1 ELSE 0 END,
+            v.title ${order}`
+        } else {
+          orderBy = `ORDER BY 
+            CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,
+            v.${sortBy} ${order}`
+        }
+      }
+
       // Get videos from channels in the list (watch later videos) with optional state filtering
       let videos = db.prepare(`
         SELECT v.*, vs.state 
@@ -2273,7 +2289,7 @@ export const channelListQueries = {
         LEFT JOIN video_states vs ON v.id = vs.video_id
         WHERE v.youtube_channel_id IN (${placeholders})
         ${stateCondition}
-        ORDER BY v.added_to_playlist_at DESC
+        ${orderBy}
       `).all(...channelIdValues) as (Video & { state: string | null })[]
 
       // Apply shorts filter if specified
