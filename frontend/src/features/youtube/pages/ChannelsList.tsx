@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { Channel, ChannelWithCount } from '../types/channel'
 import { channelsAPI } from '../services/api'
 import { toast } from 'sonner'
@@ -98,14 +98,6 @@ function ChannelsList() {
     if (filterType === 'subscribed') {
       setCurrentPage(1)
     }
-  }
-
-  const handleChannelClick = (channel: Channel, e?: React.MouseEvent) => {
-    // Don't navigate if clicking on the add to list button
-    if (e && (e.target as HTMLElement).closest('.add-to-list-button')) {
-      return
-    }
-    navigate(`/channels/${channel.youtube_channel_id}/watch-later`)
   }
 
   const handleAddToListsClick = (channel: Channel, e: React.MouseEvent) => {
@@ -360,10 +352,12 @@ function ChannelsList() {
               {channels.map((channel) => (
                 <div
                   key={channel.youtube_channel_id}
-                  onClick={(e) => handleChannelClick(channel, e)}
-                  className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer overflow-hidden relative"
+                  className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
                 >
-                  <div className="p-6">
+                  <Link
+                    to={`/channels/${channel.youtube_channel_id}/watch-later`}
+                    className="block p-6 hover:no-underline"
+                  >
                     <div className="flex items-start gap-4 mb-4">
                       {channel.thumbnail_url ? (
                         <img
@@ -408,7 +402,7 @@ function ChannelsList() {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </Link>
                   <Button
                     variant="ghost"
                     size="sm"
