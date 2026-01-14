@@ -50,7 +50,7 @@ function ChannelListTable({ lists, onEdit, onDelete }: ChannelListTableProps) {
               <td className="p-3">
                 <div
                   className="font-bold cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => navigate(`/channel-lists/${list.id}`)}
+                  onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
                 >
                   {list.name}
                 </div>
@@ -83,7 +83,7 @@ function ChannelListTable({ lists, onEdit, onDelete }: ChannelListTableProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={() => navigate(`/channel-lists/${list.id}`)}
+                      onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
                       className="cursor-pointer"
                     >
                       <List className="mr-2 h-4 w-4" />

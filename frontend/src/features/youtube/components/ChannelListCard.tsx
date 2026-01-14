@@ -30,7 +30,7 @@ function ChannelListCard({ list, onEdit, onDelete }: ChannelListCardProps) {
           <div className="flex-1 min-w-0">
             <h3
               className="font-semibold text-lg mb-1 cursor-pointer hover:text-primary transition-colors truncate"
-              onClick={() => navigate(`/channel-lists/${list.id}`)}
+              onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
             >
               {list.name}
             </h3>
@@ -49,7 +49,7 @@ function ChannelListCard({ list, onEdit, onDelete }: ChannelListCardProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => navigate(`/channel-lists/${list.id}`)}
+              onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
               className="cursor-pointer"
             >
               <List className="mr-2 h-4 w-4" />
