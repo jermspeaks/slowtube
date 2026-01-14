@@ -18,7 +18,7 @@ import {
   X,
   List,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/shared/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +27,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/shared/components/ui/dropdown-menu'
 
 export function Navbar() {
   const location = useLocation()
@@ -35,8 +35,12 @@ export function Navbar() {
 
   const isActive = (path: string) => location.pathname === path
   
-  const isTVShowsActive = () => {
-    return location.pathname.startsWith('/tv-shows')
+  const isYouTubeActive = () => {
+    return location.pathname.startsWith('/youtube')
+  }
+
+  const isMediaActive = () => {
+    return location.pathname.startsWith('/media')
   }
 
   const MobileNavLink = ({ to, icon: Icon, children, onClick }: { to: string; icon: any; children: React.ReactNode; onClick?: () => void }) => (
@@ -47,7 +51,7 @@ export function Navbar() {
         onClick?.()
       }}
       className={`flex items-center gap-3 px-4 py-3 text-sm rounded-md transition-colors ${
-        isActive(to) ? 'bg-accent' : 'hover:bg-accent'
+        location.pathname.startsWith(to) ? 'bg-accent' : 'hover:bg-accent'
       }`}
     >
       <Icon className="h-4 w-4" />
@@ -67,9 +71,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    ['/dashboard', '/movies', '/tv-shows', '/channels', '/youtube', '/channel-lists'].some(path =>
-                      location.pathname.startsWith(path)
-                    )
+                    isYouTubeActive() || isMediaActive()
                       ? 'bg-accent'
                       : ''
                   }`}
@@ -80,67 +82,92 @@ export function Navbar() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard" className="w-full flex items-center gap-2">
-                    <Home className="h-4 w-4" />
-                    Dashboard
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/movies" className="w-full flex items-center gap-2">
-                    <Film className="h-4 w-4" />
-                    Movies
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuSub>
-                  <DropdownMenuSubTrigger className={isTVShowsActive() ? 'bg-accent' : ''}>
-                    <Tv className="h-4 w-4" />
-                    TV Shows
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuItem asChild>
-                      <Link to="/tv-shows/upcoming" className="w-full flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        Upcoming
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/tv-shows/list" className="w-full">
-                        List
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/tv-shows/recently-aired" className="w-full">
-                        Recently Aired
-                      </Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
+                  <DropdownMenuSubTrigger className={isYouTubeActive() ? 'bg-accent' : ''}>
                     <Radio className="h-4 w-4" />
                     YouTube
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
+                    <DropdownMenuItem asChild>
+                      <Link to="/youtube/dashboard" className="w-full flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/youtube/watch-later" className="w-full">
                         Watch Later
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/channels/subscribed" className="w-full">
+                      <Link to="/youtube/channels/subscribed" className="w-full">
                         Subscribed Channels
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/channels/watch-later" className="w-full">
+                      <Link to="/youtube/channels/watch-later" className="w-full">
                         Watch Later Channels
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/channel-lists" className="w-full flex items-center gap-2">
+                      <Link to="/youtube/channel-lists" className="w-full flex items-center gap-2">
                         <List className="h-4 w-4" />
                         Channel Lists
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className={isMediaActive() ? 'bg-accent' : ''}>
+                    <Film className="h-4 w-4" />
+                    Media
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem asChild>
+                      <Link to="/media/dashboard" className="w-full flex items-center gap-2">
+                        <Home className="h-4 w-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/media/movies" className="w-full flex items-center gap-2">
+                        <Film className="h-4 w-4" />
+                        Movies
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        <Tv className="h-4 w-4" />
+                        TV Shows
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem asChild>
+                          <Link to="/media/tv-shows/upcoming" className="w-full flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Upcoming
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/media/tv-shows/list" className="w-full">
+                            List
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/media/tv-shows/recently-aired" className="w-full">
+                            Recently Aired
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuItem asChild>
+                      <Link to="/media/playlists" className="w-full flex items-center gap-2">
+                        <List className="h-4 w-4" />
+                        Playlists
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/media/calendar" className="w-full">
+                        Calendar
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
@@ -154,7 +181,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    ['/grouped', '/stats', '/tags', '/playlists'].some(path => location.pathname.startsWith(path))
+                    ['/youtube/grouped', '/youtube/stats', '/youtube/tags', '/media/playlists'].some(path => location.pathname.startsWith(path))
                       ? 'bg-accent'
                       : ''
                   }`}
@@ -166,25 +193,25 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuItem asChild>
-                  <Link to="/playlists" className="w-full flex items-center gap-2">
+                  <Link to="/media/playlists" className="w-full flex items-center gap-2">
                     <List className="h-4 w-4" />
                     Playlists
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/grouped" className="w-full flex items-center gap-2">
+                  <Link to="/youtube/grouped" className="w-full flex items-center gap-2">
                     <Layers className="h-4 w-4" />
                     Grouped View
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/stats" className="w-full flex items-center gap-2">
+                  <Link to="/youtube/stats" className="w-full flex items-center gap-2">
                     <BarChart className="h-4 w-4" />
                     Stats
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/tags" className="w-full flex items-center gap-2">
+                  <Link to="/youtube/tags" className="w-full flex items-center gap-2">
                     <Tag className="h-4 w-4" />
                     Tags
                   </Link>
@@ -198,7 +225,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    location.pathname.startsWith('/watch-next') ? 'bg-accent' : ''
+                    location.pathname.startsWith('/youtube/watch-next') || location.pathname.startsWith('/media/watch-next') ? 'bg-accent' : ''
                   }`}
                 >
                   <PlayCircle className="h-4 w-4" />
@@ -208,9 +235,15 @@ export function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
                 <DropdownMenuItem asChild>
-                  <Link to="/watch-next" className="w-full flex items-center gap-2">
-                    <PlayCircle className="h-4 w-4" />
-                    Watch Next
+                  <Link to="/youtube/watch-next" className="w-full flex items-center gap-2">
+                    <Radio className="h-4 w-4" />
+                    YouTube Watch Next
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/media/watch-next" className="w-full flex items-center gap-2">
+                    <Film className="h-4 w-4" />
+                    Media Watch Next
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -232,7 +265,7 @@ export function Navbar() {
         {/* Mobile Navigation */}
         <div className="md:hidden flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard">
+            <Link to="/youtube/dashboard">
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <Home className="h-5 w-5" />
                 <span className="sr-only">Home</span>
@@ -263,41 +296,60 @@ export function Navbar() {
                     Discover
                   </h3>
                   <div className="space-y-1">
-                    <MobileNavLink to="/dashboard" icon={Home}>
-                      Dashboard
-                    </MobileNavLink>
-                    <MobileNavLink to="/movies" icon={Film}>
-                      Movies
-                    </MobileNavLink>
                     <div className="px-4 py-2">
                       <div className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                        <Tv className="h-4 w-4" />
-                        TV Shows
+                        <Radio className="h-4 w-4" />
+                        YouTube
                       </div>
                       <div className="pl-6 space-y-1">
-                        <MobileNavLink to="/tv-shows/upcoming" icon={Clock}>
-                          Upcoming
+                        <MobileNavLink to="/youtube/dashboard" icon={Home}>
+                          Dashboard
                         </MobileNavLink>
-                        <MobileNavLink to="/tv-shows/list" icon={Tv}>
-                          List
+                        <MobileNavLink to="/youtube/watch-later" icon={Radio}>
+                          Watch Later
                         </MobileNavLink>
-                        <MobileNavLink to="/tv-shows/recently-aired" icon={Clock}>
-                          Recently Aired
+                        <MobileNavLink to="/youtube/channels/subscribed" icon={Radio}>
+                          Subscribed Channels
+                        </MobileNavLink>
+                        <MobileNavLink to="/youtube/channels/watch-later" icon={Radio}>
+                          Watch Later Channels
+                        </MobileNavLink>
+                        <MobileNavLink to="/youtube/channel-lists" icon={List}>
+                          Channel Lists
                         </MobileNavLink>
                       </div>
                     </div>
-                    <MobileNavLink to="/youtube/watch-later" icon={Radio}>
-                      Watch Later
-                    </MobileNavLink>
-                    <MobileNavLink to="/channels/subscribed" icon={Radio}>
-                      Subscribed Channels
-                    </MobileNavLink>
-                    <MobileNavLink to="/channels/watch-later" icon={Radio}>
-                      Watch Later Channels
-                    </MobileNavLink>
-                    <MobileNavLink to="/channel-lists" icon={List}>
-                      Channel Lists
-                    </MobileNavLink>
+                    <div className="px-4 py-2">
+                      <div className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <Film className="h-4 w-4" />
+                        Media
+                      </div>
+                      <div className="pl-6 space-y-1">
+                        <MobileNavLink to="/media/dashboard" icon={Home}>
+                          Dashboard
+                        </MobileNavLink>
+                        <MobileNavLink to="/media/movies" icon={Film}>
+                          Movies
+                        </MobileNavLink>
+                        <div className="pl-4 space-y-1">
+                          <MobileNavLink to="/media/tv-shows/upcoming" icon={Clock}>
+                            TV Shows - Upcoming
+                          </MobileNavLink>
+                          <MobileNavLink to="/media/tv-shows/list" icon={Tv}>
+                            TV Shows - List
+                          </MobileNavLink>
+                          <MobileNavLink to="/media/tv-shows/recently-aired" icon={Clock}>
+                            TV Shows - Recently Aired
+                          </MobileNavLink>
+                        </div>
+                        <MobileNavLink to="/media/playlists" icon={List}>
+                          Playlists
+                        </MobileNavLink>
+                        <MobileNavLink to="/media/calendar" icon={Clock}>
+                          Calendar
+                        </MobileNavLink>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -306,16 +358,16 @@ export function Navbar() {
                     Organize
                   </h3>
                   <div className="space-y-1">
-                    <MobileNavLink to="/playlists" icon={List}>
+                    <MobileNavLink to="/media/playlists" icon={List}>
                       Playlists
                     </MobileNavLink>
-                    <MobileNavLink to="/grouped" icon={Layers}>
+                    <MobileNavLink to="/youtube/grouped" icon={Layers}>
                       Grouped View
                     </MobileNavLink>
-                    <MobileNavLink to="/stats" icon={BarChart}>
+                    <MobileNavLink to="/youtube/stats" icon={BarChart}>
                       Stats
                     </MobileNavLink>
-                    <MobileNavLink to="/tags" icon={Tag}>
+                    <MobileNavLink to="/youtube/tags" icon={Tag}>
                       Tags
                     </MobileNavLink>
                   </div>
@@ -326,8 +378,11 @@ export function Navbar() {
                     Watch
                   </h3>
                   <div className="space-y-1">
-                    <MobileNavLink to="/watch-next" icon={PlayCircle}>
-                      Watch Next
+                    <MobileNavLink to="/youtube/watch-next" icon={Radio}>
+                      YouTube Watch Next
+                    </MobileNavLink>
+                    <MobileNavLink to="/media/watch-next" icon={Film}>
+                      Media Watch Next
                     </MobileNavLink>
                   </div>
                 </div>
@@ -345,4 +400,3 @@ export function Navbar() {
     </nav>
   )
 }
-
