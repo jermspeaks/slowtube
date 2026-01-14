@@ -355,7 +355,7 @@ function ChannelsList() {
                   className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
                 >
                   <Link
-                    to={`/channels/${channel.youtube_channel_id}/watch-later`}
+                    to={`/youtube/channels/${channel.youtube_channel_id}/watch-later`}
                     className="block p-6 hover:no-underline"
                   >
                     <div className="flex items-start gap-4 mb-4">

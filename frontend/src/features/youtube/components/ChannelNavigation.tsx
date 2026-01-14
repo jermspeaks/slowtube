@@ -6,9 +6,9 @@ export default function ChannelNavigation() {
   if (!channelId) return null
 
   const tabs = [
-    { key: 'watch_later', label: 'Watch Later Videos', path: `/channels/${channelId}/watch-later` },
-    { key: 'latest', label: 'Latest Videos', path: `/channels/${channelId}/latest` },
-    { key: 'liked', label: 'Liked Videos', path: `/channels/${channelId}/liked` },
+    { key: 'watch_later', label: 'Watch Later Videos', path: `/youtube/channels/${channelId}/watch-later` },
+    { key: 'latest', label: 'Latest Videos', path: `/youtube/channels/${channelId}/latest` },
+    { key: 'liked', label: 'Liked Videos', path: `/youtube/channels/${channelId}/liked` },
   ]
 
   return (

@@ -30,7 +30,7 @@ function ChannelLatest() {
 
   useEffect(() => {
     if (!channelId) {
-      navigate('/channels/watch-later')
+      navigate('/youtube/channels/watch-later')
       return
     }
 
@@ -53,7 +53,7 @@ function ChannelLatest() {
     } catch (error) {
       console.error('Error loading channel:', error)
       toast.error('Failed to load channel')
-      navigate('/channels/watch-later')
+      navigate('/youtube/channels/watch-later')
     } finally {
       setLoading(false)
     }
@@ -182,7 +182,7 @@ function ChannelLatest() {
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
             <p className="text-lg text-muted-foreground mb-4">Channel not found</p>
             <button
-              onClick={() => navigate('/channels/watch-later')}
+              onClick={() => navigate('/youtube/channels/watch-later')}
               className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
             >
               Back to Channels
