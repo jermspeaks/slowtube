@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 // YouTube pages
 import YouTubeDashboard from './features/youtube/pages/Dashboard'
@@ -29,29 +29,20 @@ import MoviePlaylistDetail from './features/media/pages/MoviePlaylistDetail'
 import Settings from './shared/pages/Settings'
 import Login from './shared/pages/Login'
 // Components
-import { Navbar } from './components/Navbar'
+import { DashboardLayout } from './components/DashboardLayout'
 import { useTheme } from './shared/hooks/useTheme'
 import { Toaster } from './shared/components/ui/sonner'
 
-function AppContent() {
-  // Initialize theme on app load
-  useTheme()
-  const [toastPosition, setToastPosition] = useState<'top-center' | 'bottom-right'>('bottom-right')
+function AppRoutes() {
+  const location = useLocation()
+  const isLoginPage = location.pathname === '/login'
 
-  useEffect(() => {
-    const updatePosition = () => {
-      // Use md breakpoint (768px) - below is mobile, above is desktop
-      setToastPosition(window.innerWidth >= 768 ? 'bottom-right' : 'top-center')
-    }
-
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    return () => window.removeEventListener('resize', updatePosition)
-  }, [])
+  if (isLoginPage) {
+    return <Login />
+  }
 
   return (
-    <>
-      <Navbar />
+    <DashboardLayout>
       <Routes>
         {/* YouTube routes */}
         <Route path="/youtube/dashboard" element={<YouTubeDashboard />} />
@@ -88,7 +79,6 @@ function AppContent() {
         
         {/* Shared routes */}
         <Route path="/settings" element={<Settings />} />
-        <Route path="/login" element={<Login />} />
         
         {/* Legacy redirects */}
         <Route path="/dashboard" element={<Navigate to="/youtube/dashboard" replace />} />
@@ -112,6 +102,32 @@ function AppContent() {
         
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/youtube/dashboard" replace />} />
+      </Routes>
+    </DashboardLayout>
+  )
+}
+
+function AppContent() {
+  // Initialize theme on app load
+  useTheme()
+  const [toastPosition, setToastPosition] = useState<'top-center' | 'bottom-right'>('bottom-right')
+
+  useEffect(() => {
+    const updatePosition = () => {
+      // Use md breakpoint (768px) - below is mobile, above is desktop
+      setToastPosition(window.innerWidth >= 768 ? 'bottom-right' : 'top-center')
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    return () => window.removeEventListener('resize', updatePosition)
+  }, [])
+
+  return (
+    <>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/*" element={<AppRoutes />} />
       </Routes>
       <Toaster position={toastPosition} />
     </>

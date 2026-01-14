@@ -314,9 +314,8 @@ function MoviesList() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
+    <>
+      <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
           <h1 className="text-3xl font-bold">Movies</h1>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -550,7 +549,6 @@ function MoviesList() {
             )}
           </>
         )}
-      </main>
 
       <TMDBSearchModal
         type="movie"
@@ -565,7 +563,7 @@ function MoviesList() {
         movieIds={Array.from(selectedMovieIds)}
         onSuccess={handleAddToPlaylistSuccess}
       />
-    </div>
+    </>
   )
 }
 

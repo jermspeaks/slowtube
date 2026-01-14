@@ -77,9 +77,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Latest Movies Section */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -148,8 +146,6 @@ function Dashboard() {
             )}
           </div>
         </div>
-      </main>
-    </div>
   )
 }
 

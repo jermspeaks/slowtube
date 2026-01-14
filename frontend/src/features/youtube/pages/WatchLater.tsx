@@ -174,9 +174,8 @@ function WatchLater() {
   }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="mb-6 space-y-4">
+    <>
+      <div className="mb-6 space-y-4">
           <FiltersAndSort
             stateFilter={stateFilter}
             onStateFilterChange={setStateFilter}
@@ -293,7 +292,6 @@ function WatchLater() {
             )}
           </>
         )}
-      </main>
 
       {selectedVideo && (
         <VideoDetailModal
@@ -302,7 +300,7 @@ function WatchLater() {
           onVideoUpdated={handleVideoUpdated}
         />
       )}
-    </div>
+    </>
   )
 }
 

@@ -62,40 +62,38 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-foreground">Latest Videos</h2>
-          <Link
-            to="/youtube/watch-later"
-            className="text-sm text-primary hover:underline"
-          >
-            View All
-          </Link>
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-foreground">Latest Videos</h2>
+        <Link
+          to="/youtube/watch-later"
+          className="text-sm text-primary hover:underline"
+        >
+          View All
+        </Link>
+      </div>
+      {videosLoading ? (
+        <div className="flex justify-center items-center py-8 bg-card rounded-lg">
+          <div className="text-sm text-muted-foreground">Loading...</div>
         </div>
-        {videosLoading ? (
-          <div className="flex justify-center items-center py-8 bg-card rounded-lg">
-            <div className="text-sm text-muted-foreground">Loading...</div>
-          </div>
-        ) : videos.length === 0 ? (
-          <div className="text-center py-8 px-4 bg-card rounded-lg">
-            <p className="text-sm text-muted-foreground">
-              No videos in watch later
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {videos.map(video => (
-              <VideoCard
-                key={video.id}
-                video={video}
-                onClick={() => handleVideoClick(video)}
-                onStateChange={handleStateChange}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+      ) : videos.length === 0 ? (
+        <div className="text-center py-8 px-4 bg-card rounded-lg">
+          <p className="text-sm text-muted-foreground">
+            No videos in watch later
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {videos.map(video => (
+            <VideoCard
+              key={video.id}
+              video={video}
+              onClick={() => handleVideoClick(video)}
+              onStateChange={handleStateChange}
+            />
+          ))}
+        </div>
+      )}
 
       {selectedVideo && (
         <VideoDetailModal
@@ -104,7 +102,7 @@ function Dashboard() {
           onVideoUpdated={handleVideoUpdated}
         />
       )}
-    </div>
+    </>
   )
 }
 
