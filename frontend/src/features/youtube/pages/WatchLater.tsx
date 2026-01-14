@@ -174,52 +174,52 @@ function WatchLater() {
 
   return (
     <>
+      <h1 className="text-2xl font-bold mb-6">Feed</h1>
       <div className="mb-6 space-y-4">
-          <FiltersAndSort
-            searchQuery={searchQuery}
-            onSearchQueryChange={setSearchQuery}
-            selectedChannels={selectedChannels}
-            onSelectedChannelsChange={setSelectedChannels}
-            availableChannels={availableChannels}
-            sortBy={sortBy}
-            onSortByChange={setSortBy}
-            sortOrder={sortOrder}
-            onSortOrderChange={setSortOrder}
-            dateField={dateField}
-            onDateFieldChange={setDateField}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            endDate={endDate}
-            onEndDateChange={setEndDate}
-          />
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-medium text-foreground">View As</label>
-              <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-            </div>
-            {fetchStatus && fetchStatus.remaining > 0 && (
-              <button
-                onClick={handleResumeFetching}
-                disabled={isFetching}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isFetching ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    <span>Fetching...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Resume Fetching</span>
-                    <span className="text-xs bg-primary-foreground/20 px-2 py-0.5 rounded">
-                      {fetchStatus.remaining} remaining
-                    </span>
-                  </>
-                )}
-              </button>
-            )}
+        <div className="flex justify-between items-start flex-wrap gap-4">
+          <div className="flex-1 min-w-0">
+            <FiltersAndSort
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              selectedChannels={selectedChannels}
+              onSelectedChannelsChange={setSelectedChannels}
+              availableChannels={availableChannels}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+              dateField={dateField}
+              onDateFieldChange={setDateField}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
+            />
           </div>
+          <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>
+        {fetchStatus && fetchStatus.remaining > 0 && (
+          <button
+            onClick={handleResumeFetching}
+            disabled={isFetching}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isFetching ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                <span>Fetching...</span>
+              </>
+            ) : (
+              <>
+                <span>Resume Fetching</span>
+                <span className="text-xs bg-primary-foreground/20 px-2 py-0.5 rounded">
+                  {fetchStatus.remaining} remaining
+                </span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">

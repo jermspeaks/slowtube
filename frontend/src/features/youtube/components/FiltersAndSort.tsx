@@ -74,10 +74,6 @@ function FiltersAndSort({
             className="px-3 py-2 border border-border rounded text-sm bg-background flex-1"
           />
         </div>
-      </div>
-
-      {/* Collapsible "Show more" section */}
-      <div className="mt-4">
         <button
           onClick={() => setShowMore(!showMore)}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-medium transition-colors"
@@ -95,6 +91,10 @@ function FiltersAndSort({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
+      </div>
+
+      {/* Collapsible "Show more" section */}
+      <div>
 
         {showMore && (
           <div className="mt-4 pt-4 border-t border-border space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
