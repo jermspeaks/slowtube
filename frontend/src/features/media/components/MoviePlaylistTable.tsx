@@ -50,7 +50,7 @@ function MoviePlaylistTable({ playlists, onEdit, onDelete }: MoviePlaylistTableP
               <td className="p-3">
                 <div
                   className="font-bold cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => navigate(`/playlists/${playlist.id}`)}
+                  onClick={() => navigate(`/media/playlists/${playlist.id}`)}
                 >
                   {playlist.name}
                 </div>
@@ -83,7 +83,7 @@ function MoviePlaylistTable({ playlists, onEdit, onDelete }: MoviePlaylistTableP
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={() => navigate(`/playlists/${playlist.id}`)}
+                      onClick={() => navigate(`/media/playlists/${playlist.id}`)}
                       className="cursor-pointer"
                     >
                       <List className="mr-2 h-4 w-4" />

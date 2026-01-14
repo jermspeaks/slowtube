@@ -91,8 +91,8 @@ function ChannelListDetail() {
     } catch (error: any) {
       console.error('Error loading channel list:', error)
       toast.error(error.response?.data?.error || 'Failed to load channel list')
-      if (error.response?.status === 404) {
-        navigate('/channel-lists')
+      if (error.response?.status === 404 || error.response?.status === 400) {
+        navigate('/youtube/channel-lists')
       }
     } finally {
       setLoading(false)
@@ -321,7 +321,7 @@ function ChannelListDetail() {
         <main className="max-w-[1400px] mx-auto px-6 py-6">
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
             <p className="text-lg text-muted-foreground mb-4">Channel list not found</p>
-            <Button onClick={() => navigate('/channel-lists')}>
+            <Button onClick={() => navigate('/youtube/channel-lists')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Channel Lists
             </Button>
@@ -341,7 +341,7 @@ function ChannelListDetail() {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => navigate('/channel-lists')}
+                onClick={() => navigate('/youtube/channel-lists')}
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -394,7 +394,7 @@ function ChannelListDetail() {
           <div className="border-b border-border">
             <nav className="flex -mb-px">
               <button
-                onClick={() => navigate(`/channel-lists/${id}/watch-later`)}
+                onClick={() => navigate(`/youtube/channel-lists/${id}/watch-later`)}
                 className={`
                   px-6 py-4 text-sm font-medium border-b-2 transition-colors
                   ${
@@ -407,7 +407,7 @@ function ChannelListDetail() {
                 Watch Later Videos
               </button>
               <button
-                onClick={() => navigate(`/channel-lists/${id}/latest`)}
+                onClick={() => navigate(`/youtube/channel-lists/${id}/latest`)}
                 className={`
                   px-6 py-4 text-sm font-medium border-b-2 transition-colors
                   ${
@@ -420,7 +420,7 @@ function ChannelListDetail() {
                 Latest Videos
               </button>
               <button
-                onClick={() => navigate(`/channel-lists/${id}/liked`)}
+                onClick={() => navigate(`/youtube/channel-lists/${id}/liked`)}
                 className={`
                   px-6 py-4 text-sm font-medium border-b-2 transition-colors
                   ${

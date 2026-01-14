@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 // YouTube pages
 import YouTubeDashboard from './features/youtube/pages/Dashboard'
@@ -33,6 +33,22 @@ import Login from './shared/pages/Login'
 import { DashboardLayout } from './components/DashboardLayout'
 import { useTheme } from './shared/hooks/useTheme'
 import { Toaster } from './shared/components/ui/sonner'
+
+// Redirect component for channel lists with ID parameter
+function ChannelListRedirect() {
+  const location = useLocation()
+  // Replace /channel-lists with /youtube/channel-lists in the pathname
+  const newPath = location.pathname.replace('/channel-lists', '/youtube/channel-lists')
+  return <Navigate to={newPath} replace />
+}
+
+// Redirect component for playlists with ID parameter
+function PlaylistRedirect() {
+  const location = useLocation()
+  // Replace /playlists with /media/playlists in the pathname
+  const newPath = location.pathname.replace('/playlists', '/media/playlists')
+  return <Navigate to={newPath} replace />
+}
 
 function AppRoutes() {
   const location = useLocation()
@@ -98,9 +114,9 @@ function AppRoutes() {
         <Route path="/watch-next" element={<Navigate to="/youtube/watch-next" replace />} />
         <Route path="/tags" element={<Navigate to="/youtube/tags" replace />} />
         <Route path="/playlists" element={<Navigate to="/media/playlists" replace />} />
-        <Route path="/playlists/:id" element={<Navigate to="/media/playlists/:id" replace />} />
+        <Route path="/playlists/:id" element={<PlaylistRedirect />} />
         <Route path="/channel-lists" element={<Navigate to="/youtube/channel-lists" replace />} />
-        <Route path="/channel-lists/:id/*" element={<Navigate to="/youtube/channel-lists/:id" replace />} />
+        <Route path="/channel-lists/:id/*" element={<ChannelListRedirect />} />
         
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/youtube/dashboard" replace />} />

@@ -30,7 +30,7 @@ function MoviePlaylistCard({ playlist, onEdit, onDelete }: MoviePlaylistCardProp
           <div className="flex-1 min-w-0">
             <h3
               className="font-semibold text-lg mb-1 cursor-pointer hover:text-primary transition-colors truncate"
-              onClick={() => navigate(`/playlists/${playlist.id}`)}
+              onClick={() => navigate(`/media/playlists/${playlist.id}`)}
             >
               {playlist.name}
             </h3>
@@ -49,7 +49,7 @@ function MoviePlaylistCard({ playlist, onEdit, onDelete }: MoviePlaylistCardProp
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => navigate(`/playlists/${playlist.id}`)}
+              onClick={() => navigate(`/media/playlists/${playlist.id}`)}
               className="cursor-pointer"
             >
               <List className="mr-2 h-4 w-4" />
