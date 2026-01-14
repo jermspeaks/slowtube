@@ -14,6 +14,7 @@ interface VideoTableProps {
   onSelectionChange?: (videoId: number, selected: boolean) => void
   onSelectAll?: () => void
   showFeedDate?: boolean
+  showAddedDate?: boolean
 }
 
 function VideoTable({ 
@@ -24,7 +25,8 @@ function VideoTable({
   selectedVideoIds = new Set(),
   onSelectionChange,
   onSelectAll,
-  showFeedDate = false
+  showFeedDate = false,
+  showAddedDate = true
 }: VideoTableProps) {
   const handleStateChange = (updatedVideo: Video) => {
     if (onStateChange) {
@@ -94,10 +96,12 @@ function VideoTable({
             <th className="p-3 text-left border-b-2 border-border">Channel</th>
             <th className="p-3 text-left border-b-2 border-border">Duration</th>
             <th className="p-3 text-left border-b-2 border-border">Published</th>
-            {showFeedDate ? (
-              <th className="p-3 text-left border-b-2 border-border">Added to Latest</th>
-            ) : (
-              <th className="p-3 text-left border-b-2 border-border">Added</th>
+            {showAddedDate && (
+              showFeedDate ? (
+                <th className="p-3 text-left border-b-2 border-border">Added to Latest</th>
+              ) : (
+                <th className="p-3 text-left border-b-2 border-border">Added</th>
+              )
             )}
             <th className="p-3 text-left border-b-2 border-border">Actions</th>
           </tr>
@@ -156,13 +160,15 @@ function VideoTable({
               <td className="p-3 text-muted-foreground text-xs">
                 {video.published_at ? format(new Date(video.published_at), 'MMM d, yyyy') : '-'}
               </td>
-              <td className="p-3 text-muted-foreground text-xs">
-                {showFeedDate && video.added_to_latest_at
-                  ? format(new Date(video.added_to_latest_at), 'MMM d, yyyy')
-                  : !showFeedDate && video.added_to_playlist_at
-                  ? format(new Date(video.added_to_playlist_at), 'MMM d, yyyy')
-                  : '-'}
-              </td>
+              {showAddedDate && (
+                <td className="p-3 text-muted-foreground text-xs">
+                  {showFeedDate && video.added_to_latest_at
+                    ? format(new Date(video.added_to_latest_at), 'MMM d, yyyy')
+                    : !showFeedDate && video.added_to_playlist_at
+                    ? format(new Date(video.added_to_playlist_at), 'MMM d, yyyy')
+                    : '-'}
+                </td>
+              )}
               <td className="p-3">
                 {onStateChange && (
                   <div className="flex items-center gap-2">
