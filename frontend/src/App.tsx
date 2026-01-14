@@ -12,6 +12,7 @@ import ChannelLiked from './features/youtube/pages/ChannelLiked'
 import ChannelLists from './features/youtube/pages/ChannelLists'
 import ChannelListDetail from './features/youtube/pages/ChannelListDetail'
 import YouTubeWatchNext from './features/youtube/pages/WatchNext'
+import Archive from './features/youtube/pages/Archive'
 import Tags from './features/youtube/pages/Tags'
 // Media pages
 import MediaDashboard from './features/media/pages/Dashboard'
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="/youtube/stats" element={<Stats />} />
         <Route path="/youtube/grouped" element={<GroupedView />} />
         <Route path="/youtube/watch-next" element={<YouTubeWatchNext />} />
+        <Route path="/youtube/archive" element={<Archive />} />
         <Route path="/youtube/tags" element={<Tags />} />
         <Route path="/youtube/channels/subscribed" element={<ChannelsList />} />
         <Route path="/youtube/channels/watch-later" element={<ChannelsList />} />

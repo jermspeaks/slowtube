@@ -11,6 +11,7 @@ import {
   Film,
   Calendar,
   TrendingUp,
+  Archive,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -54,19 +55,24 @@ export function SecondaryNavigation() {
       label: 'Main',
       items: [
         {
-          label: 'Dashboard',
+          label: 'Home',
           icon: Home,
           path: '/youtube/dashboard',
         },
         {
-          label: 'Watch Later',
+          label: 'Feed',
           icon: Clock,
           path: '/youtube/watch-later',
         },
         {
-          label: 'Watch Next',
+          label: 'Inbox',
           icon: PlayCircle,
           path: '/youtube/watch-next',
+        },
+        {
+          label: 'Archive',
+          icon: Archive,
+          path: '/youtube/archive',
         },
       ],
     },

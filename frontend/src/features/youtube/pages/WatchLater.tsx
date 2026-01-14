@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Video, VideoState, ViewMode } from '../types/video'
+import { Video, ViewMode } from '../types/video'
 import { videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
@@ -13,7 +13,6 @@ function WatchLater() {
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
-  const [stateFilter, setStateFilter] = useState<VideoState | 'all'>('feed')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
@@ -57,7 +56,7 @@ function WatchLater() {
     try {
       setLoading(true)
       const response = await videosAPI.getAll(
-        stateFilter === 'all' ? undefined : stateFilter,
+        'feed', // Always fetch feed videos
         debouncedSearchQuery || undefined,
         sortBy || undefined,
         sortBy ? sortOrder : undefined,
@@ -166,19 +165,17 @@ function WatchLater() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
 
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
 
   return (
     <>
       <div className="mb-6 space-y-4">
           <FiltersAndSort
-            stateFilter={stateFilter}
-            onStateFilterChange={setStateFilter}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             selectedChannels={selectedChannels}

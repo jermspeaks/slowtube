@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Video, VideoState, ViewMode } from '../types/video'
+import { Video, ViewMode } from '../types/video'
 import { videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
@@ -13,7 +13,6 @@ function GroupedView() {
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
-  const [stateFilter, setStateFilter] = useState<VideoState | 'all'>('feed')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
@@ -44,7 +43,7 @@ function GroupedView() {
     try {
       setLoading(true)
       const response = await videosAPI.getAll(
-        stateFilter === 'all' ? undefined : stateFilter,
+        undefined, // Fetch all videos regardless of state
         debouncedSearchQuery || undefined,
         sortBy || undefined,
         sortBy ? sortOrder : undefined,
@@ -127,12 +126,12 @@ function GroupedView() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
 
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateFilter, debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
 
   const groupedVideos = groupVideosByChannel(videos)
   const allChannelNames = Object.keys(groupedVideos).sort()
@@ -145,8 +144,6 @@ function GroupedView() {
         <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
           <div className="flex-1 min-w-0">
             <FiltersAndSort
-              stateFilter={stateFilter}
-              onStateFilterChange={setStateFilter}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               selectedChannels={selectedChannels}

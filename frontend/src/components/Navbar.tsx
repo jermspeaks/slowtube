@@ -91,12 +91,12 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link to="/youtube/dashboard" className="w-full flex items-center gap-2">
                         <Home className="h-4 w-4" />
-                        Dashboard
+                        Home
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/youtube/watch-later" className="w-full">
-                        Watch Later
+                        Feed
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -237,7 +237,7 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link to="/youtube/watch-next" className="w-full flex items-center gap-2">
                     <Radio className="h-4 w-4" />
-                    YouTube Watch Next
+                    YouTube Inbox
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
@@ -303,10 +303,10 @@ export function Navbar() {
                       </div>
                       <div className="pl-6 space-y-1">
                         <MobileNavLink to="/youtube/dashboard" icon={Home}>
-                          Dashboard
+                          Home
                         </MobileNavLink>
                         <MobileNavLink to="/youtube/watch-later" icon={Radio}>
-                          Watch Later
+                          Feed
                         </MobileNavLink>
                         <MobileNavLink to="/youtube/channels/subscribed" icon={Radio}>
                           Subscribed Channels
@@ -379,7 +379,7 @@ export function Navbar() {
                   </h3>
                   <div className="space-y-1">
                     <MobileNavLink to="/youtube/watch-next" icon={Radio}>
-                      YouTube Watch Next
+                      YouTube Inbox
                     </MobileNavLink>
                     <MobileNavLink to="/media/watch-next" icon={Film}>
                       Media Watch Next

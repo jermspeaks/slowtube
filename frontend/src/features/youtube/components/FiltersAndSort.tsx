@@ -1,10 +1,7 @@
 import { useState } from 'react'
-import { VideoState } from '../types/video'
 import DateRangeFilter from '@/shared/components/DateRangeFilter'
 
 interface FiltersAndSortProps {
-  stateFilter: VideoState | 'all'
-  onStateFilterChange: (value: VideoState | 'all') => void
   searchQuery: string
   onSearchQueryChange: (value: string) => void
   selectedChannels: string[]
@@ -23,8 +20,6 @@ interface FiltersAndSortProps {
 }
 
 function FiltersAndSort({
-  stateFilter,
-  onStateFilterChange,
   searchQuery,
   onSearchQueryChange,
   selectedChannels,
@@ -69,20 +64,6 @@ function FiltersAndSort({
     <div className="bg-card rounded-lg p-4 border border-border shadow-sm">
       {/* Always visible section */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-        <div className="flex gap-2 items-center w-full sm:w-auto">
-          <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
-          <select
-            value={stateFilter}
-            onChange={(e) => onStateFilterChange(e.target.value as VideoState | 'all')}
-            className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-          >
-            <option value="all">All</option>
-            <option value="feed">Feed</option>
-            <option value="inbox">Inbox</option>
-            <option value="archive">Archive</option>
-          </select>
-        </div>
-        
         <div className="flex gap-2 items-center w-full sm:w-auto sm:flex-1 sm:max-w-md">
           <label className="font-semibold text-sm text-foreground whitespace-nowrap">Search:</label>
           <input
