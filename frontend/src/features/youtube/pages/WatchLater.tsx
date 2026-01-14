@@ -244,6 +244,7 @@ function WatchLater() {
                     video={video}
                     onClick={() => handleVideoClick(video)}
                     onStateChange={handleStateChange}
+                    showAddedDate={false}
                   />
                 ))}
               </div>
@@ -252,6 +253,7 @@ function WatchLater() {
                 videos={videos}
                 onVideoClick={handleVideoClick}
                 onStateChange={handleStateChange}
+                showAddedDate={false}
               />
             )}
             {totalPages > 1 && (

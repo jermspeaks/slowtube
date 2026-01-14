@@ -10,12 +10,13 @@ interface VideoCardProps {
   onClick: () => void
   onStateChange?: (updatedVideo: Video) => void
   showFeedDate?: boolean
+  showAddedDate?: boolean
   selectable?: boolean
   selected?: boolean
   onSelectChange?: (selected: boolean) => void
 }
 
-function VideoCard({ video, onClick, onStateChange, showFeedDate = false, selectable = false, selected = false, onSelectChange }: VideoCardProps) {
+function VideoCard({ video, onClick, onStateChange, showFeedDate = false, showAddedDate = true, selectable = false, selected = false, onSelectChange }: VideoCardProps) {
   const handleStateChange = (updatedVideo: Video) => {
     if (onStateChange) {
       onStateChange(updatedVideo)
@@ -127,7 +128,7 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, select
               Added to feed: {format(new Date(video.created_at), 'MMM d, yyyy')}
             </div>
           )}
-          {!showFeedDate && video.added_to_playlist_at && (
+          {!showFeedDate && showAddedDate && video.added_to_playlist_at && (
             <div>
               Added: {format(new Date(video.added_to_playlist_at), 'MMM d, yyyy')}
             </div>
