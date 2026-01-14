@@ -440,70 +440,64 @@ function ChannelListDetail() {
         <div>
           {/* Filter and Sort Panel - only show for watch later tab, always visible */}
           {activeTab === 'watch_later' && !videosLoading && (
-            <>
-              <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <div className="flex gap-2 items-center w-full sm:w-auto">
-                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
-                    <select
-                      value={stateFilter}
-                      onChange={(e) => {
-                        const newFilter = e.target.value as 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'
-                        setStateFilter(newFilter)
-                        // If selecting archive, automatically check show archived
-                        if (newFilter === 'archive') {
-                          setShowArchived(true)
-                        }
-                        // If selecting a specific state other than archive, uncheck show archived
-                        else if (newFilter === 'feed' || newFilter === 'inbox') {
-                          setShowArchived(false)
-                        }
-                      }}
-                      className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-                    >
-                      <option value="exclude_archived">All (Exclude Archived)</option>
-                      <option value="all">All</option>
-                      <option value="feed">Feed</option>
-                      <option value="inbox">Inbox</option>
-                      <option value="archive">Archive</option>
-                    </select>
+            <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="flex gap-2 items-center w-full sm:w-auto">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
+                  <select
+                    value={stateFilter}
+                    onChange={(e) => {
+                      const newFilter = e.target.value as 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'
+                      setStateFilter(newFilter)
+                      // If selecting archive, automatically check show archived
+                      if (newFilter === 'archive') {
+                        setShowArchived(true)
+                      }
+                      // If selecting a specific state other than archive, uncheck show archived
+                      else if (newFilter === 'feed' || newFilter === 'inbox') {
+                        setShowArchived(false)
+                      }
+                    }}
+                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                  >
+                    <option value="exclude_archived">All (Exclude Archived)</option>
+                    <option value="all">All</option>
+                    <option value="feed">Feed</option>
+                    <option value="inbox">Inbox</option>
+                    <option value="archive">Archive</option>
+                  </select>
+                </div>
+                {stateFilter === 'all' && (
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="checkbox"
+                      id="show-archived"
+                      checked={showArchived}
+                      onChange={(e) => setShowArchived(e.target.checked)}
+                      className="w-4 h-4 rounded border-border"
+                    />
+                    <label htmlFor="show-archived" className="text-sm text-foreground cursor-pointer">
+                      Show archived
+                    </label>
                   </div>
-                  {stateFilter === 'all' && (
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="checkbox"
-                        id="show-archived"
-                        checked={showArchived}
-                        onChange={(e) => setShowArchived(e.target.checked)}
-                        className="w-4 h-4 rounded border-border"
-                      />
-                      <label htmlFor="show-archived" className="text-sm text-foreground cursor-pointer">
-                        Show archived
-                      </label>
-                    </div>
-                  )}
+                )}
+                <div className="flex gap-2 items-center w-full sm:w-auto">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
+                  <select
+                    value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                  >
+                    <option value="title_asc">Title (A-Z)</option>
+                    <option value="title_desc">Title (Z-A)</option>
+                    <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
+                    <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
+                    <option value="published_at_desc">Date Published (Newest)</option>
+                    <option value="published_at_asc">Date Published (Oldest)</option>
+                  </select>
                 </div>
               </div>
-              <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <div className="flex gap-2 items-center w-full sm:w-auto">
-                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
-                    <select
-                      value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
-                      onChange={(e) => handleSortChange(e.target.value)}
-                      className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-                    >
-                      <option value="title_asc">Title (A-Z)</option>
-                      <option value="title_desc">Title (Z-A)</option>
-                      <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
-                      <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
-                      <option value="published_at_desc">Date Published (Newest)</option>
-                      <option value="published_at_asc">Date Published (Oldest)</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </>
+            </div>
           )}
 
           {/* Sort Panel - only show for latest tab, always visible */}
