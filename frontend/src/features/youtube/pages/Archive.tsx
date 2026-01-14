@@ -7,8 +7,11 @@ import VideoDetailModal from '../components/VideoDetailModal'
 import ViewToggle from '../components/ViewToggle'
 import FiltersAndSort from '../components/FiltersAndSort'
 import { toast } from 'sonner'
+import { usePreserveScrollPosition } from '@/shared/hooks/usePreserveScrollPosition'
 
 function Archive() {
+  // Preserve scroll position when navigating
+  usePreserveScrollPosition(loading)
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)

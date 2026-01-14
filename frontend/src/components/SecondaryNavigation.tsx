@@ -30,6 +30,24 @@ interface NavGroup {
 export function SecondaryNavigation() {
   const location = useLocation()
 
+  // Save scroll position before navigation
+  // Save for both current route (for when returning) and destination route (for optimistic UI)
+  const handleLinkClick = (destinationPath: string) => {
+    const container = document.querySelector('main.flex-1.overflow-y-auto') as HTMLElement | null
+    if (container) {
+      const currentScrollKey = `scrollPos:${location.pathname}`
+      const destinationScrollKey = `scrollPos:${destinationPath}`
+      const scrollTop = container.scrollTop.toString()
+      
+      // Save for current route (so we can restore when coming back)
+      sessionStorage.setItem(currentScrollKey, scrollTop)
+      
+      // Also save for destination route (optimistic UI - maintain scroll position)
+      // This allows the destination page to restore to the same scroll position
+      sessionStorage.setItem(destinationScrollKey, scrollTop)
+    }
+  }
+
   const getActiveSection = () => {
     if (location.pathname.startsWith('/youtube')) return 'youtube'
     if (location.pathname.startsWith('/media/tv-shows')) return 'tv-shows'
@@ -224,6 +242,7 @@ export function SecondaryNavigation() {
                     <Link
                       key={item.path}
                       to={item.path}
+                      onClick={() => handleLinkClick(item.path)}
                       className={cn(
                         'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200',
                         'hover:bg-accent hover:text-accent-foreground',
