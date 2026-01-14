@@ -1,6 +1,6 @@
 import { Video } from '../types/video'
 import { format } from 'date-fns'
-import { Inbox, Archive } from 'lucide-react'
+import { Inbox, Archive, Rss } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { videosAPI } from '../services/api'
 import { toast } from 'sonner'
@@ -40,6 +40,18 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, showAd
     try {
       await videosAPI.updateState(video.id, 'archive')
       const updatedVideo = { ...video, state: 'archive' as const }
+      handleStateChange(updatedVideo)
+    } catch (error) {
+      console.error('Error updating video state:', error)
+      toast.error('Failed to update video state')
+    }
+  }
+
+  const handleMoveToFeed = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await videosAPI.updateState(video.id, 'feed')
+      const updatedVideo = { ...video, state: 'feed' as const }
       handleStateChange(updatedVideo)
     } catch (error) {
       console.error('Error updating video state:', error)
@@ -137,24 +149,39 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, showAd
       </div>
       {onStateChange && (
         <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10">
-          <Button
-            onClick={handleMoveToInbox}
-            variant="default"
-            size="sm"
-            className="bg-yellow-600 hover:bg-yellow-700 h-7 w-7 p-0"
-            title="Move to Inbox"
-          >
-            <Inbox className="h-3 w-3" />
-          </Button>
-          <Button
-            onClick={handleMoveToArchive}
-            variant="default"
-            size="sm"
-            className="bg-gray-600 hover:bg-gray-700 h-7 w-7 p-0"
-            title="Move to Archive"
-          >
-            <Archive className="h-3 w-3" />
-          </Button>
+          {(video.state === 'inbox' || video.state === 'archive') && (
+            <Button
+              onClick={handleMoveToFeed}
+              variant="default"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 h-7 w-7 p-0"
+              title="Move to Feed"
+            >
+              <Rss className="h-3 w-3" />
+            </Button>
+          )}
+          {video.state !== 'inbox' && (
+            <Button
+              onClick={handleMoveToInbox}
+              variant="default"
+              size="sm"
+              className="bg-yellow-600 hover:bg-yellow-700 h-7 w-7 p-0"
+              title="Move to Inbox"
+            >
+              <Inbox className="h-3 w-3" />
+            </Button>
+          )}
+          {video.state !== 'archive' && (
+            <Button
+              onClick={handleMoveToArchive}
+              variant="default"
+              size="sm"
+              className="bg-gray-600 hover:bg-gray-700 h-7 w-7 p-0"
+              title="Move to Archive"
+            >
+              <Archive className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       )}
     </div>
