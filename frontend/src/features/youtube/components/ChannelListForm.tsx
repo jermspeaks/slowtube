@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { ChannelList } from '../types/channel-list'
+import { ChannelGroup } from '../types/channel-list'
 import { Button } from '@/shared/components/ui/button'
 
-interface ChannelListFormProps {
-  list?: ChannelList | null
+interface ChannelGroupFormProps {
+  group?: ChannelGroup | null
   onSubmit: (data: { name: string; description: string | null; color: string | null }) => void
   onCancel: () => void
 }
@@ -19,18 +19,18 @@ const DEFAULT_COLORS = [
   '#84cc16', // lime
 ]
 
-function ChannelListForm({ list, onSubmit, onCancel }: ChannelListFormProps) {
-  const [name, setName] = useState(list?.name || '')
-  const [description, setDescription] = useState(list?.description || '')
-  const [color, setColor] = useState(list?.color || null)
+function ChannelGroupForm({ group, onSubmit, onCancel }: ChannelGroupFormProps) {
+  const [name, setName] = useState(group?.name || '')
+  const [description, setDescription] = useState(group?.description || '')
+  const [color, setColor] = useState(group?.color || null)
 
   useEffect(() => {
-    if (list) {
-      setName(list.name)
-      setDescription(list.description || '')
-      setColor(list.color)
+    if (group) {
+      setName(group.name)
+      setDescription(group.description || '')
+      setColor(group.color)
     }
-  }, [list])
+  }, [group])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,7 +55,7 @@ function ChannelListForm({ list, onSubmit, onCancel }: ChannelListFormProps) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Enter list name"
+          placeholder="Enter group name"
           className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
           required
           autoFocus
@@ -70,7 +70,7 @@ function ChannelListForm({ list, onSubmit, onCancel }: ChannelListFormProps) {
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Enter list description (optional)"
+          placeholder="Enter group description (optional)"
           rows={3}
           className="w-full px-3 py-2 border border-border rounded bg-background text-foreground resize-none"
         />
@@ -131,12 +131,12 @@ function ChannelListForm({ list, onSubmit, onCancel }: ChannelListFormProps) {
           Cancel
         </Button>
         <Button type="submit" disabled={!name.trim()}>
-          {list ? 'Update' : 'Create'}
+          {group ? 'Update' : 'Create'}
         </Button>
       </div>
     </form>
   )
 }
 
-export default ChannelListForm
+export default ChannelGroupForm
 

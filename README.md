@@ -55,7 +55,7 @@ A comprehensive web application for managing your media consumption across YouTu
   - Channel rankings (top channels by video count)
   - Time statistics showing when videos were added (by hour, day of week, and month)
   - Total watch time calculation
-  - Complete channel list
+  - Complete channel group
   - Date range filtering for statistics
 
 ### Technical Features
@@ -270,7 +270,7 @@ The statistics page provides analytics about your watch later videos:
   - By hour of day (0-23)
   - By day of week (Monday-Sunday)
   - By month (January-December)
-- **Channel List**: Complete list of all unique channels in your watch later list
+- **Channel Group**: Complete list of all unique channels in your watch later list
 - **Date Range Filtering**: Filter statistics by date range
 
 All time statistics include both interactive bar charts (using recharts) and detailed tables for easy analysis.

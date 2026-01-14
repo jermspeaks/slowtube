@@ -107,16 +107,16 @@ export function SecondaryNavigation() {
           icon: Clock,
           path: '/youtube/channels/watch-later',
         },
-        {
-          label: 'Channel Lists',
-          icon: List,
-          path: '/youtube/channel-lists',
-        },
       ],
     },
     {
       label: 'Organize',
       items: [
+        {
+          label: 'Channel Groups',
+          icon: List,
+          path: '/youtube/channel-lists',
+        },
         {
           label: 'Stats',
           icon: BarChart,

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ChannelListWithCount } from '../types/channel-list'
+import { ChannelGroupWithCount } from '../types/channel-list'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,35 +8,35 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { MoreVertical, Edit, Trash2, List } from 'lucide-react'
 
-interface ChannelListCardProps {
-  list: ChannelListWithCount
-  onEdit: (list: ChannelListWithCount) => void
-  onDelete: (list: ChannelListWithCount) => void
+interface ChannelGroupCardProps {
+  group: ChannelGroupWithCount
+  onEdit: (group: ChannelGroupWithCount) => void
+  onDelete: (group: ChannelGroupWithCount) => void
 }
 
-function ChannelListCard({ list, onEdit, onDelete }: ChannelListCardProps) {
+function ChannelGroupCard({ group, onEdit, onDelete }: ChannelGroupCardProps) {
   const navigate = useNavigate()
 
   return (
     <div className="bg-card rounded-lg border border-border p-4 hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          {list.color && (
+          {group.color && (
             <div
               className="w-4 h-4 rounded-full flex-shrink-0 mt-1"
-              style={{ backgroundColor: list.color }}
+              style={{ backgroundColor: group.color }}
             />
           )}
           <div className="flex-1 min-w-0">
             <h3
               className="font-semibold text-lg mb-1 cursor-pointer hover:text-primary transition-colors truncate"
-              onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
+              onClick={() => navigate(`/youtube/channel-lists/${group.id}`)}
             >
-              {list.name}
+              {group.name}
             </h3>
-            {list.description && (
+            {group.description && (
               <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                {list.description}
+                {group.description}
               </p>
             )}
           </div>
@@ -49,21 +49,21 @@ function ChannelListCard({ list, onEdit, onDelete }: ChannelListCardProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
+              onClick={() => navigate(`/youtube/channel-lists/${group.id}`)}
               className="cursor-pointer"
             >
               <List className="mr-2 h-4 w-4" />
               View
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => onEdit(list)}
+              onClick={() => onEdit(group)}
               className="cursor-pointer"
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => onDelete(list)}
+              onClick={() => onDelete(group)}
               className="cursor-pointer text-red-600 focus:text-red-600"
             >
               <Trash2 className="mr-2 h-4 w-4" />
@@ -73,14 +73,14 @@ function ChannelListCard({ list, onEdit, onDelete }: ChannelListCardProps) {
         </DropdownMenu>
       </div>
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{list.channel_count} {list.channel_count === 1 ? 'channel' : 'channels'}</span>
+        <span>{group.channel_count} {group.channel_count === 1 ? 'channel' : 'channels'}</span>
         <span className="text-xs">
-          {new Date(list.created_at).toLocaleDateString()}
+          {new Date(group.created_at).toLocaleDateString()}
         </span>
       </div>
     </div>
   )
 }
 
-export default ChannelListCard
+export default ChannelGroupCard
 

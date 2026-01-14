@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { channelListsAPI, videosAPI } from '../services/api'
-import { ChannelListWithChannels } from '../types/channel-list'
+import { channelGroupsAPI, videosAPI } from '../services/api'
+import { ChannelGroupWithChannels } from '../types/channel-list'
 import { Video, ViewMode } from '../types/video'
 import { ChannelVideoType } from '../types/channel'
 import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
-import ChannelListForm from '../components/ChannelListForm'
+import ChannelGroupForm from '../components/ChannelListForm'
 import ViewToggle from '../components/ViewToggle'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
@@ -20,11 +20,11 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 
-function ChannelListDetail() {
+function ChannelGroupDetail() {
   const navigate = useNavigate()
   const location = useLocation()
   const { id } = useParams<{ id: string }>()
-  const [list, setList] = useState<ChannelListWithChannels | null>(null)
+  const [group, setGroup] = useState<ChannelGroupWithChannels | null>(null)
   const [loading, setLoading] = useState(true)
   
   // Determine active tab from route
@@ -62,12 +62,12 @@ function ChannelListDetail() {
 
   useEffect(() => {
     if (id) {
-      loadList()
+      loadGroup()
     }
   }, [id])
 
   useEffect(() => {
-    if (list && activeTab) {
+    if (group && activeTab) {
       // Reset sort to default when switching tabs
       if (activeTab === 'watch_later') {
         setSortBy('added_to_playlist_at')
@@ -79,18 +79,18 @@ function ChannelListDetail() {
       // Clear selection when switching tabs
       setSelectedVideoIds(new Set())
     }
-  }, [list, activeTab, sortBy, sortOrder, stateFilter, showArchived, shortsFilter])
+  }, [group, activeTab, sortBy, sortOrder, stateFilter, showArchived, shortsFilter])
 
-  const loadList = async () => {
+  const loadGroup = async () => {
     if (!id) return
 
     try {
       setLoading(true)
-      const data = await channelListsAPI.getById(parseInt(id, 10))
-      setList(data)
+      const data = await channelGroupsAPI.getById(parseInt(id, 10))
+      setGroup(data)
     } catch (error: any) {
-      console.error('Error loading channel list:', error)
-      toast.error(error.response?.data?.error || 'Failed to load channel list')
+      console.error('Error loading channel group:', error)
+      toast.error(error.response?.data?.error || 'Failed to load channel group')
       if (error.response?.status === 404 || error.response?.status === 400) {
         navigate('/youtube/channel-lists')
       }
@@ -122,7 +122,7 @@ function ChannelListDetail() {
       }
       
       // Pass sort parameters for latest and watch_later tabs, state filter for watch later tab, shorts filter for latest tab
-      const data = await channelListsAPI.getVideos(
+      const data = await channelGroupsAPI.getVideos(
         parseInt(id, 10),
         activeTab,
         (activeTab === 'latest' || activeTab === 'watch_later') ? sortBy : undefined,
@@ -266,12 +266,12 @@ function ChannelListDetail() {
 
     try {
       setFetching(true)
-      const response = await channelListsAPI.refresh(parseInt(id, 10), 50)
+      const response = await channelGroupsAPI.refresh(parseInt(id, 10), 50)
       toast.success(response.message || `Refreshed ${response.totalVideos || 0} videos`)
       // Refresh the video list to show newly fetched videos
       await loadVideos()
     } catch (error: any) {
-      console.error('Error refreshing list:', error)
+      console.error('Error refreshing group:', error)
       
       if (error.response?.status === 401 || error.response?.data?.requiresAuth) {
         toast.error('YouTube authentication required. Please connect your YouTube account in Settings.', {
@@ -281,7 +281,7 @@ function ChannelListDetail() {
           }
         })
       } else {
-        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to refresh list'
+        const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to refresh group'
         toast.error(errorMessage)
       }
     } finally {
@@ -290,16 +290,16 @@ function ChannelListDetail() {
   }
 
   const handleUpdate = async (data: { name: string; description: string | null; color: string | null }) => {
-    if (!list) return
+    if (!group) return
 
     try {
-      const updated = await channelListsAPI.update(list.id, data)
-      setList(updated)
-      toast.success('Channel list updated successfully')
+      const updated = await channelGroupsAPI.update(group.id, data)
+      setGroup(updated)
+      toast.success('Channel group updated successfully')
       setIsEditModalOpen(false)
     } catch (error: any) {
-      console.error('Error updating channel list:', error)
-      toast.error(error.response?.data?.error || 'Failed to update channel list')
+      console.error('Error updating channel group:', error)
+      toast.error(error.response?.data?.error || 'Failed to update channel group')
     }
   }
 
@@ -308,22 +308,22 @@ function ChannelListDetail() {
       <div className="min-h-screen bg-background">
         <main className="max-w-[1400px] mx-auto px-6 py-6">
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading channel list...</div>
+            <div className="text-lg text-muted-foreground">Loading channel group...</div>
           </div>
         </main>
       </div>
     )
   }
 
-  if (!list) {
+  if (!group) {
     return (
       <div className="min-h-screen bg-background">
         <main className="max-w-[1400px] mx-auto px-6 py-6">
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">Channel list not found</p>
+            <p className="text-lg text-muted-foreground mb-4">Channel group not found</p>
             <Button onClick={() => navigate('/youtube/channel-lists')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Channel Lists
+              Back to Channel Groups
             </Button>
           </div>
         </main>
@@ -334,7 +334,7 @@ function ChannelListDetail() {
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
-        {/* List Header */}
+        {/* Group Header */}
         <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-start justify-between gap-6">
             <div className="flex items-start gap-4 flex-1 min-w-0">
@@ -347,22 +347,22 @@ function ChannelListDetail() {
               </Button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2">
-                  {list.color && (
+                  {group.color && (
                     <div
                       className="w-4 h-4 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: list.color }}
+                      style={{ backgroundColor: group.color }}
                     />
                   )}
                   <h1 className="text-2xl font-bold text-foreground">
-                    {list.name}
+                    {group.name}
                   </h1>
                   <span className="text-sm text-muted-foreground">
-                    • {list.channel_count} {list.channel_count === 1 ? 'channel' : 'channels'}
+                    • {group.channel_count} {group.channel_count === 1 ? 'channel' : 'channels'}
                   </span>
                 </div>
-                {list.description && (
+                {group.description && (
                   <p className="text-muted-foreground mb-2">
-                    {list.description}
+                    {group.description}
                   </p>
                 )}
               </div>
@@ -375,7 +375,7 @@ function ChannelListDetail() {
                 className="gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${fetching ? 'animate-spin' : ''}`} />
-                {fetching ? 'Refreshing...' : 'Refresh List'}
+                {fetching ? 'Refreshing...' : 'Refresh Group'}
               </Button>
               <Button
                 variant="outline"
@@ -665,13 +665,13 @@ function ChannelListDetail() {
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Channel List</DialogTitle>
+            <DialogTitle>Edit Channel Group</DialogTitle>
             <DialogDescription>
-              Update channel list details.
+              Update channel group details.
             </DialogDescription>
           </DialogHeader>
-          <ChannelListForm
-            list={list}
+          <ChannelGroupForm
+            group={group}
             onSubmit={handleUpdate}
             onCancel={() => setIsEditModalOpen(false)}
           />
@@ -681,5 +681,5 @@ function ChannelListDetail() {
   )
 }
 
-export default ChannelListDetail
+export default ChannelGroupDetail
 

@@ -169,8 +169,8 @@ export const channelsAPI = {
   },
 }
 
-// Channel Lists API
-export const channelListsAPI = {
+// Channel Groups API
+export const channelGroupsAPI = {
   getAll: async () => {
     const response = await api.get('/api/channel-lists')
     return response.data

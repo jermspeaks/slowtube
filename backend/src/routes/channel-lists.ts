@@ -5,7 +5,7 @@ import { getAuthenticatedClient } from './auth.js'
 
 const router = express.Router()
 
-// Create a channel list
+// Create a channel group
 router.post('/', (req, res) => {
   try {
     const { name, description, color } = req.body
@@ -22,23 +22,23 @@ router.post('/', (req, res) => {
 
     res.status(201).json(list)
   } catch (error: any) {
-    console.error('Error creating channel list:', error)
-    res.status(500).json({ error: error.message || 'Failed to create channel list' })
+    console.error('Error creating channel group:', error)
+    res.status(500).json({ error: error.message || 'Failed to create channel group' })
   }
 })
 
-// Get all channel lists
+// Get all channel groups
 router.get('/', (req, res) => {
   try {
     const lists = channelListQueries.getAll()
     res.json(lists)
   } catch (error) {
-    console.error('Error fetching channel lists:', error)
-    res.status(500).json({ error: 'Failed to fetch channel lists' })
+    console.error('Error fetching channel groups:', error)
+    res.status(500).json({ error: 'Failed to fetch channel groups' })
   }
 })
 
-// Get channel list by ID
+// Get channel group by ID
 router.get('/:id', (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
@@ -53,12 +53,12 @@ router.get('/:id', (req, res) => {
 
     res.json(list)
   } catch (error) {
-    console.error('Error fetching channel list:', error)
-    res.status(500).json({ error: 'Failed to fetch channel list' })
+    console.error('Error fetching channel group:', error)
+    res.status(500).json({ error: 'Failed to fetch channel group' })
   }
 })
 
-// Update channel list
+// Update channel group
 router.patch('/:id', (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
@@ -95,12 +95,12 @@ router.patch('/:id', (req, res) => {
     const updatedList = channelListQueries.getById(id)
     res.json(updatedList)
   } catch (error: any) {
-    console.error('Error updating channel list:', error)
-    res.status(500).json({ error: error.message || 'Failed to update channel list' })
+    console.error('Error updating channel group:', error)
+    res.status(500).json({ error: error.message || 'Failed to update channel group' })
   }
 })
 
-// Delete channel list
+// Delete channel group
 router.delete('/:id', (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
@@ -120,12 +120,12 @@ router.delete('/:id', (req, res) => {
       return res.status(500).json({ error: 'Failed to delete list' })
     }
   } catch (error) {
-    console.error('Error deleting channel list:', error)
-    res.status(500).json({ error: 'Failed to delete channel list' })
+    console.error('Error deleting channel group:', error)
+    res.status(500).json({ error: 'Failed to delete channel group' })
   }
 })
 
-// Add channels to list
+// Add channels to group
 router.post('/:id/channels', (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
@@ -167,12 +167,12 @@ router.post('/:id/channels', (req, res) => {
     const updatedList = channelListQueries.getById(id)
     res.json(updatedList)
   } catch (error: any) {
-    console.error('Error adding channels to list:', error)
-    res.status(500).json({ error: error.message || 'Failed to add channels to list' })
+    console.error('Error adding channels to group:', error)
+    res.status(500).json({ error: error.message || 'Failed to add channels to group' })
   }
 })
 
-// Remove channel from list
+// Remove channel from group
 router.delete('/:id/channels/:channelId', (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
@@ -200,7 +200,7 @@ router.delete('/:id/channels/:channelId', (req, res) => {
   }
 })
 
-// Refresh list - fetch latest videos from all channels in list
+// Refresh group - fetch latest videos from all channels in group
 router.post('/:id/refresh', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10)
@@ -325,7 +325,7 @@ router.post('/:id/refresh', async (req, res) => {
         settingsUrl: '/settings'
       })
     }
-    res.status(500).json({ error: error.message || 'Failed to refresh channel list' })
+    res.status(500).json({ error: error.message || 'Failed to refresh channel group' })
   }
 })
 
@@ -420,8 +420,8 @@ router.get('/:id/videos', (req, res) => {
       return res.status(400).json({ error: 'Invalid type. Must be watch_later, latest, or liked' })
     }
   } catch (error) {
-    console.error('Error fetching list videos:', error)
-    res.status(500).json({ error: 'Failed to fetch list videos' })
+    console.error('Error fetching group videos:', error)
+    res.status(500).json({ error: 'Failed to fetch group videos' })
   }
 })
 

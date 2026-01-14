@@ -280,7 +280,7 @@ function Stats() {
           </div>
         </div>
 
-        {/* Channel List */}
+        {/* All Channels */}
         <div className="bg-card rounded-lg shadow-md p-6 mb-6">
           <h3 className="text-xl font-semibold mb-4">All Channels ({stats.channelList.length})</h3>
           {stats.channelList.length > 0 ? (

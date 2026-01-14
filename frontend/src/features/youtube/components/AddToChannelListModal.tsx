@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { channelListsAPI } from '../services/api'
-import { ChannelListWithCount } from '../types/channel-list'
-import ChannelListForm from './ChannelListForm'
+import { channelGroupsAPI } from '../services/api'
+import { ChannelGroupWithCount } from '../types/channel-list'
+import ChannelGroupForm from './ChannelListForm'
 import { Button } from '@/shared/components/ui/button'
 import {
   Dialog,
@@ -13,68 +13,68 @@ import {
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 
-interface AddToChannelListModalProps {
+interface AddToChannelGroupModalProps {
   isOpen: boolean
   onClose: () => void
   channelIds: string[]
   onSuccess?: () => void
 }
 
-function AddToChannelListModal({ isOpen, onClose, channelIds, onSuccess }: AddToChannelListModalProps) {
-  const [lists, setLists] = useState<ChannelListWithCount[]>([])
-  const [selectedListIds, setSelectedListIds] = useState<Set<number>>(new Set())
+function AddToChannelGroupModal({ isOpen, onClose, channelIds, onSuccess }: AddToChannelGroupModalProps) {
+  const [groups, setGroups] = useState<ChannelGroupWithCount[]>([])
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
-      loadLists()
-      setSelectedListIds(new Set())
+      loadGroups()
+      setSelectedGroupIds(new Set())
       setShowCreateForm(false)
     }
   }, [isOpen])
 
-  const loadLists = async () => {
+  const loadGroups = async () => {
     try {
       setLoading(true)
-      const data = await channelListsAPI.getAll()
-      setLists(data)
+      const data = await channelGroupsAPI.getAll()
+      setGroups(data)
     } catch (error) {
-      console.error('Error loading channel lists:', error)
-      toast.error('Failed to load channel lists')
+      console.error('Error loading channel groups:', error)
+      toast.error('Failed to load channel groups')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleToggleList = (listId: number) => {
-    const newSelected = new Set(selectedListIds)
-    if (newSelected.has(listId)) {
-      newSelected.delete(listId)
+  const handleToggleGroup = (groupId: number) => {
+    const newSelected = new Set(selectedGroupIds)
+    if (newSelected.has(groupId)) {
+      newSelected.delete(groupId)
     } else {
-      newSelected.add(listId)
+      newSelected.add(groupId)
     }
-    setSelectedListIds(newSelected)
+    setSelectedGroupIds(newSelected)
   }
 
-  const handleCreateList = async (data: { name: string; description: string | null; color: string | null }) => {
+  const handleCreateGroup = async (data: { name: string; description: string | null; color: string | null }) => {
     try {
-      const newList = await channelListsAPI.create(data.name, data.description, data.color)
-      toast.success('Channel list created successfully')
+      const newGroup = await channelGroupsAPI.create(data.name, data.description, data.color)
+      toast.success('Channel group created successfully')
       setShowCreateForm(false)
-      await loadLists()
-      // Automatically select the newly created list
-      setSelectedListIds(new Set([newList.id]))
+      await loadGroups()
+      // Automatically select the newly created group
+      setSelectedGroupIds(new Set([newGroup.id]))
     } catch (error: any) {
-      console.error('Error creating channel list:', error)
-      toast.error(error.response?.data?.error || 'Failed to create channel list')
+      console.error('Error creating channel group:', error)
+      toast.error(error.response?.data?.error || 'Failed to create channel group')
     }
   }
 
-  const handleAddToLists = async () => {
-    if (selectedListIds.size === 0) {
-      toast.error('Please select at least one list')
+  const handleAddToGroups = async () => {
+    if (selectedGroupIds.size === 0) {
+      toast.error('Please select at least one group')
       return
     }
 
@@ -83,30 +83,30 @@ function AddToChannelListModal({ isOpen, onClose, channelIds, onSuccess }: AddTo
       let successCount = 0
       let errorCount = 0
 
-      for (const listId of selectedListIds) {
+      for (const groupId of selectedGroupIds) {
         try {
-          await channelListsAPI.addChannels(listId, channelIds)
+          await channelGroupsAPI.addChannels(groupId, channelIds)
           successCount++
         } catch (error) {
           errorCount++
-          console.error(`Error adding channels to list ${listId}:`, error)
+          console.error(`Error adding channels to group ${groupId}:`, error)
         }
       }
 
       if (successCount > 0) {
-        toast.success(`Added ${channelIds.length} channel(s) to ${successCount} list(s)`)
+        toast.success(`Added ${channelIds.length} channel(s) to ${successCount} group(s)`)
         onSuccess?.()
         onClose()
       } else {
-        toast.error('Failed to add channels to lists')
+        toast.error('Failed to add channels to groups')
       }
 
       if (errorCount > 0) {
-        toast.error(`${errorCount} list(s) failed to update`)
+        toast.error(`${errorCount} group(s) failed to update`)
       }
     } catch (error) {
-      console.error('Error adding channels to lists:', error)
-      toast.error('Failed to add channels to lists')
+      console.error('Error adding channels to groups:', error)
+      toast.error('Failed to add channels to groups')
     } finally {
       setLoading(false)
     }
@@ -116,62 +116,62 @@ function AddToChannelListModal({ isOpen, onClose, channelIds, onSuccess }: AddTo
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add to Channel List</DialogTitle>
+          <DialogTitle>Add to Channel Group</DialogTitle>
           <DialogDescription>
-            Select one or more lists to add {channelIds.length} channel{channelIds.length !== 1 ? 's' : ''} to.
+            Select one or more groups to add {channelIds.length} channel{channelIds.length !== 1 ? 's' : ''} to.
           </DialogDescription>
         </DialogHeader>
 
         {showCreateForm ? (
           <div className="space-y-4">
-            <ChannelListForm
-              onSubmit={handleCreateList}
+            <ChannelGroupForm
+              onSubmit={handleCreateGroup}
               onCancel={() => setShowCreateForm(false)}
             />
           </div>
         ) : (
           <div className="space-y-4">
-            {loading && lists.length === 0 ? (
+            {loading && groups.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Loading lists...
+                Loading groups...
               </div>
-            ) : lists.length === 0 ? (
+            ) : groups.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No channel lists found</p>
+                <p className="text-muted-foreground mb-4">No channel groups found</p>
                 <Button onClick={() => setShowCreateForm(true)} variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Create New List
+                  Create New Group
                 </Button>
               </div>
             ) : (
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {lists.map(list => (
+                {groups.map(group => (
                   <label
-                    key={list.id}
+                    key={group.id}
                     className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-accent cursor-pointer transition-colors"
                   >
                     <input
                       type="checkbox"
-                      checked={selectedListIds.has(list.id)}
-                      onChange={() => handleToggleList(list.id)}
+                      checked={selectedGroupIds.has(group.id)}
+                      onChange={() => handleToggleGroup(group.id)}
                       className="w-4 h-4 rounded border-border"
                     />
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {list.color && (
+                      {group.color && (
                         <div
                           className="w-4 h-4 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: list.color }}
+                          style={{ backgroundColor: group.color }}
                         />
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{list.name}</div>
-                        {list.description && (
+                        <div className="font-medium truncate">{group.name}</div>
+                        {group.description && (
                           <div className="text-sm text-muted-foreground line-clamp-1">
-                            {list.description}
+                            {group.description}
                           </div>
                         )}
                         <div className="text-xs text-muted-foreground">
-                          {list.channel_count} {list.channel_count === 1 ? 'channel' : 'channels'}
+                          {group.channel_count} {group.channel_count === 1 ? 'channel' : 'channels'}
                         </div>
                       </div>
                     </div>
@@ -187,14 +187,14 @@ function AddToChannelListModal({ isOpen, onClose, channelIds, onSuccess }: AddTo
                 className="gap-2 flex-1"
               >
                 <Plus className="h-4 w-4" />
-                Create New List
+                Create New Group
               </Button>
               <Button
-                onClick={handleAddToLists}
-                disabled={loading || selectedListIds.size === 0}
+                onClick={handleAddToGroups}
+                disabled={loading || selectedGroupIds.size === 0}
                 className="flex-1"
               >
-                {loading ? 'Adding...' : `Add to ${selectedListIds.size} List${selectedListIds.size !== 1 ? 's' : ''}`}
+                {loading ? 'Adding...' : `Add to ${selectedGroupIds.size} Group${selectedGroupIds.size !== 1 ? 's' : ''}`}
               </Button>
             </div>
           </div>
@@ -204,5 +204,5 @@ function AddToChannelListModal({ isOpen, onClose, channelIds, onSuccess }: AddTo
   )
 }
 
-export default AddToChannelListModal
+export default AddToChannelGroupModal
 

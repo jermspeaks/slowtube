@@ -2072,7 +2072,7 @@ export const moviePlaylistQueries = {
   },
 }
 
-// Channel List interfaces
+// Channel Group interfaces
 export interface ChannelList {
   id: number
   name: string
@@ -2096,7 +2096,7 @@ export interface ChannelListWithChannels extends ChannelList {
   channel_count: number
 }
 
-// Channel List operations
+// Channel Group operations
 export const channelListQueries = {
   create: (name: string, description?: string | null, color?: string | null): number => {
     const stmt = db.prepare(`

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { ChannelListWithCount } from '../types/channel-list'
+import { ChannelGroupWithCount } from '../types/channel-list'
 import { format } from 'date-fns'
 import {
   DropdownMenu,
@@ -9,13 +9,13 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { MoreVertical, Edit, Trash2, List } from 'lucide-react'
 
-interface ChannelListTableProps {
-  lists: ChannelListWithCount[]
-  onEdit: (list: ChannelListWithCount) => void
-  onDelete: (list: ChannelListWithCount) => void
+interface ChannelGroupTableProps {
+  groups: ChannelGroupWithCount[]
+  onEdit: (group: ChannelGroupWithCount) => void
+  onDelete: (group: ChannelGroupWithCount) => void
 }
 
-function ChannelListTable({ lists, onEdit, onDelete }: ChannelListTableProps) {
+function ChannelGroupTable({ groups, onEdit, onDelete }: ChannelGroupTableProps) {
   const navigate = useNavigate()
 
   return (
@@ -32,16 +32,16 @@ function ChannelListTable({ lists, onEdit, onDelete }: ChannelListTableProps) {
           </tr>
         </thead>
         <tbody>
-          {lists.map(list => (
+          {groups.map(group => (
             <tr
-              key={list.id}
+              key={group.id}
               className="border-b border-border hover:bg-accent transition-colors"
             >
               <td className="p-3">
-                {list.color ? (
+                {group.color ? (
                   <div
                     className="w-6 h-6 rounded-full"
-                    style={{ backgroundColor: list.color }}
+                    style={{ backgroundColor: group.color }}
                   />
                 ) : (
                   <div className="w-6 h-6 rounded-full bg-muted" />
@@ -50,26 +50,26 @@ function ChannelListTable({ lists, onEdit, onDelete }: ChannelListTableProps) {
               <td className="p-3">
                 <div
                   className="font-bold cursor-pointer hover:text-primary transition-colors"
-                  onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
+                  onClick={() => navigate(`/youtube/channel-lists/${group.id}`)}
                 >
-                  {list.name}
+                  {group.name}
                 </div>
               </td>
               <td className="p-3 max-w-[400px]">
-                {list.description ? (
+                {group.description ? (
                   <div className="text-sm text-muted-foreground line-clamp-2">
-                    {list.description}
+                    {group.description}
                   </div>
                 ) : (
                   <span className="text-muted-foreground text-sm">-</span>
                 )}
               </td>
               <td className="p-3 text-muted-foreground text-sm">
-                {list.channel_count} {list.channel_count === 1 ? 'channel' : 'channels'}
+                {group.channel_count} {group.channel_count === 1 ? 'channel' : 'channels'}
               </td>
               <td className="p-3 text-muted-foreground text-sm">
-                {list.created_at ? (
-                  format(new Date(list.created_at), 'MMM d, yyyy')
+                {group.created_at ? (
+                  format(new Date(group.created_at), 'MMM d, yyyy')
                 ) : (
                   '-'
                 )}
@@ -83,21 +83,21 @@ function ChannelListTable({ lists, onEdit, onDelete }: ChannelListTableProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={() => navigate(`/youtube/channel-lists/${list.id}`)}
+                      onClick={() => navigate(`/youtube/channel-lists/${group.id}`)}
                       className="cursor-pointer"
                     >
                       <List className="mr-2 h-4 w-4" />
                       View
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onEdit(list)}
+                      onClick={() => onEdit(group)}
                       className="cursor-pointer"
                     >
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => onDelete(list)}
+                      onClick={() => onDelete(group)}
                       className="cursor-pointer text-red-600 focus:text-red-600"
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
@@ -114,5 +114,5 @@ function ChannelListTable({ lists, onEdit, onDelete }: ChannelListTableProps) {
   )
 }
 
-export default ChannelListTable
+export default ChannelGroupTable
 

@@ -1,6 +1,6 @@
 import { Channel } from './channel'
 
-export interface ChannelList {
+export interface ChannelGroup {
   id: number
   name: string
   description: string | null
@@ -10,7 +10,7 @@ export interface ChannelList {
   updated_at: string
 }
 
-export interface ChannelListItem {
+export interface ChannelGroupItem {
   id: number
   list_id: number
   youtube_channel_id: string
@@ -18,12 +18,12 @@ export interface ChannelListItem {
   added_at: string
 }
 
-export interface ChannelListWithChannels extends ChannelList {
+export interface ChannelGroupWithChannels extends ChannelGroup {
   channels: (Channel & { position: number; added_at: string })[]
   channel_count: number
 }
 
-export interface ChannelListWithCount extends ChannelList {
+export interface ChannelGroupWithCount extends ChannelGroup {
   channel_count: number
 }
 

@@ -112,7 +112,7 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link to="/youtube/channel-lists" className="w-full flex items-center gap-2">
                         <List className="h-4 w-4" />
-                        Channel Lists
+                        Channel Groups
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>
@@ -315,7 +315,7 @@ export function Navbar() {
                           Watch Later Channels
                         </MobileNavLink>
                         <MobileNavLink to="/youtube/channel-lists" icon={List}>
-                          Channel Lists
+                          Channel Groups
                         </MobileNavLink>
                       </div>
                     </div>

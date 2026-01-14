@@ -9,8 +9,8 @@ import ChannelsList from './features/youtube/pages/ChannelsList'
 import ChannelWatchLater from './features/youtube/pages/ChannelWatchLater'
 import ChannelLatest from './features/youtube/pages/ChannelLatest'
 import ChannelLiked from './features/youtube/pages/ChannelLiked'
-import ChannelLists from './features/youtube/pages/ChannelLists'
-import ChannelListDetail from './features/youtube/pages/ChannelListDetail'
+import ChannelGroups from './features/youtube/pages/ChannelLists'
+import ChannelGroupDetail from './features/youtube/pages/ChannelListDetail'
 import YouTubeWatchNext from './features/youtube/pages/WatchNext'
 import Archive from './features/youtube/pages/Archive'
 import Tags from './features/youtube/pages/Tags'
@@ -34,8 +34,8 @@ import { DashboardLayout } from './components/DashboardLayout'
 import { useTheme } from './shared/hooks/useTheme'
 import { Toaster } from './shared/components/ui/sonner'
 
-// Redirect component for channel lists with ID parameter
-function ChannelListRedirect() {
+// Redirect component for channel groups with ID parameter
+function ChannelGroupRedirect() {
   const location = useLocation()
   // Replace /channel-lists with /youtube/channel-lists in the pathname
   const newPath = location.pathname.replace('/channel-lists', '/youtube/channel-lists')
@@ -75,10 +75,10 @@ function AppRoutes() {
         <Route path="/youtube/channels/:channelId/latest" element={<ChannelLatest />} />
         <Route path="/youtube/channels/:channelId/liked" element={<ChannelLiked />} />
         <Route path="/youtube/channels/:channelId" element={<Navigate to="watch-later" replace />} />
-        <Route path="/youtube/channel-lists" element={<ChannelLists />} />
-        <Route path="/youtube/channel-lists/:id/watch-later" element={<ChannelListDetail />} />
-        <Route path="/youtube/channel-lists/:id/latest" element={<ChannelListDetail />} />
-        <Route path="/youtube/channel-lists/:id/liked" element={<ChannelListDetail />} />
+        <Route path="/youtube/channel-lists" element={<ChannelGroups />} />
+        <Route path="/youtube/channel-lists/:id/watch-later" element={<ChannelGroupDetail />} />
+        <Route path="/youtube/channel-lists/:id/latest" element={<ChannelGroupDetail />} />
+        <Route path="/youtube/channel-lists/:id/liked" element={<ChannelGroupDetail />} />
         <Route path="/youtube/channel-lists/:id" element={<Navigate to="watch-later" replace />} />
         
         {/* Media routes */}
@@ -116,7 +116,7 @@ function AppRoutes() {
         <Route path="/playlists" element={<Navigate to="/media/playlists" replace />} />
         <Route path="/playlists/:id" element={<PlaylistRedirect />} />
         <Route path="/channel-lists" element={<Navigate to="/youtube/channel-lists" replace />} />
-        <Route path="/channel-lists/:id/*" element={<ChannelListRedirect />} />
+        <Route path="/channel-lists/:id/*" element={<ChannelGroupRedirect />} />
         
         {/* Root redirect */}
         <Route path="/" element={<Navigate to="/youtube/dashboard" replace />} />

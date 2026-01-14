@@ -5,7 +5,7 @@ import { channelsAPI } from '../services/api'
 import { toast } from 'sonner'
 import { RefreshCw, Plus } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
-import AddToChannelListModal from '../components/AddToChannelListModal'
+import AddToChannelGroupModal from '../components/AddToChannelListModal'
 
 function ChannelsList() {
   const location = useLocation()
@@ -185,7 +185,7 @@ function ChannelsList() {
         }
       }
       
-      // Refresh the channel list to show updated counts
+      // Refresh the channel group to show updated counts
       await loadChannels()
     } catch (error: any) {
       console.error('Error refreshing latest videos:', error)
@@ -452,7 +452,7 @@ function ChannelsList() {
         )}
       </main>
 
-      <AddToChannelListModal
+      <AddToChannelGroupModal
         isOpen={isAddToListModalOpen}
         onClose={() => {
           setIsAddToListModalOpen(false)

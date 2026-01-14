@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { channelListsAPI } from '../services/api'
-import { ChannelListWithCount } from '../types/channel-list'
-import ChannelListCard from '../components/ChannelListCard'
-import ChannelListTable from '../components/ChannelListTable'
-import ChannelListForm from '../components/ChannelListForm'
+import { channelGroupsAPI } from '../services/api'
+import { ChannelGroupWithCount } from '../types/channel-list'
+import ChannelGroupCard from '../components/ChannelListCard'
+import ChannelGroupTable from '../components/ChannelListTable'
+import ChannelGroupForm from '../components/ChannelListForm'
 import ViewToggle from '../components/ViewToggle'
 import {
   Dialog,
@@ -17,28 +17,28 @@ import { Button } from '@/shared/components/ui/button'
 import { toast } from 'sonner'
 import { Plus } from 'lucide-react'
 
-function ChannelLists() {
-  const [lists, setLists] = useState<ChannelListWithCount[]>([])
+function ChannelGroups() {
+  const [groups, setGroups] = useState<ChannelGroupWithCount[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingList, setEditingList] = useState<ChannelListWithCount | null>(null)
-  const [deletingList, setDeletingList] = useState<ChannelListWithCount | null>(null)
+  const [editingGroup, setEditingGroup] = useState<ChannelGroupWithCount | null>(null)
+  const [deletingGroup, setDeletingGroup] = useState<ChannelGroupWithCount | null>(null)
 
   useEffect(() => {
-    loadLists()
+    loadGroups()
   }, [])
 
-  const loadLists = async () => {
+  const loadGroups = async () => {
     try {
       setLoading(true)
-      const data = await channelListsAPI.getAll()
-      setLists(data)
+      const data = await channelGroupsAPI.getAll()
+      setGroups(data)
     } catch (error) {
-      console.error('Error loading channel lists:', error)
-      toast.error('Failed to load channel lists')
+      console.error('Error loading channel groups:', error)
+      toast.error('Failed to load channel groups')
     } finally {
       setLoading(false)
     }
@@ -46,53 +46,53 @@ function ChannelLists() {
 
   const handleCreate = async (data: { name: string; description: string | null; color: string | null }) => {
     try {
-      await channelListsAPI.create(data.name, data.description, data.color)
-      toast.success('Channel list created successfully')
+      await channelGroupsAPI.create(data.name, data.description, data.color)
+      toast.success('Channel group created successfully')
       setIsCreateModalOpen(false)
-      loadLists()
+      loadGroups()
     } catch (error: any) {
-      console.error('Error creating channel list:', error)
-      toast.error(error.response?.data?.error || 'Failed to create channel list')
+      console.error('Error creating channel group:', error)
+      toast.error(error.response?.data?.error || 'Failed to create channel group')
     }
   }
 
-  const handleEdit = (list: ChannelListWithCount) => {
-    setEditingList(list)
+  const handleEdit = (group: ChannelGroupWithCount) => {
+    setEditingGroup(group)
     setIsEditModalOpen(true)
   }
 
   const handleUpdate = async (data: { name: string; description: string | null; color: string | null }) => {
-    if (!editingList) return
+    if (!editingGroup) return
 
     try {
-      await channelListsAPI.update(editingList.id, data)
-      toast.success('Channel list updated successfully')
+      await channelGroupsAPI.update(editingGroup.id, data)
+      toast.success('Channel group updated successfully')
       setIsEditModalOpen(false)
-      setEditingList(null)
-      loadLists()
+      setEditingGroup(null)
+      loadGroups()
     } catch (error: any) {
-      console.error('Error updating channel list:', error)
-      toast.error(error.response?.data?.error || 'Failed to update channel list')
+      console.error('Error updating channel group:', error)
+      toast.error(error.response?.data?.error || 'Failed to update channel group')
     }
   }
 
-  const handleDeleteClick = (list: ChannelListWithCount) => {
-    setDeletingList(list)
+  const handleDeleteClick = (group: ChannelGroupWithCount) => {
+    setDeletingGroup(group)
     setIsDeleteDialogOpen(true)
   }
 
   const handleDeleteConfirm = async () => {
-    if (!deletingList) return
+    if (!deletingGroup) return
 
     try {
-      await channelListsAPI.delete(deletingList.id)
-      toast.success('Channel list deleted successfully')
+      await channelGroupsAPI.delete(deletingGroup.id)
+      toast.success('Channel group deleted successfully')
       setIsDeleteDialogOpen(false)
-      setDeletingList(null)
-      loadLists()
+      setDeletingGroup(null)
+      loadGroups()
     } catch (error: any) {
-      console.error('Error deleting channel list:', error)
-      toast.error(error.response?.data?.error || 'Failed to delete channel list')
+      console.error('Error deleting channel group:', error)
+      toast.error(error.response?.data?.error || 'Failed to delete channel group')
     }
   }
 
@@ -100,7 +100,7 @@ function ChannelLists() {
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
-          <h1 className="text-3xl font-bold">Channel Lists</h1>
+          <h1 className="text-3xl font-bold">Channel Groups</h1>
           <div className="flex items-center gap-4">
             <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             <Button
@@ -108,44 +108,44 @@ function ChannelLists() {
               className="gap-2"
             >
               <Plus className="h-4 w-4" />
-              Create List
+              Create Group
             </Button>
           </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading channel lists...</div>
+            <div className="text-lg text-muted-foreground">Loading channel groups...</div>
           </div>
-        ) : lists.length === 0 ? (
+        ) : groups.length === 0 ? (
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
             <p className="text-lg text-muted-foreground mb-4">
-              No channel lists found
+              No channel groups found
             </p>
             <p className="text-sm text-muted-foreground mb-4">
-              Create your first channel list to organize your channels.
+              Create your first channel group to organize your channels.
             </p>
             <Button onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Create List
+              Create Group
             </Button>
           </div>
         ) : (
           <>
             {viewMode === 'card' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {lists.map(list => (
-                  <ChannelListCard
-                    key={list.id}
-                    list={list}
+                {groups.map(group => (
+                  <ChannelGroupCard
+                    key={group.id}
+                    group={group}
                     onEdit={handleEdit}
                     onDelete={handleDeleteClick}
                   />
                 ))}
               </div>
             ) : (
-              <ChannelListTable
-                lists={lists}
+              <ChannelGroupTable
+                groups={groups}
                 onEdit={handleEdit}
                 onDelete={handleDeleteClick}
               />
@@ -158,12 +158,12 @@ function ChannelLists() {
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Channel List</DialogTitle>
+            <DialogTitle>Create Channel Group</DialogTitle>
             <DialogDescription>
-              Create a new channel list to organize your channels.
+              Create a new channel group to organize your channels.
             </DialogDescription>
           </DialogHeader>
-          <ChannelListForm
+          <ChannelGroupForm
             onSubmit={handleCreate}
             onCancel={() => setIsCreateModalOpen(false)}
           />
@@ -174,17 +174,17 @@ function ChannelLists() {
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Channel List</DialogTitle>
+            <DialogTitle>Edit Channel Group</DialogTitle>
             <DialogDescription>
-              Update channel list details.
+              Update channel group details.
             </DialogDescription>
           </DialogHeader>
-          <ChannelListForm
-            list={editingList}
+          <ChannelGroupForm
+            group={editingGroup}
             onSubmit={handleUpdate}
             onCancel={() => {
               setIsEditModalOpen(false)
-              setEditingList(null)
+              setEditingGroup(null)
             }}
           />
         </DialogContent>
@@ -194,9 +194,9 @@ function ChannelLists() {
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Channel List</DialogTitle>
+            <DialogTitle>Delete Channel Group</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deletingList?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{deletingGroup?.name}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -204,7 +204,7 @@ function ChannelLists() {
               variant="outline"
               onClick={() => {
                 setIsDeleteDialogOpen(false)
-                setDeletingList(null)
+                setDeletingGroup(null)
               }}
             >
               Cancel
@@ -222,5 +222,5 @@ function ChannelLists() {
   )
 }
 
-export default ChannelLists
+export default ChannelGroups
 
