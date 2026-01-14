@@ -10,8 +10,6 @@ import { toast } from 'sonner'
 import { usePreserveScrollPosition } from '@/shared/hooks/usePreserveScrollPosition'
 
 function WatchLater() {
-  // Preserve scroll position when navigating
-  usePreserveScrollPosition(loading)
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
@@ -30,6 +28,9 @@ function WatchLater() {
   const [fetchStatus, setFetchStatus] = useState<{ remaining: number; status: string } | null>(null)
   const [isFetching, setIsFetching] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Preserve scroll position when navigating
+  usePreserveScrollPosition(loading)
 
   useEffect(() => {
     loadChannels()

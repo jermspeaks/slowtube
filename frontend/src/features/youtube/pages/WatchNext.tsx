@@ -1,26 +1,48 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Video, ViewMode } from '../types/video'
 import { videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
 import ViewToggle from '../components/ViewToggle'
+import FiltersAndSort from '../components/FiltersAndSort'
 import { toast } from 'sonner'
 import { usePreserveScrollPosition } from '@/shared/hooks/usePreserveScrollPosition'
 
 function WatchNext() {
-  // Preserve scroll position when navigating
-  usePreserveScrollPosition(loading)
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('published_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([])
+  const [availableChannels, setAvailableChannels] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
+  const [startDate, setStartDate] = useState<string | null>(null)
+  const [endDate, setEndDate] = useState<string | null>(null)
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Preserve scroll position when navigating
+  usePreserveScrollPosition(loading)
 
   useEffect(() => {
+    loadChannels()
     loadVideos()
-  }, [currentPage])
+  }, [])
+
+  const loadChannels = async () => {
+    try {
+      const channels = await videosAPI.getAllChannels()
+      setAvailableChannels(channels)
+    } catch (error) {
+      console.error('Error loading channels:', error)
+    }
+  }
 
   const loadVideos = async () => {
     try {
@@ -28,12 +50,15 @@ function WatchNext() {
       // Load videos with state='inbox' (watch later inbox)
       const response = await videosAPI.getAll(
         'inbox', // Only inbox videos
-        undefined, // No search
-        'added_to_playlist_at', // Sort by date added
-        'asc', // Oldest first
-        undefined, // No channel filter
+        debouncedSearchQuery || undefined,
+        sortBy || undefined,
+        sortBy ? sortOrder : undefined,
+        selectedChannels.length > 0 ? selectedChannels : undefined,
         currentPage,
-        100 // Limit
+        100, // Limit
+        dateField || undefined,
+        startDate || undefined,
+        endDate || undefined
       )
       setVideos(response.videos || [])
       if (response.pagination) {
@@ -77,11 +102,59 @@ function WatchNext() {
     loadVideos()
   }
 
+  // Debounce search query
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 500) // 500ms debounce
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [searchQuery])
+
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    setCurrentPage(1)
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+
+  useEffect(() => {
+    loadVideos()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
+
   return (
     <>
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <h1 className="text-2xl font-bold">Inbox</h1>
-        <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+      <h1 className="text-2xl font-bold mb-6">Inbox</h1>
+      <div className="mb-6 space-y-4">
+        <div className="flex justify-between items-start flex-wrap gap-4">
+          <div className="flex-1 min-w-0">
+            <FiltersAndSort
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              selectedChannels={selectedChannels}
+              onSelectedChannelsChange={setSelectedChannels}
+              availableChannels={availableChannels}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+              dateField={dateField}
+              onDateFieldChange={setDateField}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
+            />
+          </div>
+          <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+        </div>
       </div>
 
       {loading ? (

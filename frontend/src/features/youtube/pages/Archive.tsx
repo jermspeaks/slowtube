@@ -10,8 +10,6 @@ import { toast } from 'sonner'
 import { usePreserveScrollPosition } from '@/shared/hooks/usePreserveScrollPosition'
 
 function Archive() {
-  // Preserve scroll position when navigating
-  usePreserveScrollPosition(loading)
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
@@ -28,6 +26,9 @@ function Archive() {
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Preserve scroll position when navigating
+  usePreserveScrollPosition(loading)
 
   useEffect(() => {
     loadChannels()
