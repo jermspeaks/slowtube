@@ -1,6 +1,9 @@
 import { Video } from '../types/video'
 import { format } from 'date-fns'
-import StateSwitchButton from './StateSwitchButton'
+import { Inbox, Archive } from 'lucide-react'
+import { Button } from '@/shared/components/ui/button'
+import { videosAPI } from '../services/api'
+import { toast } from 'sonner'
 
 interface VideoCardProps {
   video: Video
@@ -13,18 +16,33 @@ interface VideoCardProps {
 }
 
 function VideoCard({ video, onClick, onStateChange, showFeedDate = false, selectable = false, selected = false, onSelectChange }: VideoCardProps) {
-  const getStateColorClasses = (state?: string | null) => {
-    switch (state) {
-      case 'feed': return 'bg-green-500'
-      case 'inbox': return 'bg-yellow-500'
-      case 'archive': return 'bg-gray-500'
-      default: return 'bg-gray-500'
-    }
-  }
-
   const handleStateChange = (updatedVideo: Video) => {
     if (onStateChange) {
       onStateChange(updatedVideo)
+    }
+  }
+
+  const handleMoveToInbox = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await videosAPI.updateState(video.id, 'inbox')
+      const updatedVideo = { ...video, state: 'inbox' as const }
+      handleStateChange(updatedVideo)
+    } catch (error) {
+      console.error('Error updating video state:', error)
+      toast.error('Failed to update video state')
+    }
+  }
+
+  const handleMoveToArchive = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await videosAPI.updateState(video.id, 'archive')
+      const updatedVideo = { ...video, state: 'archive' as const }
+      handleStateChange(updatedVideo)
+    } catch (error) {
+      console.error('Error updating video state:', error)
+      toast.error('Failed to update video state')
     }
   }
 
@@ -81,16 +99,6 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, select
             {video.channel_title}
           </div>
         )}
-        <div className="flex items-center gap-2 mb-2">
-          {video.state && (
-            <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold text-white uppercase ${getStateColorClasses(video.state)}`}>
-              {video.state}
-            </span>
-          )}
-          {onStateChange && (
-            <StateSwitchButton video={video} onStateChange={handleStateChange} />
-          )}
-        </div>
         {video.tags && video.tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {video.tags.slice(0, 3).map(tag => (
@@ -126,6 +134,28 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, select
           )}
         </div>
       </div>
+      {onStateChange && (
+        <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10">
+          <Button
+            onClick={handleMoveToInbox}
+            variant="default"
+            size="sm"
+            className="bg-yellow-600 hover:bg-yellow-700 h-7 w-7 p-0"
+            title="Move to Inbox"
+          >
+            <Inbox className="h-3 w-3" />
+          </Button>
+          <Button
+            onClick={handleMoveToArchive}
+            variant="default"
+            size="sm"
+            className="bg-gray-600 hover:bg-gray-700 h-7 w-7 p-0"
+            title="Move to Archive"
+          >
+            <Archive className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
