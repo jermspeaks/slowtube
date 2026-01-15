@@ -1,4 +1,5 @@
 import api from '../../../shared/services/client'
+import { buildQueryParams } from '../../../shared/utils/apiParams'
 
 // TV Shows API
 export const tvShowsAPI = {
@@ -13,18 +14,17 @@ export const tvShowsAPI = {
     archiveFilter?: 'all' | 'archived' | 'unarchived',
     completionFilter?: 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly'
   ) => {
-    const params: Record<string, string | number> = {}
-    if (includeArchived !== undefined) {
-      params.includeArchived = includeArchived ? 'true' : 'false'
-    }
-    if (search) params.search = search
-    if (sortBy) params.sortBy = sortBy
-    if (sortOrder) params.sortOrder = sortOrder
-    if (page !== undefined) params.page = page
-    if (limit !== undefined) params.limit = limit
-    if (status) params.status = status
-    if (archiveFilter) params.archiveFilter = archiveFilter
-    if (completionFilter) params.completionFilter = completionFilter
+    const params = buildQueryParams({
+      includeArchived: includeArchived !== undefined ? (includeArchived ? 'true' : 'false') : undefined,
+      search,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+      status,
+      archiveFilter,
+      completionFilter,
+    })
     const response = await api.get('/api/tv-shows', { params })
     return response.data
   },
@@ -107,16 +107,17 @@ export const moviesAPI = {
     watchedFilter?: 'all' | 'watched' | 'unwatched',
     playlistFilter?: 'all' | 'in_playlist' | 'not_in_playlist'
   ) => {
-    const params: Record<string, string | number> = {}
-    if (search) params.search = search
-    if (sortBy) params.sortBy = sortBy
-    if (sortOrder) params.sortOrder = sortOrder
-    if (page !== undefined) params.page = page
-    if (limit !== undefined) params.limit = limit
-    if (archiveFilter) params.archiveFilter = archiveFilter
-    if (starredFilter) params.starredFilter = starredFilter
-    if (watchedFilter) params.watchedFilter = watchedFilter
-    if (playlistFilter) params.playlistFilter = playlistFilter
+    const params = buildQueryParams({
+      search,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+      archiveFilter,
+      starredFilter,
+      watchedFilter,
+      playlistFilter,
+    })
     const response = await api.get('/api/movies', { params })
     return response.data
   },
@@ -201,13 +202,11 @@ export const moviePlaylistsAPI = {
 // Calendar API
 export const calendarAPI = {
   getEpisodes: async (startDate: string, endDate: string, hideArchived?: boolean) => {
-    const params: Record<string, string> = {
+    const params = buildQueryParams({
       startDate,
       endDate,
-    }
-    if (hideArchived !== undefined) {
-      params.hideArchived = hideArchived ? 'true' : 'false'
-    }
+      hideArchived: hideArchived !== undefined ? (hideArchived ? 'true' : 'false') : undefined,
+    })
     const response = await api.get('/api/calendar/episodes', { params })
     return response.data
   },

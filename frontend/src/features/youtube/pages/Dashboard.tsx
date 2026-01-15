@@ -5,11 +5,22 @@ import { videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoDetailModal from '../components/VideoDetailModal'
 import { toast } from 'sonner'
+import { useEntityListState } from '@/shared/hooks/useEntityListState'
 
 function Dashboard() {
-  const [videos, setVideos] = useState<Video[]>([])
   const [videosLoading, setVideosLoading] = useState(true)
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  const {
+    items: videos,
+    setItems: setVideos,
+    selectedItem: selectedVideo,
+    setSelectedItem: setSelectedVideo,
+    handleItemUpdated: handleVideoUpdated,
+    handleStateChange,
+  } = useEntityListState<Video>({
+    onStateChange: () => {
+      loadVideos()
+    },
+  })
 
   useEffect(() => {
     loadVideos()
@@ -46,20 +57,6 @@ function Dashboard() {
     }
   }
 
-  const handleVideoUpdated = (updatedVideo: Video) => {
-    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
-    if (selectedVideo?.id === updatedVideo.id) {
-      setSelectedVideo(updatedVideo)
-    }
-  }
-
-  const handleStateChange = (updatedVideo: Video) => {
-    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
-    if (selectedVideo?.id === updatedVideo.id) {
-      setSelectedVideo(updatedVideo)
-    }
-    loadVideos()
-  }
 
   return (
     <>

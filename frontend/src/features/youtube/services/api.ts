@@ -1,4 +1,5 @@
 import api, { API_BASE_URL } from '../../../shared/services/client'
+import { buildQueryParams } from '../../../shared/utils/apiParams'
 
 // Videos API
 export const videosAPI = {
@@ -14,20 +15,18 @@ export const videosAPI = {
     startDate?: string,
     endDate?: string
   ) => {
-    const params: Record<string, string | string[] | number> = {}
-    if (state) params.state = state
-    if (search) params.search = search
-    if (sortBy) params.sortBy = sortBy
-    if (sortOrder) params.sortOrder = sortOrder
-    if (channels && channels.length > 0) {
-      // Send channels as comma-separated string - backend handles both string and array
-      params.channels = channels.join(',')
-    }
-    if (page !== undefined) params.page = page
-    if (limit !== undefined) params.limit = limit
-    if (dateField) params.dateField = dateField
-    if (startDate) params.startDate = startDate
-    if (endDate) params.endDate = endDate
+    const params = buildQueryParams({
+      state,
+      search,
+      sortBy,
+      sortOrder,
+      channels: channels && channels.length > 0 ? channels.join(',') : undefined,
+      page,
+      limit,
+      dateField,
+      startDate,
+      endDate,
+    })
     const response = await api.get('/api/videos', { params })
     return response.data
   },
@@ -98,10 +97,11 @@ export const videosAPI = {
     startDate?: string,
     endDate?: string
   ) => {
-    const params: Record<string, string> = {}
-    if (dateField) params.dateField = dateField
-    if (startDate) params.startDate = startDate
-    if (endDate) params.endDate = endDate
+    const params = buildQueryParams({
+      dateField,
+      startDate,
+      endDate,
+    })
     const response = await api.get('/api/videos/stats', { params })
     return response.data
   },
@@ -117,13 +117,14 @@ export const channelsAPI = {
     sortOrder?: 'asc' | 'desc',
     notInAnyList?: boolean
   ) => {
-    const params: Record<string, string | number | boolean> = {}
-    if (filter) params.filter = filter
-    if (page !== undefined) params.page = page
-    if (limit !== undefined) params.limit = limit
-    if (sortBy) params.sortBy = sortBy
-    if (sortOrder) params.sortOrder = sortOrder
-    if (notInAnyList !== undefined) params.notInAnyList = notInAnyList
+    const params = buildQueryParams({
+      filter,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      notInAnyList,
+    })
     const response = await api.get('/api/channels', { params })
     return response.data
   },
@@ -137,9 +138,11 @@ export const channelsAPI = {
     sortBy?: 'title' | 'added_to_latest_at' | 'published_at',
     sortOrder?: 'asc' | 'desc'
   ) => {
-    const params: Record<string, string> = { type }
-    if (sortBy) params.sortBy = sortBy
-    if (sortOrder) params.sortOrder = sortOrder
+    const params = buildQueryParams({
+      type,
+      sortBy,
+      sortOrder,
+    })
     const response = await api.get(`/api/channels/${channelId}/videos`, { params })
     return response.data
   },
@@ -156,14 +159,12 @@ export const channelsAPI = {
     return response.data
   },
   fetchLatest: async (channelId: string, limit?: number) => {
-    const params: Record<string, number> = {}
-    if (limit !== undefined) params.limit = limit
+    const params = buildQueryParams({ limit })
     const response = await api.post(`/api/channels/${channelId}/fetch-latest`, null, { params })
     return response.data
   },
   fetchLatestAll: async (limit?: number) => {
-    const params: Record<string, number> = {}
-    if (limit !== undefined) params.limit = limit
+    const params = buildQueryParams({ limit })
     const response = await api.post('/api/channels/fetch-latest-all', null, { params })
     return response.data
   },
@@ -204,8 +205,7 @@ export const channelGroupsAPI = {
     return response.data
   },
   refresh: async (listId: number, limit?: number) => {
-    const params: Record<string, number> = {}
-    if (limit !== undefined) params.limit = limit
+    const params = buildQueryParams({ limit })
     const response = await api.post(`/api/channel-lists/${listId}/refresh`, null, { params })
     return response.data
   },
@@ -217,11 +217,13 @@ export const channelGroupsAPI = {
     stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive',
     shortsFilter?: 'all' | 'exclude' | 'only'
   ) => {
-    const params: Record<string, string> = { type }
-    if (sortBy) params.sortBy = sortBy
-    if (sortOrder) params.sortOrder = sortOrder
-    if (stateFilter) params.stateFilter = stateFilter
-    if (shortsFilter) params.shortsFilter = shortsFilter
+    const params = buildQueryParams({
+      type,
+      sortBy,
+      sortOrder,
+      stateFilter,
+      shortsFilter,
+    })
     const response = await api.get(`/api/channel-lists/${listId}/videos`, { params })
     return response.data
   },

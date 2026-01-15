@@ -97,12 +97,6 @@ function ChannelDetail() {
     }
   }
 
-  const handleVideoUpdated = (updatedVideo: Video) => {
-    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
-    if (selectedVideo?.id === updatedVideo.id) {
-      setSelectedVideo(updatedVideo)
-    }
-  }
 
   const handleVideoSelect = (videoId: number, selected: boolean) => {
     setSelectedVideoIds(prev => {

@@ -1,112 +1,118 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { TVShow } from '../types/tv-show'
 import { tvShowsAPI } from '../services/api'
 import TVShowTable from '../components/TVShowTable'
 import TMDBSearchModal from '../components/TMDBSearchModal'
 import { toast } from 'sonner'
+import { Pagination } from '@/shared/components/Pagination'
+import { useURLParams } from '@/shared/hooks/useURLParams'
+import {
+  isArchiveFilter,
+  isCompletionFilter,
+  isSortOrder,
+  isTVShowSortBy,
+  isValidPage,
+} from '@/shared/utils/typeGuards'
+
+type TVShowsListFilters = {
+  search: string
+  archiveFilter: 'all' | 'archived' | 'unarchived'
+  statusFilter: string
+  completionFilter: 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly'
+  sortBy: 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | null
+  sortOrder: 'asc' | 'desc'
+  currentPage: number
+}
 
 function TVShowsList() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  
-  // Initialize state from URL params or defaults
   const [tvShows, setTvShows] = useState<TVShow[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchParams.get('search') || '')
-  const [archiveFilter, setArchiveFilter] = useState<'all' | 'archived' | 'unarchived'>(
-    (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
-  )
-  const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || '')
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const [statuses, setStatuses] = useState<string[]>([])
-  const [completionFilter, setCompletionFilter] = useState<'all' | 'hideCompleted' | 'startedOnly' | 'newOnly'>(
-    (searchParams.get('completionFilter') as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly') || 'hideCompleted'
-  )
-  const [sortBy, setSortBy] = useState<'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date' | null>(
-    (searchParams.get('sortBy') as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date') || 'last_episode_date'
-  )
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
-    (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
-  )
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10))
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isSyncingFromUrlRef = useRef(false)
 
-  // Sync state from URL params when they change (e.g., browser back/forward)
+  const defaults: TVShowsListFilters = {
+    search: '',
+    archiveFilter: 'unarchived',
+    statusFilter: '',
+    completionFilter: 'hideCompleted',
+    sortBy: 'last_episode_date',
+    sortOrder: 'desc',
+    currentPage: 1,
+  }
+
+  const [filters, updateFilters] = useURLParams<TVShowsListFilters>({
+    defaults,
+    serialize: (state) => {
+      const params = new URLSearchParams()
+      if (state.search) {
+        params.set('search', state.search)
+      }
+      if (state.archiveFilter !== 'unarchived') {
+        params.set('archive', state.archiveFilter)
+      }
+      if (state.statusFilter) {
+        params.set('status', state.statusFilter)
+      }
+      if (state.completionFilter !== 'hideCompleted') {
+        params.set('completionFilter', state.completionFilter)
+      }
+      if (state.sortBy && state.sortBy !== 'last_episode_date') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      } else if (state.sortBy === 'last_episode_date' && state.sortOrder !== 'desc') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      }
+      if (state.currentPage > 1) {
+        params.set('page', state.currentPage.toString())
+      }
+      return params
+    },
+    deserialize: (params) => {
+      const result: Partial<TVShowsListFilters> = {}
+      const search = params.get('search')
+      if (search) result.search = search
+      const archive = params.get('archive')
+      if (isArchiveFilter(archive)) {
+        result.archiveFilter = archive
+      }
+      const status = params.get('status')
+      if (status) result.statusFilter = status
+      const completionFilter = params.get('completionFilter')
+      if (isCompletionFilter(completionFilter)) {
+        result.completionFilter = completionFilter
+      }
+      const sortBy = params.get('sortBy')
+      if (isTVShowSortBy(sortBy)) {
+        result.sortBy = sortBy
+      }
+      const sortOrder = params.get('sortOrder')
+      if (isSortOrder(sortOrder)) {
+        result.sortOrder = sortOrder
+      }
+      const page = params.get('page')
+      if (isValidPage(page)) {
+        result.currentPage = parseInt(page, 10)
+      }
+      return result
+    },
+  })
+
+  // Sync searchQuery and debouncedSearchQuery with filters.search (when URL changes)
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(filters.search)
+  
   useEffect(() => {
-    const urlSearch = searchParams.get('search') || ''
-    const urlArchive = (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
-    const urlStatus = searchParams.get('status') || ''
-    const urlCompletionFilter = (searchParams.get('completionFilter') as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly') || 'hideCompleted'
-    const urlSortBy = (searchParams.get('sortBy') as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date') || 'last_episode_date'
-    const urlSortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
-    const urlPage = parseInt(searchParams.get('page') || '1', 10)
+    // When filters.search changes from URL, update both immediately (no debounce)
+    setSearchQuery(filters.search)
+    setDebouncedSearchQuery(filters.search)
+  }, [filters.search])
 
-    // Check if any values need updating
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    const needsUpdate = urlSearch !== debouncedSearchQuery ||
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      urlArchive !== archiveFilter ||
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      urlStatus !== statusFilter ||
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      urlCompletionFilter !== completionFilter ||
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      urlSortBy !== sortBy ||
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      urlSortOrder !== sortOrder ||
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      urlPage !== currentPage
-
-    // Set flag BEFORE updating state to prevent other effects from running
-    if (needsUpdate) {
-      isSyncingFromUrlRef.current = true
-    }
-
-    // Only update state if URL params differ from current state
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (urlSearch !== debouncedSearchQuery) {
-      setSearchQuery(urlSearch)
-      setDebouncedSearchQuery(urlSearch)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (urlArchive !== archiveFilter) {
-      setArchiveFilter(urlArchive)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (urlStatus !== statusFilter) {
-      setStatusFilter(urlStatus)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (urlCompletionFilter !== completionFilter) {
-      setCompletionFilter(urlCompletionFilter)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (urlSortBy !== sortBy) {
-      setSortBy(urlSortBy)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (urlSortOrder !== sortOrder) {
-      setSortOrder(urlSortOrder)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (urlPage !== currentPage) {
-      setCurrentPage(urlPage)
-    }
-    
-    // Reset the flag after state updates and effects complete
-    if (needsUpdate) {
-      // Use a small delay to ensure all effects have run
-      setTimeout(() => {
-        isSyncingFromUrlRef.current = false
-      }, 100)
-    }
-  }, [searchParams]) // Only depend on searchParams, not the state values
 
   useEffect(() => {
     loadStatuses()
@@ -126,18 +132,18 @@ function TVShowsList() {
     try {
       setLoading(true)
       // Convert archiveFilter to includeArchived boolean for backward compatibility
-      const includeArchived = archiveFilter === 'all' || archiveFilter === 'archived'
+      const includeArchived = filters.archiveFilter === 'all' || filters.archiveFilter === 'archived'
       
       const response = await tvShowsAPI.getAll(
         includeArchived,
         debouncedSearchQuery || undefined,
-        sortBy || undefined,
-        sortBy ? sortOrder : undefined,
-        currentPage,
+        filters.sortBy || undefined,
+        filters.sortBy ? filters.sortOrder : undefined,
+        filters.currentPage,
         50,
-        statusFilter || undefined,
-        archiveFilter,
-        completionFilter
+        filters.statusFilter || undefined,
+        filters.archiveFilter,
+        filters.completionFilter
       )
       
       setTvShows(response.tvShows || [])
@@ -172,7 +178,7 @@ function TVShowsList() {
   const handleRefresh = async () => {
     try {
       setIsRefreshing(true)
-      const includeArchived = archiveFilter === 'all' || archiveFilter === 'archived'
+      const includeArchived = filters.archiveFilter === 'all' || filters.archiveFilter === 'archived'
       const result = await tvShowsAPI.refreshAll(includeArchived)
       
       const newEpisodes = result.results.reduce((sum: number, r: { newEpisodes?: number }) => sum + (r.newEpisodes || 0), 0)
@@ -198,14 +204,20 @@ function TVShowsList() {
     }
   }
 
-  // Debounce search query
+  // Debounce search query (only when user types, not when syncing from URL)
   useEffect(() => {
+    // If searchQuery matches filters.search, we're syncing from URL - don't debounce
+    if (searchQuery === filters.search) {
+      return
+    }
+    
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
     }
 
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
+      updateFilters({ search: searchQuery })
     }, 500)
 
     return () => {
@@ -213,82 +225,62 @@ function TVShowsList() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [searchQuery])
+  }, [searchQuery, filters.search, updateFilters])
 
-  // Update URL params when state changes
+  // Reset page to 1 when filters change (except page itself)
+  const prevFiltersRef = useRef({
+    search: filters.search,
+    sortBy: filters.sortBy,
+    sortOrder: filters.sortOrder,
+    archiveFilter: filters.archiveFilter,
+    statusFilter: filters.statusFilter,
+    completionFilter: filters.completionFilter,
+  })
   useEffect(() => {
-    // Don't update URL if we're currently syncing from URL
-    if (isSyncingFromUrlRef.current) {
-      return
-    }
+    const prev = prevFiltersRef.current
+    const filtersChanged = 
+      prev.search !== filters.search ||
+      prev.sortBy !== filters.sortBy ||
+      prev.sortOrder !== filters.sortOrder ||
+      prev.archiveFilter !== filters.archiveFilter ||
+      prev.statusFilter !== filters.statusFilter ||
+      prev.completionFilter !== filters.completionFilter
     
-    const params = new URLSearchParams()
-    
-    if (debouncedSearchQuery) {
-      params.set('search', debouncedSearchQuery)
+    if (filtersChanged) {
+      updateFilters({ currentPage: 1 })
+      prevFiltersRef.current = {
+        search: filters.search,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        archiveFilter: filters.archiveFilter,
+        statusFilter: filters.statusFilter,
+        completionFilter: filters.completionFilter,
+      }
     }
-    
-    if (archiveFilter !== 'unarchived') {
-      params.set('archive', archiveFilter)
-    }
-    
-    if (statusFilter) {
-      params.set('status', statusFilter)
-    }
-    
-    // Only include completionFilter in URL if it's not the default ('hideCompleted')
-    if (completionFilter !== 'hideCompleted') {
-      params.set('completionFilter', completionFilter)
-    }
-    
-    if (sortBy && sortBy !== 'last_episode_date') {
-      params.set('sortBy', sortBy)
-      params.set('sortOrder', sortOrder)
-    } else if (sortBy === 'last_episode_date' && sortOrder !== 'desc') {
-      params.set('sortBy', sortBy)
-      params.set('sortOrder', sortOrder)
-    }
-    
-    if (currentPage > 1) {
-      params.set('page', currentPage.toString())
-    }
-    
-    // Only update if params actually changed to avoid infinite loops
-    const currentParams = searchParams.toString()
-    const newParams = params.toString()
-    
-    if (currentParams !== newParams) {
-      setSearchParams(params, { replace: true })
-    }
-  }, [debouncedSearchQuery, archiveFilter, statusFilter, completionFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
-
-  useEffect(() => {
-    // Reset to page 1 when filters change, but not when syncing from URL
-    if (!isSyncingFromUrlRef.current) {
-      setCurrentPage(1)
-    }
-  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, statusFilter, completionFilter])
+  }, [filters.search, filters.sortBy, filters.sortOrder, filters.archiveFilter, filters.statusFilter, filters.completionFilter, updateFilters])
 
   useEffect(() => {
     loadTVShows()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, statusFilter, completionFilter])
+  }, [debouncedSearchQuery, filters.sortBy, filters.sortOrder, filters.currentPage, filters.archiveFilter, filters.statusFilter, filters.completionFilter])
 
   const handleSortChange = (value: string) => {
     if (value === 'none') {
-      setSortBy(null)
-      setSortOrder('asc')
+      updateFilters({ sortBy: null, sortOrder: 'asc' })
     } else {
       const lastUnderscoreIndex = value.lastIndexOf('_')
       if (lastUnderscoreIndex !== -1) {
         const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'first_air_date' | 'created_at' | 'next_episode_date' | 'last_episode_date'
         const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
         if ((by === 'title' || by === 'first_air_date' || by === 'created_at' || by === 'next_episode_date' || by === 'last_episode_date') && (order === 'asc' || order === 'desc')) {
-          setSortBy(by)
-          setSortOrder(order)
+          updateFilters({ sortBy: by, sortOrder: order })
         }
       }
     }
+  }
+  
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
   }
 
   return (
@@ -321,7 +313,7 @@ function TVShowsList() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search by title or overview..."
                 className="px-3 py-2 border border-border rounded text-sm bg-background flex-1"
               />
@@ -329,7 +321,7 @@ function TVShowsList() {
             <div className="flex gap-2 items-center">
               <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
               <select
-                value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                value={filters.sortBy ? `${filters.sortBy}_${filters.sortOrder}` : 'none'}
                 onChange={(e) => handleSortChange(e.target.value)}
                 className="px-3 py-2 border border-border rounded text-sm bg-background"
               >
@@ -374,8 +366,8 @@ function TVShowsList() {
                   <div className="flex gap-2 items-center">
                     <label className="font-semibold text-sm text-foreground whitespace-nowrap">Archive:</label>
                     <select
-                      value={archiveFilter}
-                      onChange={(e) => setArchiveFilter(e.target.value as 'all' | 'archived' | 'unarchived')}
+                      value={filters.archiveFilter}
+                      onChange={(e) => updateFilters({ archiveFilter: e.target.value as 'all' | 'archived' | 'unarchived' })}
                       className="px-3 py-2 border border-border rounded text-sm bg-background"
                     >
                       <option value="all">All</option>
@@ -386,8 +378,8 @@ function TVShowsList() {
                   <div className="flex gap-2 items-center">
                     <label className="font-semibold text-sm text-foreground whitespace-nowrap">Status:</label>
                     <select
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
+                      value={filters.statusFilter}
+                      onChange={(e) => updateFilters({ statusFilter: e.target.value })}
                       className="px-3 py-2 border border-border rounded text-sm bg-background"
                     >
                       <option value="">All</option>
@@ -405,8 +397,8 @@ function TVShowsList() {
                         type="radio"
                         name="completionFilter"
                         value="all"
-                        checked={completionFilter === 'all'}
-                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        checked={filters.completionFilter === 'all'}
+                        onChange={(e) => updateFilters({ completionFilter: e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly' })}
                         className="w-4 h-4"
                       />
                       <span className="text-sm text-foreground">All</span>
@@ -416,8 +408,8 @@ function TVShowsList() {
                         type="radio"
                         name="completionFilter"
                         value="hideCompleted"
-                        checked={completionFilter === 'hideCompleted'}
-                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        checked={filters.completionFilter === 'hideCompleted'}
+                        onChange={(e) => updateFilters({ completionFilter: e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly' })}
                         className="w-4 h-4"
                       />
                       <span className="text-sm text-foreground">Hide Completed</span>
@@ -427,8 +419,8 @@ function TVShowsList() {
                         type="radio"
                         name="completionFilter"
                         value="startedOnly"
-                        checked={completionFilter === 'startedOnly'}
-                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        checked={filters.completionFilter === 'startedOnly'}
+                        onChange={(e) => updateFilters({ completionFilter: e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly' })}
                         className="w-4 h-4"
                       />
                       <span className="text-sm text-foreground">Started Only</span>
@@ -438,8 +430,8 @@ function TVShowsList() {
                         type="radio"
                         name="completionFilter"
                         value="newOnly"
-                        checked={completionFilter === 'newOnly'}
-                        onChange={(e) => setCompletionFilter(e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly')}
+                        checked={filters.completionFilter === 'newOnly'}
+                        onChange={(e) => updateFilters({ completionFilter: e.target.value as 'all' | 'hideCompleted' | 'startedOnly' | 'newOnly' })}
                         className="w-4 h-4"
                       />
                       <span className="text-sm text-foreground">New Only</span>
@@ -484,39 +476,11 @@ function TVShowsList() {
               }}
               onStartedChange={loadTVShows}
             />
-            {totalPages > 1 && (
-              <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-foreground">Page</span>
-                  <select
-                    value={currentPage}
-                    onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background"
-                  >
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <option key={page} value={page}>
-                        {page}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-sm text-foreground">of {totalPages}</span>
-                </div>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            )}
+            <Pagination
+              currentPage={filters.currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => updateFilters({ currentPage: page })}
+            />
           </>
         )}
       </main>

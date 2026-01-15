@@ -75,33 +75,22 @@ function Stats() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <div>Loading stats...</div>
+        <div className="max-w-[1400px] mx-auto px-6 py-6">
+          <LoadingState message="Loading stats..." />
         </div>
       </div>
     )
   }
 
   if (error) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="bg-destructive/20 border border-destructive/50 text-destructive px-4 py-3 rounded">
-            <p className="font-semibold">Error</p>
-            <p>{error}</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <ErrorState message={error} />
   }
 
   if (!stats) {
     return (
       <div className="min-h-screen bg-background">
         <div className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="text-center py-12">
-            <p className="text-lg text-muted-foreground">No stats available</p>
-          </div>
+          <EmptyState title="No stats available" />
         </div>
       </div>
     )

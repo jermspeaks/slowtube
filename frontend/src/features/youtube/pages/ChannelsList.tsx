@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { RefreshCw, Plus } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import AddToChannelGroupModal from '../components/AddToChannelListModal'
+import { Pagination } from '@/shared/components/Pagination'
 
 function ChannelsList() {
   const location = useLocation()
@@ -415,38 +416,12 @@ function ChannelsList() {
                 </div>
               ))}
             </div>
-            {filterType === 'subscribed' && totalPages > 1 && (
-              <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-foreground">Page</span>
-                  <select
-                    value={currentPage}
-                    onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background"
-                  >
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <option key={page} value={page}>
-                        {page}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-sm text-foreground">of {totalPages}</span>
-                </div>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
+            {filterType === 'subscribed' && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
             )}
           </>
         )}

@@ -8,14 +8,27 @@ import ViewToggle from '../components/ViewToggle'
 import FiltersAndSort from '../components/FiltersAndSort'
 import { toast } from 'sonner'
 import { usePreserveScrollPosition } from '@/shared/hooks/usePreserveScrollPosition'
+import { Pagination } from '@/shared/components/Pagination'
+import { useDebounce } from '@/shared/hooks/useDebounce'
+import { useEntityListState } from '@/shared/hooks/useEntityListState'
 
 function WatchLater() {
-  const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  const {
+    items: videos,
+    setItems: setVideos,
+    selectedItem: selectedVideo,
+    setSelectedItem: setSelectedVideo,
+    handleItemUpdated: handleVideoUpdated,
+    handleStateChange,
+  } = useEntityListState<Video>({
+    onStateChange: () => {
+      loadVideos()
+    },
+  })
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState<string>('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
+  const debouncedSearchQuery = useDebounce(searchQuery, 500)
   const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
@@ -27,7 +40,6 @@ function WatchLater() {
   const [endDate, setEndDate] = useState<string | null>(null)
   const [fetchStatus, setFetchStatus] = useState<{ remaining: number; status: string } | null>(null)
   const [isFetching, setIsFetching] = useState(false)
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Preserve scroll position when navigating
   usePreserveScrollPosition(loading)
@@ -97,24 +109,6 @@ function WatchLater() {
     }
   }
 
-  const handleVideoUpdated = (updatedVideo: Video) => {
-    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
-    if (selectedVideo?.id === updatedVideo.id) {
-      setSelectedVideo(updatedVideo)
-    }
-  }
-
-  const handleStateChange = (updatedVideo: Video) => {
-    // Update the video in the list
-    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
-    // If the video is selected, update it too
-    if (selectedVideo?.id === updatedVideo.id) {
-      setSelectedVideo(updatedVideo)
-    }
-    // Reload videos to ensure the list is up to date
-    loadVideos()
-  }
-
   const handleResumeFetching = async () => {
     try {
       setIsFetching(true)
@@ -149,22 +143,6 @@ function WatchLater() {
     }
   }
 
-  // Debounce search query
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery)
-    }, 500) // 500ms debounce
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current)
-      }
-    }
-  }, [searchQuery])
 
   useEffect(() => {
     // Reset to page 1 when filters change
@@ -260,39 +238,11 @@ function WatchLater() {
                 showAddedDate={false}
               />
             )}
-            {totalPages > 1 && (
-              <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-foreground">Page</span>
-                  <select
-                    value={currentPage}
-                    onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-                    className="px-3 py-2 border border-border rounded text-sm"
-                  >
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <option key={page} value={page}>
-                        {page}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-sm text-foreground">of {totalPages}</span>
-                </div>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                </button>
-              </div>
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </>
         )}
 

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { Movie } from '../types/movie'
 import { moviesAPI } from '../services/api'
 import MovieTable from '../components/MovieTable'
@@ -8,33 +7,33 @@ import AddToPlaylistModal from '../components/AddToPlaylistModal'
 import { Button } from '@/shared/components/ui/button'
 import { toast } from 'sonner'
 import { ListPlus, X, Check } from 'lucide-react'
+import { Pagination } from '@/shared/components/Pagination'
+import { useURLParams } from '@/shared/hooks/useURLParams'
+import {
+  isArchiveFilter,
+  isStarredFilter,
+  isWatchedFilter,
+  isPlaylistFilter,
+  isSortOrder,
+  isMovieSortBy,
+  isValidPage,
+} from '@/shared/utils/typeGuards'
+
+type MoviesListFilters = {
+  search: string
+  archiveFilter: 'all' | 'archived' | 'unarchived'
+  starredFilter: 'all' | 'starred' | 'unstarred'
+  watchedFilter: 'all' | 'watched' | 'unwatched'
+  playlistFilter: 'all' | 'in_playlist' | 'not_in_playlist'
+  sortBy: 'title' | 'release_date' | 'created_at' | null
+  sortOrder: 'asc' | 'desc'
+  currentPage: number
+}
 
 function MoviesList() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  
   const [movies, setMovies] = useState<Movie[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState<string>(searchParams.get('search') || '')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(searchParams.get('search') || '')
-  const [archiveFilter, setArchiveFilter] = useState<'all' | 'archived' | 'unarchived'>(
-    (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
-  )
-  const [starredFilter, setStarredFilter] = useState<'all' | 'starred' | 'unstarred'>(
-    (searchParams.get('starred') as 'all' | 'starred' | 'unstarred') || 'all'
-  )
-  const [watchedFilter, setWatchedFilter] = useState<'all' | 'watched' | 'unwatched'>(
-    (searchParams.get('watched') as 'all' | 'watched' | 'unwatched') || 'unwatched'
-  )
-  const [playlistFilter, setPlaylistFilter] = useState<'all' | 'in_playlist' | 'not_in_playlist'>(
-    (searchParams.get('playlist') as 'all' | 'in_playlist' | 'not_in_playlist') || 'all'
-  )
-  const [sortBy, setSortBy] = useState<'title' | 'release_date' | 'created_at' | null>(
-    (searchParams.get('sortBy') as 'title' | 'release_date' | 'created_at') || 'title'
-  )
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
-    (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc'
-  )
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10))
+  const [searchQuery, setSearchQuery] = useState<string>('')
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -42,64 +41,94 @@ function MoviesList() {
   const [selectedMovieIds, setSelectedMovieIds] = useState<Set<number>>(new Set())
   const [isAddToPlaylistModalOpen, setIsAddToPlaylistModalOpen] = useState(false)
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const isSyncingFromUrlRef = useRef(false)
 
-  // Sync state from URL params when they change (e.g., browser back/forward)
+  const defaults: MoviesListFilters = {
+    search: '',
+    archiveFilter: 'unarchived',
+    starredFilter: 'all',
+    watchedFilter: 'unwatched',
+    playlistFilter: 'all',
+    sortBy: 'title',
+    sortOrder: 'asc',
+    currentPage: 1,
+  }
+
+  const [filters, updateFilters] = useURLParams<MoviesListFilters>({
+    defaults,
+    serialize: (state) => {
+      const params = new URLSearchParams()
+      if (state.search) {
+        params.set('search', state.search)
+      }
+      if (state.archiveFilter !== 'unarchived') {
+        params.set('archive', state.archiveFilter)
+      }
+      if (state.starredFilter !== 'all') {
+        params.set('starred', state.starredFilter)
+      }
+      if (state.watchedFilter !== 'unwatched') {
+        params.set('watched', state.watchedFilter)
+      }
+      if (state.playlistFilter !== 'all') {
+        params.set('playlist', state.playlistFilter)
+      }
+      if (state.sortBy && state.sortBy !== 'title') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      } else if (state.sortBy === 'title' && state.sortOrder !== 'asc') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      }
+      if (state.currentPage > 1) {
+        params.set('page', state.currentPage.toString())
+      }
+      return params
+    },
+    deserialize: (params) => {
+      const result: Partial<MoviesListFilters> = {}
+      const search = params.get('search')
+      if (search) result.search = search
+      const archive = params.get('archive')
+      if (isArchiveFilter(archive)) {
+        result.archiveFilter = archive
+      }
+      const starred = params.get('starred')
+      if (isStarredFilter(starred)) {
+        result.starredFilter = starred
+      }
+      const watched = params.get('watched')
+      if (isWatchedFilter(watched)) {
+        result.watchedFilter = watched
+      }
+      const playlist = params.get('playlist')
+      if (isPlaylistFilter(playlist)) {
+        result.playlistFilter = playlist
+      }
+      const sortBy = params.get('sortBy')
+      if (isMovieSortBy(sortBy)) {
+        result.sortBy = sortBy
+      }
+      const sortOrder = params.get('sortOrder')
+      if (isSortOrder(sortOrder)) {
+        result.sortOrder = sortOrder
+      }
+      const page = params.get('page')
+      if (isValidPage(page)) {
+        result.currentPage = parseInt(page, 10)
+      }
+      return result
+    },
+  })
+
+  // Sync searchQuery and debouncedSearchQuery with filters.search (when URL changes)
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>(filters.search)
+  
   useEffect(() => {
-    const urlSearch = searchParams.get('search') || ''
-    const urlArchive = (searchParams.get('archive') as 'all' | 'archived' | 'unarchived') || 'unarchived'
-    const urlStarred = (searchParams.get('starred') as 'all' | 'starred' | 'unstarred') || 'all'
-    const urlWatched = (searchParams.get('watched') as 'all' | 'watched' | 'unwatched') || 'unwatched'
-    const urlPlaylist = (searchParams.get('playlist') as 'all' | 'in_playlist' | 'not_in_playlist') || 'all'
-    const urlSortBy = (searchParams.get('sortBy') as 'title' | 'release_date' | 'created_at') || 'title'
-    const urlSortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc'
-    const urlPage = parseInt(searchParams.get('page') || '1', 10)
+    // When filters.search changes from URL, update both immediately (no debounce)
+    setSearchQuery(filters.search)
+    setDebouncedSearchQuery(filters.search)
+  }, [filters.search])
 
-    const needsUpdate = urlSearch !== debouncedSearchQuery ||
-      urlArchive !== archiveFilter ||
-      urlStarred !== starredFilter ||
-      urlWatched !== watchedFilter ||
-      urlPlaylist !== playlistFilter ||
-      urlSortBy !== sortBy ||
-      urlSortOrder !== sortOrder ||
-      urlPage !== currentPage
-
-    if (needsUpdate) {
-      isSyncingFromUrlRef.current = true
-    }
-
-    if (urlSearch !== debouncedSearchQuery) {
-      setSearchQuery(urlSearch)
-      setDebouncedSearchQuery(urlSearch)
-    }
-    if (urlArchive !== archiveFilter) {
-      setArchiveFilter(urlArchive)
-    }
-    if (urlStarred !== starredFilter) {
-      setStarredFilter(urlStarred)
-    }
-    if (urlWatched !== watchedFilter) {
-      setWatchedFilter(urlWatched)
-    }
-    if (urlPlaylist !== playlistFilter) {
-      setPlaylistFilter(urlPlaylist)
-    }
-    if (urlSortBy !== sortBy) {
-      setSortBy(urlSortBy)
-    }
-    if (urlSortOrder !== sortOrder) {
-      setSortOrder(urlSortOrder)
-    }
-    if (urlPage !== currentPage) {
-      setCurrentPage(urlPage)
-    }
-    
-    if (needsUpdate) {
-      setTimeout(() => {
-        isSyncingFromUrlRef.current = false
-      }, 100)
-    }
-  }, [searchParams])
 
   useEffect(() => {
     loadMovies()
@@ -110,14 +139,14 @@ function MoviesList() {
       setLoading(true)
       const response = await moviesAPI.getAll(
         debouncedSearchQuery || undefined,
-        sortBy || undefined,
-        sortBy ? sortOrder : undefined,
-        currentPage,
+        filters.sortBy || undefined,
+        filters.sortBy ? filters.sortOrder : undefined,
+        filters.currentPage,
         50,
-        archiveFilter !== 'all' ? archiveFilter : undefined,
-        starredFilter !== 'all' ? starredFilter : undefined,
-        watchedFilter !== 'all' ? watchedFilter : undefined,
-        playlistFilter !== 'all' ? playlistFilter : undefined
+        filters.archiveFilter !== 'all' ? filters.archiveFilter : undefined,
+        filters.starredFilter !== 'all' ? filters.starredFilter : undefined,
+        filters.watchedFilter !== 'all' ? filters.watchedFilter : undefined,
+        filters.playlistFilter !== 'all' ? filters.playlistFilter : undefined
       )
       setMovies(response.movies || [])
       if (response.pagination) {
@@ -220,14 +249,20 @@ function MoviesList() {
     loadMovies()
   }
 
-  // Debounce search query
+  // Debounce search query (only when user types, not when syncing from URL)
   useEffect(() => {
+    // If searchQuery matches filters.search, we're syncing from URL - don't debounce
+    if (searchQuery === filters.search) {
+      return
+    }
+    
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current)
     }
 
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
+      updateFilters({ search: searchQuery })
     }, 500)
 
     return () => {
@@ -235,79 +270,62 @@ function MoviesList() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [searchQuery])
+  }, [searchQuery, filters.search, updateFilters])
+  
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value)
+  }
 
-  // Update URL params when state changes
+  // Reset page to 1 when filters change (except page itself)
+  const prevFiltersRef = useRef({
+    search: filters.search,
+    sortBy: filters.sortBy,
+    sortOrder: filters.sortOrder,
+    archiveFilter: filters.archiveFilter,
+    starredFilter: filters.starredFilter,
+    watchedFilter: filters.watchedFilter,
+    playlistFilter: filters.playlistFilter,
+  })
   useEffect(() => {
-    if (isSyncingFromUrlRef.current) {
-      return
-    }
+    const prev = prevFiltersRef.current
+    const filtersChanged = 
+      prev.search !== filters.search ||
+      prev.sortBy !== filters.sortBy ||
+      prev.sortOrder !== filters.sortOrder ||
+      prev.archiveFilter !== filters.archiveFilter ||
+      prev.starredFilter !== filters.starredFilter ||
+      prev.watchedFilter !== filters.watchedFilter ||
+      prev.playlistFilter !== filters.playlistFilter
     
-    const params = new URLSearchParams()
-    
-    if (debouncedSearchQuery) {
-      params.set('search', debouncedSearchQuery)
+    if (filtersChanged) {
+      updateFilters({ currentPage: 1 })
+      prevFiltersRef.current = {
+        search: filters.search,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        archiveFilter: filters.archiveFilter,
+        starredFilter: filters.starredFilter,
+        watchedFilter: filters.watchedFilter,
+        playlistFilter: filters.playlistFilter,
+      }
     }
-    
-    if (archiveFilter !== 'unarchived') {
-      params.set('archive', archiveFilter)
-    }
-    
-    if (starredFilter !== 'all') {
-      params.set('starred', starredFilter)
-    }
-    
-    if (watchedFilter !== 'unwatched') {
-      params.set('watched', watchedFilter)
-    }
-    
-    if (playlistFilter !== 'all') {
-      params.set('playlist', playlistFilter)
-    }
-    
-    if (sortBy && sortBy !== 'title') {
-      params.set('sortBy', sortBy)
-      params.set('sortOrder', sortOrder)
-    } else if (sortBy === 'title' && sortOrder !== 'asc') {
-      params.set('sortBy', sortBy)
-      params.set('sortOrder', sortOrder)
-    }
-    
-    if (currentPage > 1) {
-      params.set('page', currentPage.toString())
-    }
-    
-    const currentParams = searchParams.toString()
-    const newParams = params.toString()
-    
-    if (currentParams !== newParams) {
-      setSearchParams(params, { replace: true })
-    }
-  }, [debouncedSearchQuery, archiveFilter, starredFilter, watchedFilter, playlistFilter, sortBy, sortOrder, currentPage, searchParams, setSearchParams])
-
-  useEffect(() => {
-    if (!isSyncingFromUrlRef.current) {
-      setCurrentPage(1)
-    }
-  }, [debouncedSearchQuery, sortBy, sortOrder, archiveFilter, starredFilter, watchedFilter, playlistFilter])
+  }, [filters.search, filters.sortBy, filters.sortOrder, filters.archiveFilter, filters.starredFilter, filters.watchedFilter, filters.playlistFilter, updateFilters])
 
   useEffect(() => {
     loadMovies()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, currentPage, archiveFilter, starredFilter, watchedFilter, playlistFilter])
+  }, [debouncedSearchQuery, filters.sortBy, filters.sortOrder, filters.currentPage, filters.archiveFilter, filters.starredFilter, filters.watchedFilter, filters.playlistFilter])
 
   const handleSortChange = (value: string) => {
     if (value === 'none') {
-      setSortBy(null)
-      setSortOrder('asc')
+      updateFilters({ sortBy: null, sortOrder: 'asc' })
     } else {
       const lastUnderscoreIndex = value.lastIndexOf('_')
       if (lastUnderscoreIndex !== -1) {
         const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'release_date' | 'created_at'
         const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
         if ((by === 'title' || by === 'release_date' || by === 'created_at') && (order === 'asc' || order === 'desc')) {
-          setSortBy(by)
-          setSortOrder(order)
+          updateFilters({ sortBy: by, sortOrder: order })
         }
       }
     }
@@ -333,7 +351,7 @@ function MoviesList() {
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Search by title or overview..."
                 className="px-3 py-2 border border-border rounded text-sm bg-background flex-1"
               />
@@ -341,7 +359,7 @@ function MoviesList() {
             <div className="flex gap-2 items-center">
               <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
               <select
-                value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                value={filters.sortBy ? `${filters.sortBy}_${filters.sortOrder}` : 'none'}
                 onChange={(e) => handleSortChange(e.target.value)}
                 className="px-3 py-2 border border-border rounded text-sm bg-background"
               >
@@ -382,8 +400,8 @@ function MoviesList() {
                   <div className="flex gap-2 items-center">
                     <label className="font-semibold text-sm text-foreground whitespace-nowrap">Archive:</label>
                     <select
-                      value={archiveFilter}
-                      onChange={(e) => setArchiveFilter(e.target.value as 'all' | 'archived' | 'unarchived')}
+                      value={filters.archiveFilter}
+                      onChange={(e) => updateFilters({ archiveFilter: e.target.value as 'all' | 'archived' | 'unarchived' })}
                       className="px-3 py-2 border border-border rounded text-sm bg-background"
                     >
                       <option value="all">All</option>
@@ -394,8 +412,8 @@ function MoviesList() {
                   <div className="flex gap-2 items-center">
                     <label className="font-semibold text-sm text-foreground whitespace-nowrap">Starred:</label>
                     <select
-                      value={starredFilter}
-                      onChange={(e) => setStarredFilter(e.target.value as 'all' | 'starred' | 'unstarred')}
+                      value={filters.starredFilter}
+                      onChange={(e) => updateFilters({ starredFilter: e.target.value as 'all' | 'starred' | 'unstarred' })}
                       className="px-3 py-2 border border-border rounded text-sm bg-background"
                     >
                       <option value="all">All</option>
@@ -406,8 +424,8 @@ function MoviesList() {
                   <div className="flex gap-2 items-center">
                     <label className="font-semibold text-sm text-foreground whitespace-nowrap">Watched:</label>
                     <select
-                      value={watchedFilter}
-                      onChange={(e) => setWatchedFilter(e.target.value as 'all' | 'watched' | 'unwatched')}
+                      value={filters.watchedFilter}
+                      onChange={(e) => updateFilters({ watchedFilter: e.target.value as 'all' | 'watched' | 'unwatched' })}
                       className="px-3 py-2 border border-border rounded text-sm bg-background"
                     >
                       <option value="all">All</option>
@@ -418,8 +436,8 @@ function MoviesList() {
                   <div className="flex gap-2 items-center">
                     <label className="font-semibold text-sm text-foreground whitespace-nowrap">Playlist:</label>
                     <select
-                      value={playlistFilter}
-                      onChange={(e) => setPlaylistFilter(e.target.value as 'all' | 'in_playlist' | 'not_in_playlist')}
+                      value={filters.playlistFilter}
+                      onChange={(e) => updateFilters({ playlistFilter: e.target.value as 'all' | 'in_playlist' | 'not_in_playlist' })}
                       className="px-3 py-2 border border-border rounded text-sm bg-background"
                     >
                       <option value="all">All</option>
@@ -514,39 +532,11 @@ function MoviesList() {
               selectedMovieIds={selectedMovieIds}
               onSelectionChange={setSelectedMovieIds}
             />
-            {totalPages > 1 && (
-              <div className="mt-6 flex justify-center items-center gap-4 flex-wrap">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Previous
-                </button>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-foreground">Page</span>
-                  <select
-                    value={currentPage}
-                    onChange={(e) => setCurrentPage(parseInt(e.target.value, 10))}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background"
-                  >
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <option key={page} value={page}>
-                        {page}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-sm text-foreground">of {totalPages}</span>
-                </div>
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 border border-border rounded text-sm bg-card hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                </button>
-              </div>
-            )}
+            <Pagination
+              currentPage={filters.currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => updateFilters({ currentPage: page })}
+            />
           </>
         )}
 
