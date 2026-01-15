@@ -116,6 +116,7 @@ cp .env.example .env
 # - GOOGLE_CLIENT_ID (optional, for YouTube OAuth)
 # - GOOGLE_CLIENT_SECRET (optional, for YouTube OAuth)
 # - TMDB_API_KEY (required for movies and TV shows)
+# - LOG_LEVEL (optional, for backend logging - see Backend Configuration below)
 ```
 
 5. Start the backend server:
@@ -133,6 +134,45 @@ npm run dev
 The application will be available at:
 - Frontend: http://localhost:5200
 - Backend: http://localhost:3001
+
+## Backend Configuration
+
+### Logging
+
+The backend uses Winston for structured logging with configurable log levels. You can control the verbosity of logs using the `LOG_LEVEL` environment variable.
+
+**Available log levels** (from most to least verbose):
+- `debug`: Detailed debugging information, including request/response details
+- `info`: General informational messages (default)
+- `warn`: Warning messages for potential issues
+- `error`: Only error messages
+
+**Usage:**
+
+Set the log level when starting the backend:
+```bash
+# For detailed debugging
+LOG_LEVEL=debug npm run dev
+
+# Default (info level)
+npm run dev
+
+# Only warnings and errors
+LOG_LEVEL=warn npm run dev
+
+# Only errors
+LOG_LEVEL=error npm run dev
+```
+
+**What gets logged:**
+- Server startup and configuration
+- API request errors and validation failures
+- Database operation errors
+- TV episode refresh job status
+- CORS rejections
+- Detailed endpoint debugging (when `LOG_LEVEL=debug`)
+
+The logger outputs to the console with colorized formatting, timestamps, and structured metadata for easier debugging.
 
 ## API Setup
 
