@@ -6,7 +6,7 @@ export const videosAPI = {
   getAll: async (
     state?: string,
     search?: string,
-    sortBy?: 'published_at' | 'added_to_playlist_at',
+    sortBy?: 'published_at' | 'added_to_playlist_at' | 'archived_at',
     sortOrder?: 'asc' | 'desc',
     channels?: string[],
     page?: number,

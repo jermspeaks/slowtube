@@ -7,8 +7,8 @@ interface FiltersAndSortProps {
   selectedChannels: string[]
   onSelectedChannelsChange: (channels: string[]) => void
   availableChannels: string[]
-  sortBy: 'published_at' | 'added_to_playlist_at' | null
-  onSortByChange: (value: 'published_at' | 'added_to_playlist_at' | null) => void
+  sortBy: 'published_at' | 'added_to_playlist_at' | 'archived_at' | null
+  onSortByChange: (value: 'published_at' | 'added_to_playlist_at' | 'archived_at' | null) => void
   sortOrder: 'asc' | 'desc'
   onSortOrderChange: (value: 'asc' | 'desc') => void
   dateField: 'added_to_playlist_at' | 'published_at' | null
@@ -45,9 +45,9 @@ function FiltersAndSort({
     } else {
       const lastUnderscoreIndex = value.lastIndexOf('_')
       if (lastUnderscoreIndex !== -1) {
-        const by = value.substring(0, lastUnderscoreIndex) as 'published_at' | 'added_to_playlist_at'
+        const by = value.substring(0, lastUnderscoreIndex) as 'published_at' | 'added_to_playlist_at' | 'archived_at'
         const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
-        if ((by === 'published_at' || by === 'added_to_playlist_at') && (order === 'asc' || order === 'desc')) {
+        if ((by === 'published_at' || by === 'added_to_playlist_at' || by === 'archived_at') && (order === 'asc' || order === 'desc')) {
           onSortByChange(by)
           onSortOrderChange(order)
         }
@@ -151,6 +151,8 @@ function FiltersAndSort({
                 <option value="published_at_asc">Date Published (Oldest)</option>
                 <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
                 <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
+                <option value="archived_at_desc">Date Archived (Newest)</option>
+                <option value="archived_at_asc">Date Archived (Oldest)</option>
               </select>
             </div>
           </div>

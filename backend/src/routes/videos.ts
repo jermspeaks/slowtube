@@ -126,8 +126,8 @@ router.get('/', (req, res) => {
     const { state, search, sortBy, sortOrder, channels, page, limit, dateField, startDate, endDate } = req.query
     
     // Validate sortBy and sortOrder
-    let validSortBy: 'published_at' | 'added_to_playlist_at' | undefined
-    if (sortBy === 'published_at' || sortBy === 'added_to_playlist_at') {
+    let validSortBy: 'published_at' | 'added_to_playlist_at' | 'archived_at' | undefined
+    if (sortBy === 'published_at' || sortBy === 'added_to_playlist_at' || sortBy === 'archived_at') {
       validSortBy = sortBy
     }
     

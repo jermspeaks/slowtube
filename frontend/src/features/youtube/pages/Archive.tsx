@@ -29,7 +29,7 @@ function Archive() {
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const debouncedSearchQuery = useDebounce(searchQuery, 500)
-  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
+  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | 'archived_at' | null>('archived_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [availableChannels, setAvailableChannels] = useState<string[]>([])

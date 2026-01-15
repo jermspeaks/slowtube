@@ -68,7 +68,7 @@ export const videoQueries = {
   getAll: (
     state?: string,
     search?: string,
-    sortBy?: 'published_at' | 'added_to_playlist_at',
+    sortBy?: 'published_at' | 'added_to_playlist_at' | 'archived_at',
     sortOrder?: 'asc' | 'desc',
     channels?: string[],
     limit?: number,
@@ -129,6 +129,13 @@ export const videoQueries = {
       orderBy = `ORDER BY 
         CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,
         v.${sortBy} ${order}`
+    } else if (sortBy === 'archived_at') {
+      const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
+      // Handle NULL values - put them at the end
+      // archived_at comes from vs.updated_at when state is 'archive'
+      orderBy = `ORDER BY 
+        CASE WHEN vs.updated_at IS NULL THEN 1 ELSE 0 END,
+        vs.updated_at ${order}`
     }
 
     // Build LIMIT and OFFSET clauses
@@ -143,7 +150,7 @@ export const videoQueries = {
     }
 
     const query = `
-      SELECT v.*, vs.state 
+      SELECT v.*, vs.state, vs.updated_at as archived_at
       FROM videos v
       LEFT JOIN video_states vs ON v.id = vs.video_id
       ${whereClause}
