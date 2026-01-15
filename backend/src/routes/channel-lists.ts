@@ -8,12 +8,13 @@ const router = express.Router()
 // Create a channel group
 router.post('/', (req, res) => {
   try {
-    const { name, description, color } = req.body
+    const { name, description, color, display_on_home } = req.body
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return res.status(400).json({ error: 'Name is required' })
     }
 
-    const listId = channelListQueries.create(name.trim(), description || null, color || null)
+    const displayOnHome = display_on_home !== undefined ? (display_on_home ? 1 : 0) : undefined
+    const listId = channelListQueries.create(name.trim(), description || null, color || null, displayOnHome)
     const list = channelListQueries.getById(listId)
     
     if (!list) {
@@ -30,7 +31,9 @@ router.post('/', (req, res) => {
 // Get all channel groups
 router.get('/', (req, res) => {
   try {
-    const lists = channelListQueries.getAll()
+    const { display_on_home } = req.query
+    const displayOnHome = display_on_home === 'true' ? true : display_on_home === 'false' ? false : undefined
+    const lists = channelListQueries.getAll(displayOnHome)
     res.json(lists)
   } catch (error) {
     console.error('Error fetching channel groups:', error)
@@ -71,8 +74,8 @@ router.patch('/:id', (req, res) => {
       return res.status(404).json({ error: 'List not found' })
     }
 
-    const { name, description, color } = req.body
-    const updates: { name?: string; description?: string | null; color?: string | null } = {}
+    const { name, description, color, display_on_home } = req.body
+    const updates: { name?: string; description?: string | null; color?: string | null; display_on_home?: number } = {}
 
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
@@ -85,6 +88,9 @@ router.patch('/:id', (req, res) => {
     }
     if (color !== undefined) {
       updates.color = color === null || color === '' ? null : color
+    }
+    if (display_on_home !== undefined) {
+      updates.display_on_home = display_on_home ? 1 : 0
     }
 
     const changes = channelListQueries.update(id, updates)
@@ -422,6 +428,37 @@ router.get('/:id/videos', (req, res) => {
   } catch (error) {
     console.error('Error fetching group videos:', error)
     res.status(500).json({ error: 'Failed to fetch group videos' })
+  }
+})
+
+// Toggle display on home for a channel group
+router.patch('/:id/display-on-home', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid list ID' })
+    }
+
+    const list = channelListQueries.getById(id)
+    if (!list) {
+      return res.status(404).json({ error: 'List not found' })
+    }
+
+    const { display_on_home } = req.body
+    if (typeof display_on_home !== 'boolean') {
+      return res.status(400).json({ error: 'display_on_home must be a boolean' })
+    }
+
+    const changes = channelListQueries.updateDisplayOnHome(id, display_on_home)
+    if (changes === 0) {
+      return res.status(500).json({ error: 'Failed to update display on home' })
+    }
+
+    const updatedList = channelListQueries.getById(id)
+    res.json(updatedList)
+  } catch (error: any) {
+    console.error('Error updating display on home:', error)
+    res.status(500).json({ error: error.message || 'Failed to update display on home' })
   }
 })
 

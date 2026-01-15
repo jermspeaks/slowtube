@@ -118,4 +118,9 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Hide scrollbar for webkit browsers */
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
 }

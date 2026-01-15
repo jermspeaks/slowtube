@@ -1,49 +1,39 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Settings } from 'lucide-react'
+import { Button } from '@/shared/components/ui/button'
 import { Video } from '../types/video'
-import { videosAPI } from '../services/api'
-import VideoCard from '../components/VideoCard'
+import { dashboardAPI, videosAPI } from '../services/api'
+import { DashboardSection } from '../types/dashboard'
+import DashboardSectionRow from '../components/DashboardSectionRow'
 import VideoDetailModal from '../components/VideoDetailModal'
+import ConfigureDashboardModal from '../components/ConfigureDashboardModal'
 import { toast } from 'sonner'
 import { useEntityListState } from '@/shared/hooks/useEntityListState'
 
 function Dashboard() {
-  const [videosLoading, setVideosLoading] = useState(true)
+  const [sections, setSections] = useState<DashboardSection[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isConfigureModalOpen, setIsConfigureModalOpen] = useState(false)
   const {
-    items: videos,
-    setItems: setVideos,
     selectedItem: selectedVideo,
     setSelectedItem: setSelectedVideo,
     handleItemUpdated: handleVideoUpdated,
-    handleStateChange,
-  } = useEntityListState<Video>({
-    onStateChange: () => {
-      loadVideos()
-    },
-  })
+  } = useEntityListState<Video>({})
 
   useEffect(() => {
-    loadVideos()
+    loadSections()
   }, [])
 
-  const loadVideos = async () => {
+  const loadSections = async () => {
     try {
-      setVideosLoading(true)
-      const response = await videosAPI.getAll(
-        'feed',
-        undefined,
-        'added_to_playlist_at',
-        'desc',
-        undefined,
-        1,
-        10
-      )
-      setVideos(response.videos || [])
+      setLoading(true)
+      const response = await dashboardAPI.getSections()
+      setSections(response.sections || [])
     } catch (error) {
-      console.error('Error loading videos:', error)
-      toast.error('Failed to load videos')
+      console.error('Error loading dashboard sections:', error)
+      toast.error('Failed to load dashboard')
     } finally {
-      setVideosLoading(false)
+      setLoading(false)
     }
   }
 
@@ -57,45 +47,71 @@ function Dashboard() {
     }
   }
 
+  const handleVideoStateChange = (updatedVideo: Video) => {
+    // Update the video in the sections
+    setSections(prevSections => 
+      prevSections.map(section => ({
+        ...section,
+        videos: section.videos.map(v => 
+          v.id === updatedVideo.id ? updatedVideo : v
+        )
+      }))
+    )
+    handleVideoUpdated(updatedVideo)
+  }
+
+  const handleConfigureSave = () => {
+    // Reload sections after configuration change
+    loadSections()
+  }
 
   return (
     <>
-      <div className="flex items-center justify-between mb-4 md:mb-6 flex-wrap gap-2">
-        <h2 className="text-xl md:text-2xl font-bold text-foreground">Latest Videos</h2>
-        <Link
-          to="/youtube/watch-later"
-          className="text-sm md:text-base text-primary hover:underline"
+      {/* Header with Configure button */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Welcome</h1>
+        <Button
+          variant="outline"
+          onClick={() => setIsConfigureModalOpen(true)}
+          className="gap-2"
         >
-          View All
-        </Link>
+          <Settings className="h-4 w-4" />
+          Configure
+        </Button>
       </div>
-      {videosLoading ? (
-        <div className="flex justify-center items-center py-8 md:py-12 bg-card rounded-lg">
-          <div className="text-sm md:text-base text-muted-foreground">Loading...</div>
+
+      {/* Dashboard Sections */}
+      {loading ? (
+        <div className="flex justify-center items-center py-16 bg-card rounded-lg">
+          <div className="text-lg text-muted-foreground">Loading dashboard...</div>
         </div>
-      ) : videos.length === 0 ? (
-        <div className="text-center py-8 md:py-12 px-4 bg-card rounded-lg">
-          <p className="text-sm md:text-base text-muted-foreground">
-            No videos in watch later
+      ) : sections.length === 0 ? (
+        <div className="text-center py-16 bg-card rounded-lg">
+          <p className="text-lg text-muted-foreground mb-4">
+            No content to display
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Configure your dashboard to show channel groups, or add videos to your inbox or feed.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {videos.map(video => (
-            <VideoCard
-              key={video.id}
-              video={video}
-              onClick={() => handleVideoClick(video)}
-              onStateChange={handleStateChange}
+        <div className="space-y-8">
+          {sections.map((section) => (
+            <DashboardSectionRow
+              key={section.id}
+              section={section}
+              onVideoClick={handleVideoClick}
+              onVideoStateChange={handleVideoStateChange}
             />
           ))}
         </div>
       )}
 
+      {/* Video Detail Modal */}
       {selectedVideo && (
         <VideoDetailModal
           video={selectedVideo}
-          videos={videos}
+          videos={sections.flatMap(s => s.videos)}
           onClose={() => setSelectedVideo(null)}
           onVideoUpdated={handleVideoUpdated}
           onVideoChange={(newVideo) => {
@@ -103,6 +119,13 @@ function Dashboard() {
           }}
         />
       )}
+
+      {/* Configure Dashboard Modal */}
+      <ConfigureDashboardModal
+        isOpen={isConfigureModalOpen}
+        onClose={() => setIsConfigureModalOpen(false)}
+        onSave={handleConfigureSave}
+      />
     </>
   )
 }

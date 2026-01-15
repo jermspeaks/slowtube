@@ -6,6 +6,7 @@ export interface ChannelGroup {
   description: string | null
   color: string | null
   sort_order: number
+  display_on_home?: number
   created_at: string
   updated_at: string
 }

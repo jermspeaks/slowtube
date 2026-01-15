@@ -2057,6 +2057,7 @@ export interface ChannelList {
   description: string | null
   color: string | null
   sort_order: number
+  display_on_home?: number
   created_at: string
   updated_at: string
 }
@@ -2076,24 +2077,29 @@ export interface ChannelListWithChannels extends ChannelList {
 
 // Channel Group operations
 export const channelListQueries = {
-  create: (name: string, description?: string | null, color?: string | null): number => {
+  create: (name: string, description?: string | null, color?: string | null, display_on_home?: number): number => {
     const stmt = db.prepare(`
-      INSERT INTO channel_lists (name, description, color, sort_order, created_at, updated_at)
-      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO channel_lists (name, description, color, sort_order, display_on_home, created_at, updated_at)
+      VALUES (?, ?, ?, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `)
-    const result = stmt.run(name, description || null, color || null)
+    const result = stmt.run(name, description || null, color || null, display_on_home ?? 0)
     return result.lastInsertRowid as number
   },
 
-  getAll: (): (ChannelList & { channel_count: number })[] => {
+  getAll: (displayOnHome?: boolean): (ChannelList & { channel_count: number })[] => {
+    let whereClause = ''
+    if (displayOnHome !== undefined) {
+      whereClause = `WHERE cl.display_on_home = ${displayOnHome ? 1 : 0}`
+    }
     const query = `
       SELECT 
         cl.*,
         COUNT(cli.id) as channel_count
       FROM channel_lists cl
       LEFT JOIN channel_list_items cli ON cl.id = cli.list_id
+      ${whereClause}
       GROUP BY cl.id
-      ORDER BY cl.name ASC
+      ORDER BY cl.sort_order ASC, cl.name ASC
     `
     return db.prepare(query).all() as (ChannelList & { channel_count: number })[]
   },
@@ -2120,7 +2126,7 @@ export const channelListQueries = {
     }
   },
 
-  update: (id: number, updates: { name?: string; description?: string | null; color?: string | null }): number => {
+  update: (id: number, updates: { name?: string; description?: string | null; color?: string | null; display_on_home?: number }): number => {
     const fields: string[] = []
     const values: any[] = []
 
@@ -2136,6 +2142,10 @@ export const channelListQueries = {
       fields.push('color = ?')
       values.push(updates.color)
     }
+    if (updates.display_on_home !== undefined) {
+      fields.push('display_on_home = ?')
+      values.push(updates.display_on_home)
+    }
 
     if (fields.length === 0) return 0
 
@@ -2144,6 +2154,15 @@ export const channelListQueries = {
 
     const stmt = db.prepare(`UPDATE channel_lists SET ${fields.join(', ')} WHERE id = ?`)
     return stmt.run(...values).changes
+  },
+
+  updateDisplayOnHome: (id: number, displayOnHome: boolean): number => {
+    const stmt = db.prepare(`
+      UPDATE channel_lists 
+      SET display_on_home = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `)
+    return stmt.run(displayOnHome ? 1 : 0, id).changes
   },
 
   delete: (id: number): number => {

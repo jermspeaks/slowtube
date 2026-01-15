@@ -170,10 +170,19 @@ export const channelsAPI = {
   },
 }
 
+// Dashboard API
+export const dashboardAPI = {
+  getSections: async () => {
+    const response = await api.get('/api/dashboard/sections')
+    return response.data
+  },
+}
+
 // Channel Groups API
 export const channelGroupsAPI = {
-  getAll: async () => {
-    const response = await api.get('/api/channel-lists')
+  getAll: async (displayOnHome?: boolean) => {
+    const params = displayOnHome !== undefined ? { display_on_home: displayOnHome } : {}
+    const response = await api.get('/api/channel-lists', { params })
     return response.data
   },
   getById: async (id: number) => {
@@ -184,8 +193,12 @@ export const channelGroupsAPI = {
     const response = await api.post('/api/channel-lists', { name, description, color })
     return response.data
   },
-  update: async (id: number, updates: { name?: string; description?: string | null; color?: string | null }) => {
+  update: async (id: number, updates: { name?: string; description?: string | null; color?: string | null; display_on_home?: boolean }) => {
     const response = await api.patch(`/api/channel-lists/${id}`, updates)
+    return response.data
+  },
+  toggleDisplayOnHome: async (id: number, displayOnHome: boolean) => {
+    const response = await api.patch(`/api/channel-lists/${id}/display-on-home`, { display_on_home: displayOnHome })
     return response.data
   },
   delete: async (id: number) => {
