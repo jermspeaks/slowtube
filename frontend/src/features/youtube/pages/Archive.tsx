@@ -109,28 +109,30 @@ function Archive() {
 
   return (
     <>
+      <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Archive</h1>
       <div className="mb-6 space-y-4">
-        <div className="flex justify-between items-center flex-wrap gap-4">
-          <h1 className="text-xl md:text-2xl font-bold">Archive</h1>
+        <div className="flex justify-between items-start flex-wrap gap-4">
+          <div className="flex-1 min-w-0">
+            <FiltersAndSort
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              selectedChannels={selectedChannels}
+              onSelectedChannelsChange={setSelectedChannels}
+              availableChannels={availableChannels}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              sortOrder={sortOrder}
+              onSortOrderChange={setSortOrder}
+              dateField={dateField}
+              onDateFieldChange={setDateField}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
+            />
+          </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
         </div>
-        <FiltersAndSort
-          searchQuery={searchQuery}
-          onSearchQueryChange={setSearchQuery}
-          selectedChannels={selectedChannels}
-          onSelectedChannelsChange={setSelectedChannels}
-          availableChannels={availableChannels}
-          sortBy={sortBy}
-          onSortByChange={setSortBy}
-          sortOrder={sortOrder}
-          onSortOrderChange={setSortOrder}
-          dateField={dateField}
-          onDateFieldChange={setDateField}
-          startDate={startDate}
-          onStartDateChange={setStartDate}
-          endDate={endDate}
-          onEndDateChange={setEndDate}
-        />
       </div>
 
       {loading ? (

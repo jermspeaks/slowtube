@@ -156,8 +156,8 @@ function WatchLater() {
 
   return (
     <>
-      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Feed</h1>
-      <div className="mb-4 md:mb-6 space-y-4">
+      <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Feed</h1>
+      <div className="mb-6 space-y-4">
         <div className="flex justify-between items-start flex-wrap gap-4">
           <div className="flex-1 min-w-0">
             <FiltersAndSort
