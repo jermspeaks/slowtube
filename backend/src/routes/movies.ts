@@ -140,7 +140,13 @@ router.patch('/:id/star', validateIdParam(), validateEntityExists(movieQueries, 
   }
 
   // Set starred state
-  movieStateQueries.setStarred(id, isStarred)
+  const changes = movieStateQueries.setStarred(id, isStarred)
+  console.log(`[DEBUG] setStarred called for movie ${id}, isStarred=${isStarred}, changes=${changes}`)
+
+  // Verify the update worked by querying the database directly
+  const db = (await import('../config/db.js')).default
+  const verify = db.prepare('SELECT is_starred, starred_at FROM movie_states WHERE movie_id = ?').get(id) as { is_starred: number, starred_at: string | null } | undefined
+  console.log(`[DEBUG] Verification query result for movie ${id}:`, verify)
 
   sendSuccessResponse(res, {
     message: `Movie ${isStarred ? 'starred' : 'unstarred'} successfully`,
