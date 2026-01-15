@@ -431,6 +431,49 @@ router.get('/:id/videos', (req, res) => {
   }
 })
 
+// Reorder channel groups (must be before /:id routes to avoid route matching conflicts)
+router.patch('/reorder', (req, res) => {
+  try {
+    const { groupIds } = req.body
+    if (!Array.isArray(groupIds)) {
+      return res.status(400).json({ error: 'groupIds must be an array' })
+    }
+    if (!groupIds.every(id => typeof id === 'number')) {
+      return res.status(400).json({ error: 'All groupIds must be numbers' })
+    }
+    if (groupIds.length === 0) {
+      return res.status(400).json({ error: 'groupIds array cannot be empty' })
+    }
+
+    // Verify all group IDs exist
+    const allGroups = channelListQueries.getAll()
+    const allGroupIds = allGroups.map(g => g.id)
+    const invalidIds = groupIds.filter((id: number) => !allGroupIds.includes(id))
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        error: `Invalid group IDs: ${invalidIds.join(', ')}`,
+        details: `Requested ${groupIds.length} groups, but ${invalidIds.length} are invalid. Valid group IDs: ${allGroupIds.join(', ')}`
+      })
+    }
+
+    // Verify all groups are included
+    if (groupIds.length !== allGroupIds.length) {
+      const missingIds = allGroupIds.filter(id => !groupIds.includes(id))
+      return res.status(400).json({ 
+        error: 'All channel groups must be included in reorder',
+        details: `Requested ${groupIds.length} groups, but there are ${allGroupIds.length} total groups. Missing group IDs: ${missingIds.join(', ')}`
+      })
+    }
+
+    channelListQueries.reorderChannelGroups(groupIds)
+    const updatedGroups = channelListQueries.getAll()
+    res.json(updatedGroups)
+  } catch (error: any) {
+    console.error('Error reordering channel groups:', error)
+    res.status(500).json({ error: error.message || 'Failed to reorder channel groups' })
+  }
+})
+
 // Toggle display on home for a channel group
 router.patch('/:id/display-on-home', (req, res) => {
   try {
@@ -459,42 +502,6 @@ router.patch('/:id/display-on-home', (req, res) => {
   } catch (error: any) {
     console.error('Error updating display on home:', error)
     res.status(500).json({ error: error.message || 'Failed to update display on home' })
-  }
-})
-
-// Reorder channel groups
-router.patch('/reorder', (req, res) => {
-  try {
-    const { groupIds } = req.body
-    if (!Array.isArray(groupIds)) {
-      return res.status(400).json({ error: 'groupIds must be an array' })
-    }
-    if (!groupIds.every(id => typeof id === 'number')) {
-      return res.status(400).json({ error: 'All groupIds must be numbers' })
-    }
-    if (groupIds.length === 0) {
-      return res.status(400).json({ error: 'groupIds array cannot be empty' })
-    }
-
-    // Verify all group IDs exist
-    const allGroups = channelListQueries.getAll()
-    const allGroupIds = allGroups.map(g => g.id)
-    const invalidIds = groupIds.filter((id: number) => !allGroupIds.includes(id))
-    if (invalidIds.length > 0) {
-      return res.status(400).json({ error: `Invalid group IDs: ${invalidIds.join(', ')}` })
-    }
-
-    // Verify all groups are included
-    if (groupIds.length !== allGroupIds.length) {
-      return res.status(400).json({ error: 'All channel groups must be included in reorder' })
-    }
-
-    channelListQueries.reorderChannelGroups(groupIds)
-    const updatedGroups = channelListQueries.getAll()
-    res.json(updatedGroups)
-  } catch (error: any) {
-    console.error('Error reordering channel groups:', error)
-    res.status(500).json({ error: error.message || 'Failed to reorder channel groups' })
   }
 })
 

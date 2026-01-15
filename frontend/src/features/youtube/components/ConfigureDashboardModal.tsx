@@ -115,9 +115,30 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
     try {
       setSaving(true)
       
+      // Reload groups to ensure we have the latest list (in case groups were added/deleted)
+      const allGroups = await channelGroupsAPI.getAll()
+      const allGroupIds = allGroups.map(g => g.id)
+      const currentGroupIds = groups.map(g => g.id)
+      
+      // Check if we have all groups - if not, merge the new groups with our current order
+      const missingIds = allGroupIds.filter(id => !currentGroupIds.includes(id))
+      let groupsToSave = [...groups]
+      
+      if (missingIds.length > 0) {
+        // Add missing groups to the end of the list
+        const missingGroups = allGroups.filter(g => missingIds.includes(g.id))
+        groupsToSave = [...groups, ...missingGroups]
+      }
+      
+      // Also check for groups that were deleted
+      const deletedIds = currentGroupIds.filter(id => !allGroupIds.includes(id))
+      if (deletedIds.length > 0) {
+        groupsToSave = groupsToSave.filter(g => !deletedIds.includes(g.id))
+      }
+      
       // Update all groups that changed display_on_home
       const updates: Promise<any>[] = []
-      for (const group of groups) {
+      for (const group of groupsToSave) {
         const currentValue = group.display_on_home === 1
         const newValue = displayOnHomeMap.get(group.id) ?? false
         
@@ -126,8 +147,8 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
         }
       }
       
-      // Save the new order
-      const groupIds = groups.map(g => g.id)
+      // Save the new order - use all groups to ensure we include everything
+      const groupIds = groupsToSave.map(g => g.id)
       updates.push(channelGroupsAPI.reorderChannelGroups(groupIds))
       
       await Promise.all(updates)
@@ -139,7 +160,8 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
       onClose()
     } catch (error: any) {
       console.error('Error saving dashboard configuration:', error)
-      toast.error(error.response?.data?.error || 'Failed to save configuration')
+      const errorMessage = error.response?.data?.error || error.response?.data?.details || 'Failed to save configuration'
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }
