@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { videosAPI } from '../services/api'
 import DateRangeFilter from '@/shared/components/DateRangeFilter'
+import { LoadingState } from '@/shared/components/LoadingState'
+import { ErrorState } from '@/shared/components/ErrorState'
+import { EmptyState } from '@/shared/components/EmptyState'
 
 interface ChannelRanking {
   rank: number
