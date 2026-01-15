@@ -9,15 +9,27 @@ interface SidebarNavigationProps {
 export function SidebarNavigation({ onNavigate }: SidebarNavigationProps) {
   const location = useLocation()
 
+  const getActiveSection = () => {
+    if (location.pathname.startsWith('/youtube')) return 'youtube'
+    if (location.pathname.startsWith('/media/tv-shows')) return 'tv-shows'
+    if (location.pathname.startsWith('/media/movies')) return 'movies'
+    // Handle other media routes
+    if (location.pathname.startsWith('/media/calendar')) return 'tv-shows' // Calendar is for TV shows
+    if (location.pathname.startsWith('/media/playlists')) return 'movies' // Playlists are for movies
+    if (location.pathname.startsWith('/media/watch-next')) return 'movies' // Watch next is for movies
+    return null
+  }
+
   const isActive = (path: string) => {
+    const activeSection = getActiveSection()
     if (path === '/youtube') {
-      return location.pathname.startsWith('/youtube')
+      return activeSection === 'youtube'
     }
     if (path === '/media/tv-shows') {
-      return location.pathname.startsWith('/media/tv-shows')
+      return activeSection === 'tv-shows'
     }
     if (path === '/media/movies') {
-      return location.pathname.startsWith('/media/movies')
+      return activeSection === 'movies'
     }
     return location.pathname === path
   }
