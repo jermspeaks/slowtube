@@ -75,13 +75,13 @@ router.get('/sections', (req, res) => {
       episodes: upcomingEpisodes,
     })
 
-    // Section 3: Recently Aired Episodes (past 30 days)
-    const pastMonth = new Date(today)
-    pastMonth.setDate(pastMonth.getDate() - 30)
+    // Section 3: Recently Aired Episodes (past 7 days)
+    const weekAgo = new Date(today)
+    weekAgo.setDate(weekAgo.getDate() - 7)
     
-    const pastMonthStr = pastMonth.toISOString().split('T')[0]
+    const weekAgoStr = weekAgo.toISOString().split('T')[0]
 
-    const recentlyAiredEpisodes = episodeQueries.getByDateRange(pastMonthStr, todayStr, true) // hideArchived = true
+    const recentlyAiredEpisodes = episodeQueries.getByDateRange(weekAgoStr, todayStr, true) // hideArchived = true
       .filter(ep => {
         // Filter to only past episodes (air_date <= today)
         if (!ep.air_date) return false
@@ -96,7 +96,7 @@ router.get('/sections', (req, res) => {
       id: 'recently_aired_episodes',
       type: 'recently_aired_episodes',
       title: 'Recently Aired',
-      description: 'Episodes that aired in the past month',
+      description: 'Episodes from the past week',
       episodes: recentlyAiredEpisodes,
     })
 
