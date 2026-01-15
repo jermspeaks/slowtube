@@ -38,7 +38,7 @@ export function SidebarNavigation({ onNavigate }: SidebarNavigationProps) {
     {
       label: 'Movies',
       icon: Film,
-      path: '/media/movies',
+      path: '/media/movies/all',
       activePath: '/media/movies',
     },
   ]

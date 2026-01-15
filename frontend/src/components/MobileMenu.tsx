@@ -43,7 +43,7 @@ export function MobileMenu() {
     {
       label: 'Movies',
       icon: Film,
-      path: '/media/movies',
+      path: '/media/movies/all',
       activePath: '/media/movies',
     },
   ]

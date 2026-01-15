@@ -179,7 +179,7 @@ export function SecondaryNavigation() {
         {
           label: 'All Movies',
           icon: Film,
-          path: '/media/movies',
+          path: '/media/movies/all',
         },
         {
           label: 'Playlists',

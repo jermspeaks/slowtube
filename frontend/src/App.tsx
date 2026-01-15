@@ -89,7 +89,8 @@ function AppRoutes() {
         <Route path="/media/movies/dashboard" element={<MoviesDashboard />} />
         <Route path="/media/tv-shows/dashboard" element={<TVShowsDashboard />} />
         <Route path="/media/calendar" element={<Calendar />} />
-        <Route path="/media/movies" element={<MoviesList />} />
+        <Route path="/media/movies/all" element={<MoviesList />} />
+        <Route path="/media/movies" element={<Navigate to="/media/movies/all" replace />} />
         <Route path="/media/movies/:id" element={<MovieDetail />} />
         <Route path="/media/tv-shows/upcoming" element={<Upcoming />} />
         <Route path="/media/tv-shows/list" element={<TVShowsList />} />
@@ -112,7 +113,7 @@ function AppRoutes() {
         <Route path="/channels/subscribed" element={<Navigate to="/youtube/channels/subscribed" replace />} />
         <Route path="/channels/watch-later" element={<Navigate to="/youtube/channels/watch-later" replace />} />
         <Route path="/channels/:channelId/*" element={<Navigate to="/youtube/channels/:channelId" replace />} />
-        <Route path="/movies" element={<Navigate to="/media/movies" replace />} />
+        <Route path="/movies" element={<Navigate to="/media/movies/all" replace />} />
         <Route path="/movies/:id" element={<Navigate to="/media/movies/:id" replace />} />
         <Route path="/tv-shows/*" element={<Navigate to="/media/tv-shows" replace />} />
         <Route path="/upcoming" element={<Navigate to="/media/tv-shows/upcoming" replace />} />

@@ -34,7 +34,7 @@ function MovieDetail() {
     } catch (error) {
       console.error('Error loading movie:', error)
       toast.error('Failed to load movie')
-      navigate('/media/movies')
+      navigate('/media/movies/all')
     } finally {
       setLoading(false)
     }
@@ -42,7 +42,7 @@ function MovieDetail() {
 
   useEffect(() => {
     if (!id) {
-      navigate('/media/movies')
+      navigate('/media/movies/all')
       return
     }
 
@@ -94,7 +94,7 @@ function MovieDetail() {
     try {
       await moviesAPI.delete(parseInt(id, 10))
       toast.success('Movie deleted successfully')
-      navigate('/media/movies')
+      navigate('/media/movies/all')
     } catch (error) {
       console.error('Error deleting movie:', error)
       toast.error('Failed to delete movie')
@@ -125,7 +125,7 @@ function MovieDetail() {
           <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
             <p className="text-base md:text-lg text-muted-foreground mb-4">Movie not found</p>
             <button
-              onClick={() => navigate('/media/movies')}
+              onClick={() => navigate('/media/movies/all')}
               className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm md:text-base"
             >
               Back to Movies
@@ -181,7 +181,7 @@ function MovieDetail() {
 
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => navigate('/media/movies')}
+                    onClick={() => navigate('/media/movies/all')}
                     className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded transition-colors backdrop-blur-sm"
                   >
                     Back to Movies

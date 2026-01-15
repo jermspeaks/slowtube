@@ -53,7 +53,7 @@ function MoviesDashboard() {
         <div className="flex items-center justify-between mb-4 md:mb-6 flex-wrap gap-2">
           <h2 className="text-xl md:text-2xl font-bold text-foreground">Latest Movies</h2>
           <Link
-            to="/media/movies"
+            to="/media/movies/all"
             className="text-sm md:text-base text-primary hover:underline"
           >
             View All
