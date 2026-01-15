@@ -1100,21 +1100,23 @@ export const tvShowQueries = {
     }
 
     // Subquery for next episode date (first unwatched episode with future air_date)
+    // Extract date part from ISO datetime string for proper comparison
     const nextEpisodeSubquery = `
       SELECT MIN(e.air_date) as air_date, e.tv_show_id
       FROM episodes e
       WHERE e.is_watched = 0 
         AND e.air_date IS NOT NULL
-        AND e.air_date > date('now')
+        AND date(substr(e.air_date, 1, 10)) > date('now')
       GROUP BY e.tv_show_id
     `
 
     // Subquery for last episode aired date (latest air_date from episodes that have already aired)
+    // Extract date part from ISO datetime string for proper comparison
     const lastEpisodeSubquery = `
       SELECT MAX(e.air_date) as air_date, e.tv_show_id
       FROM episodes e
       WHERE e.air_date IS NOT NULL
-        AND e.air_date <= date('now')
+        AND date(substr(e.air_date, 1, 10)) <= date('now')
       GROUP BY e.tv_show_id
     `
 

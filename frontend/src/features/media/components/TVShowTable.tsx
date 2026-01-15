@@ -107,10 +107,14 @@ function TVShowTable({ tvShows, onDelete, onArchive, onStartedChange }: TVShowTa
                       <img
                         src={posterUrl}
                         alt={tvShow.title}
-                        className="w-16 h-24 md:w-20 md:h-30 object-cover rounded"
+                        className="w-16 h-24 md:w-20 md:h-30 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => navigate(`/media/tv-shows/${tvShow.id}`)}
                       />
                     ) : (
-                      <div className="w-16 h-24 md:w-20 md:h-30 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                      <div 
+                        className="w-16 h-24 md:w-20 md:h-30 bg-muted rounded flex items-center justify-center text-xs text-muted-foreground cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => navigate(`/media/tv-shows/${tvShow.id}`)}
+                      >
                         No poster
                       </div>
                     )}
@@ -118,7 +122,7 @@ function TVShowTable({ tvShows, onDelete, onArchive, onStartedChange }: TVShowTa
                   <td className="p-2 md:p-3 max-w-[200px] md:max-w-[300px]">
                     <div
                       className="font-bold mb-1 cursor-pointer hover:text-primary transition-colors text-sm md:text-base"
-                      onClick={() => navigate(`/tv-shows/${tvShow.id}`)}
+                      onClick={() => navigate(`/media/tv-shows/${tvShow.id}`)}
                     >
                       {tvShow.title}
                     </div>
