@@ -83,12 +83,9 @@ function DashboardSectionRow({ section, onVideoClick, onVideoStateChange }: Dash
             />
           )}
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-1">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">
               {section.title}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              {section.description}
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-4 shrink-0">

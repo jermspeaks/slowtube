@@ -41,8 +41,8 @@ router.get('/sections', (req, res) => {
     sections.push({
       id: 'inbox',
       type: 'inbox',
-      title: 'Latest Videos',
-      description: 'Videos in your inbox',
+      title: 'Inbox',
+      description: '',
       videos: inboxVideosWithDetails,
     })
 
@@ -70,8 +70,8 @@ router.get('/sections', (req, res) => {
     sections.push({
       id: 'feed',
       type: 'feed',
-      title: 'From Feed',
-      description: 'Videos from your feed',
+      title: 'Feed',
+      description: '',
       videos: feedVideosWithDetails,
     })
 
@@ -102,7 +102,7 @@ router.get('/sections', (req, res) => {
         id: `group-${group.id}`,
         type: 'channel_group',
         title: group.name,
-        description: `Watch later videos from ${group.name}`,
+        description: '',
         videos: groupVideosWithDetails,
         groupId: group.id,
         groupName: group.name,

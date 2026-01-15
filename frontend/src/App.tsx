@@ -76,10 +76,12 @@ function AppRoutes() {
         <Route path="/youtube/channels/:channelId/liked" element={<ChannelLiked />} />
         <Route path="/youtube/channels/:channelId" element={<Navigate to="watch-later" replace />} />
         <Route path="/youtube/channel-lists" element={<ChannelGroups />} />
-        <Route path="/youtube/channel-lists/:id/watch-later" element={<ChannelGroupDetail />} />
+        <Route path="/youtube/channel-lists/:id/inbox" element={<ChannelGroupDetail />} />
+        <Route path="/youtube/channel-lists/:id/feed" element={<ChannelGroupDetail />} />
+        <Route path="/youtube/channel-lists/:id/archive" element={<ChannelGroupDetail />} />
         <Route path="/youtube/channel-lists/:id/latest" element={<ChannelGroupDetail />} />
         <Route path="/youtube/channel-lists/:id/liked" element={<ChannelGroupDetail />} />
-        <Route path="/youtube/channel-lists/:id" element={<Navigate to="watch-later" replace />} />
+        <Route path="/youtube/channel-lists/:id" element={<Navigate to="inbox" replace />} />
         
         {/* Media routes */}
         <Route path="/media/dashboard" element={<MediaDashboard />} />

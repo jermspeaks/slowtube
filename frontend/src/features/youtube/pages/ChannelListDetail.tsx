@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { channelGroupsAPI, videosAPI } from '../services/api'
 import { ChannelGroupWithChannels } from '../types/channel-list'
 import { Video, ViewMode } from '../types/video'
-import { ChannelVideoType } from '../types/channel'
 import VideoCard from '../components/VideoCard'
 import VideoTable from '../components/VideoTable'
 import VideoDetailModal from '../components/VideoDetailModal'
@@ -27,10 +26,13 @@ function ChannelGroupDetail() {
   const [group, setGroup] = useState<ChannelGroupWithChannels | null>(null)
   const [loading, setLoading] = useState(true)
   
-  // Determine active tab from route
-  const activeTab: ChannelVideoType = location.pathname.includes('/latest') ? 'latest' : 
-                                      location.pathname.includes('/liked') ? 'liked' : 
-                                      'watch_later'
+  // Determine active tab from route - using local type for tabs
+  type TabType = 'inbox' | 'feed' | 'archive' | 'latest' | 'liked'
+  const activeTab: TabType = location.pathname.includes('/archive') ? 'archive' : 
+                             location.pathname.includes('/feed') ? 'feed' : 
+                             location.pathname.includes('/latest') ? 'latest' : 
+                             location.pathname.includes('/liked') ? 'liked' : 
+                             'inbox'
   
   const [videos, setVideos] = useState<Video[]>([])
   const [videosLoading, setVideosLoading] = useState(false)
@@ -46,16 +48,12 @@ function ChannelGroupDetail() {
     // Initialize based on current active tab
     if (location.pathname.includes('/latest')) {
       return 'added_to_latest_at'
-    } else if (location.pathname.includes('/watch-later') || !location.pathname.includes('/latest') && !location.pathname.includes('/liked')) {
+    } else if (location.pathname.includes('/inbox') || location.pathname.includes('/feed') || location.pathname.includes('/archive')) {
       return 'added_to_playlist_at'
     }
-    return 'added_to_latest_at'
+    return 'added_to_playlist_at'
   })
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  
-  // State filter for watch later videos (default: exclude archived)
-  const [stateFilter, setStateFilter] = useState<'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'>('exclude_archived')
-  const [showArchived, setShowArchived] = useState(false)
   
   // Shorts filter for latest videos (default: exclude shorts)
   const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('exclude')
@@ -69,17 +67,17 @@ function ChannelGroupDetail() {
   useEffect(() => {
     if (group && activeTab) {
       // Reset sort to default when switching tabs
-      if (activeTab === 'watch_later') {
-        setSortBy('added_to_playlist_at')
-      } else if (activeTab === 'latest') {
+      if (activeTab === 'latest') {
         setSortBy('added_to_latest_at')
+      } else if (activeTab === 'inbox' || activeTab === 'feed' || activeTab === 'archive') {
+        setSortBy('added_to_playlist_at')
       }
       setSortOrder('desc')
       loadVideos()
       // Clear selection when switching tabs
       setSelectedVideoIds(new Set())
     }
-  }, [group, activeTab, sortBy, sortOrder, stateFilter, showArchived, shortsFilter])
+  }, [group, activeTab, sortBy, sortOrder, shortsFilter])
 
   const loadGroup = async () => {
     if (!id) return
@@ -104,32 +102,39 @@ function ChannelGroupDetail() {
 
     try {
       setVideosLoading(true)
-      // Determine state filter for watch later videos
-      let effectiveStateFilter: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive' | undefined = undefined
-      if (activeTab === 'watch_later') {
-        // If stateFilter is a specific state (feed, inbox, archive), use that directly
-        if (stateFilter === 'feed' || stateFilter === 'inbox' || stateFilter === 'archive') {
-          effectiveStateFilter = stateFilter
-        }
-        // If stateFilter is 'all' and showArchived is checked, show all videos
-        else if (stateFilter === 'all' && showArchived) {
-          effectiveStateFilter = 'all'
-        }
-        // Default: exclude archived (either 'exclude_archived' or 'all' with showArchived unchecked)
-        else {
-          effectiveStateFilter = 'exclude_archived'
-        }
+      
+      let data
+      if (activeTab === 'inbox' || activeTab === 'feed' || activeTab === 'archive') {
+        // Map tab to state filter: inbox -> 'inbox', feed -> 'feed', archive -> 'archive'
+        const stateFilter: 'feed' | 'inbox' | 'archive' = activeTab
+        // Use 'watch_later' type with the appropriate state filter
+        data = await channelGroupsAPI.getVideos(
+          parseInt(id, 10),
+          'watch_later',
+          sortBy,
+          sortOrder,
+          stateFilter
+        )
+      } else if (activeTab === 'latest') {
+        // Use 'latest' type with sort parameters and shorts filter
+        data = await channelGroupsAPI.getVideos(
+          parseInt(id, 10),
+          'latest',
+          sortBy,
+          sortOrder,
+          undefined,
+          shortsFilter
+        )
+      } else if (activeTab === 'liked') {
+        // Use 'liked' type
+        data = await channelGroupsAPI.getVideos(
+          parseInt(id, 10),
+          'liked'
+        )
+      } else {
+        data = { videos: [] }
       }
       
-      // Pass sort parameters for latest and watch_later tabs, state filter for watch later tab, shorts filter for latest tab
-      const data = await channelGroupsAPI.getVideos(
-        parseInt(id, 10),
-        activeTab,
-        (activeTab === 'latest' || activeTab === 'watch_later') ? sortBy : undefined,
-        (activeTab === 'latest' || activeTab === 'watch_later') ? sortOrder : undefined,
-        activeTab === 'watch_later' ? effectiveStateFilter : undefined,
-        activeTab === 'latest' ? shortsFilter : undefined
-      )
       setVideos(data.videos || [])
     } catch (error) {
       console.error('Error loading videos:', error)
@@ -145,7 +150,7 @@ function ChannelGroupDetail() {
       const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'added_to_latest_at' | 'published_at' | 'added_to_playlist_at'
       const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
       // Validate based on active tab
-      if (activeTab === 'watch_later') {
+      if (activeTab === 'inbox' || activeTab === 'feed' || activeTab === 'archive') {
         if ((by === 'title' || by === 'added_to_playlist_at' || by === 'published_at') && (order === 'asc' || order === 'desc')) {
           setSortBy(by)
           setSortOrder(order)
@@ -264,6 +269,7 @@ function ChannelGroupDetail() {
     await handleBulkAction('archive')
   }
 
+
   const handleRefresh = async () => {
     if (!id) return
 
@@ -339,7 +345,7 @@ function ChannelGroupDetail() {
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         {/* Group Header */}
         <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-start justify-between gap-6">
+          <div className="flex items-start justify-between gap-6 mb-4">
             <div className="flex items-start gap-4 flex-1 min-w-0">
               <Button
                 variant="ghost"
@@ -352,7 +358,7 @@ function ChannelGroupDetail() {
                 <div className="flex items-center gap-3 mb-2">
                   {group.color && (
                     <div
-                      className="w-4 h-4 rounded-full flex-shrink-0"
+                      className="w-4 h-4 rounded-full shrink-0"
                       style={{ backgroundColor: group.color }}
                     />
                   )}
@@ -370,7 +376,7 @@ function ChannelGroupDetail() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 onClick={handleRefresh}
@@ -390,24 +396,48 @@ function ChannelGroupDetail() {
               </Button>
             </div>
           </div>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="bg-card rounded-lg shadow-sm mb-6">
-          <div className="border-b border-border">
+          
+          {/* Navigation Tabs */}
+          <div className="border-t border-border pt-0">
             <nav className="flex -mb-px">
               <button
-                onClick={() => navigate(`/youtube/channel-lists/${id}/watch-later`)}
+                onClick={() => navigate(`/youtube/channel-lists/${id}/inbox`)}
                 className={`
                   px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors
                   ${
-                    activeTab === 'watch_later'
+                    activeTab === 'inbox'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                   }
                 `}
               >
-                Watch Later Videos
+                Inbox
+              </button>
+              <button
+                onClick={() => navigate(`/youtube/channel-lists/${id}/feed`)}
+                className={`
+                  px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeTab === 'feed'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }
+                `}
+              >
+                Feed
+              </button>
+              <button
+                onClick={() => navigate(`/youtube/channel-lists/${id}/archive`)}
+                className={`
+                  px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors
+                  ${
+                    activeTab === 'archive'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  }
+                `}
+              >
+                Archive
               </button>
               <button
                 onClick={() => navigate(`/youtube/channel-lists/${id}/latest`)}
@@ -441,100 +471,61 @@ function ChannelGroupDetail() {
 
         {/* Videos Content */}
         <div>
-          {/* Filter and Sort Panel - only show for watch later tab, always visible */}
-          {activeTab === 'watch_later' && !videosLoading && (
-            <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="flex gap-2 items-center w-full sm:w-auto">
-                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Filter:</label>
+          {/* Sort Panel and View Toggle - visible for all tabs */}
+          {!videosLoading && (
+            <div className="flex gap-4 items-center mb-6">
+              <div className="bg-card rounded-lg p-4 border border-border shadow-sm">
+                <div className="flex gap-2 items-center">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
                   <select
-                    value={stateFilter}
-                    onChange={(e) => {
-                      const newFilter = e.target.value as 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'
-                      setStateFilter(newFilter)
-                      // If selecting archive, automatically check show archived
-                      if (newFilter === 'archive') {
-                        setShowArchived(true)
-                      }
-                      // If selecting a specific state other than archive, uncheck show archived
-                      else if (newFilter === 'feed' || newFilter === 'inbox') {
-                        setShowArchived(false)
-                      }
-                    }}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                    value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="px-3 py-2 border border-border rounded text-sm bg-background"
                   >
-                    <option value="exclude_archived">All (Exclude Archived)</option>
-                    <option value="all">All</option>
-                    <option value="feed">Feed</option>
-                    <option value="inbox">Inbox</option>
-                    <option value="archive">Archive</option>
+                    {(activeTab === 'inbox' || activeTab === 'feed' || activeTab === 'archive') ? (
+                      <>
+                        <option value="title_asc">Title (A-Z)</option>
+                        <option value="title_desc">Title (Z-A)</option>
+                        <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
+                        <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
+                        <option value="published_at_desc">Date Published (Newest)</option>
+                        <option value="published_at_asc">Date Published (Oldest)</option>
+                      </>
+                    ) : activeTab === 'latest' ? (
+                      <>
+                        <option value="title_asc">Title (A-Z)</option>
+                        <option value="title_desc">Title (Z-A)</option>
+                        <option value="added_to_latest_at_desc">Date Added (Newest)</option>
+                        <option value="added_to_latest_at_asc">Date Added (Oldest)</option>
+                        <option value="published_at_desc">Date Published (Newest)</option>
+                        <option value="published_at_asc">Date Published (Oldest)</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="title_asc">Title (A-Z)</option>
+                        <option value="title_desc">Title (Z-A)</option>
+                      </>
+                    )}
                   </select>
                 </div>
-                {stateFilter === 'all' && (
+              </div>
+              {activeTab === 'latest' && (
+                <div className="bg-card rounded-lg p-4 border border-border shadow-sm">
                   <div className="flex gap-2 items-center">
-                    <input
-                      type="checkbox"
-                      id="show-archived"
-                      checked={showArchived}
-                      onChange={(e) => setShowArchived(e.target.checked)}
-                      className="w-4 h-4 rounded border-border"
-                    />
-                    <label htmlFor="show-archived" className="text-sm text-foreground cursor-pointer">
-                      Show archived
-                    </label>
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Shorts:</label>
+                    <select
+                      value={shortsFilter}
+                      onChange={(e) => setShortsFilter(e.target.value as 'all' | 'exclude' | 'only')}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background"
+                    >
+                      <option value="all">All Videos</option>
+                      <option value="exclude">Exclude Shorts</option>
+                      <option value="only">Shorts Only</option>
+                    </select>
                   </div>
-                )}
-                <div className="flex gap-2 items-center w-full sm:w-auto">
-                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
-                  <select
-                    value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-                  >
-                    <option value="title_asc">Title (A-Z)</option>
-                    <option value="title_desc">Title (Z-A)</option>
-                    <option value="added_to_playlist_at_desc">Date Added (Newest)</option>
-                    <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
-                    <option value="published_at_desc">Date Published (Newest)</option>
-                    <option value="published_at_asc">Date Published (Oldest)</option>
-                  </select>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Sort Panel - only show for latest tab, always visible */}
-          {activeTab === 'latest' && !videosLoading && (
-            <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div className="flex gap-2 items-center w-full sm:w-auto">
-                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
-                  <select
-                    value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
-                    onChange={(e) => handleSortChange(e.target.value)}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-                  >
-                    <option value="title_asc">Title (A-Z)</option>
-                    <option value="title_desc">Title (Z-A)</option>
-                    <option value="added_to_latest_at_desc">Date Added (Newest)</option>
-                    <option value="added_to_latest_at_asc">Date Added (Oldest)</option>
-                    <option value="published_at_desc">Date Published (Newest)</option>
-                    <option value="published_at_asc">Date Published (Oldest)</option>
-                  </select>
-                </div>
-                <div className="flex gap-2 items-center w-full sm:w-auto">
-                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">Shorts:</label>
-                  <select
-                    value={shortsFilter}
-                    onChange={(e) => setShortsFilter(e.target.value as 'all' | 'exclude' | 'only')}
-                    className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
-                  >
-                    <option value="all">All Videos</option>
-                    <option value="exclude">Exclude Shorts</option>
-                    <option value="only">Shorts Only</option>
-                  </select>
-                </div>
-              </div>
+              )}
+              <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             </div>
           )}
 
@@ -554,14 +545,13 @@ function ChannelGroupDetail() {
                 No videos found
               </p>
               <p className="text-sm text-muted-foreground">
-                {activeTab === 'watch_later' 
-                  ? 'This list has no watch later videos from its channels matching the current filter.'
-                  : 'This list has no latest videos pending review from its channels.'}
+                {activeTab === 'latest' 
+                  ? 'This list has no latest videos pending review from its channels.'
+                  : `This list has no videos from its channels in ${activeTab}.`}
               </p>
             </div>
           ) : (
             <>
-
               <div className="mb-4 flex justify-between items-center">
                 {activeTab === 'latest' && (
                   <div className="flex items-center gap-4">
@@ -592,7 +582,6 @@ function ChannelGroupDetail() {
                     )}
                   </div>
                 )}
-                <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
               </div>
               {activeTab === 'latest' && selectedVideoIds.size > 0 && (
                 <div className="mb-4 flex gap-2">
