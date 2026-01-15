@@ -51,7 +51,8 @@ export const tvShowsAPI = {
   },
   getEpisodes: async (id: number) => {
     const response = await api.get(`/api/tv-shows/${id}/episodes`)
-    return response.data
+    // Backend wraps response in { data: ... } format
+    return response.data.data || response.data || []
   },
   archive: async (id: number, isArchived: boolean) => {
     const response = await api.patch(`/api/tv-shows/${id}/archive`, { isArchived })
@@ -232,6 +233,14 @@ export const importAPI = {
         'Content-Type': 'multipart/form-data',
       },
     })
+    return response.data
+  },
+}
+
+// TV Dashboard API
+export const tvDashboardAPI = {
+  getSections: async () => {
+    const response = await api.get('/api/tv-dashboard/sections')
     return response.data
   },
 }

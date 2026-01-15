@@ -144,13 +144,15 @@ function TVShowDetail() {
   }
 
   // Calculate statistics
-  const totalEpisodes = episodes.length
-  const watchedCount = episodes.filter(e => e.is_watched === 1).length
+  // Ensure episodes is always an array
+  const episodesArray = Array.isArray(episodes) ? episodes : []
+  const totalEpisodes = episodesArray.length
+  const watchedCount = episodesArray.filter(e => e.is_watched === 1).length
   const unwatchedCount = totalEpisodes - watchedCount
   const progressPercentage = totalEpisodes > 0 ? Math.round((watchedCount / totalEpisodes) * 100) : 0
 
   // Calculate first episode (earliest air_date)
-  const firstEpisode = episodes
+  const firstEpisode = episodesArray
     .filter(e => e.air_date)
     .sort((a, b) => {
       const dateA = new Date(a.air_date!).getTime()
@@ -159,7 +161,7 @@ function TVShowDetail() {
     })[0] || null
 
   // Calculate latest episode (latest air_date)
-  const latestEpisode = episodes
+  const latestEpisode = episodesArray
     .filter(e => e.air_date)
     .sort((a, b) => {
       const dateA = new Date(a.air_date!).getTime()
@@ -169,7 +171,7 @@ function TVShowDetail() {
 
   // Calculate next episode (first unwatched with future air_date)
   const now = new Date()
-  const nextEpisode = episodes
+  const nextEpisode = episodesArray
     .filter(e => e.is_watched === 0 && e.air_date)
     .filter(e => {
       const airDate = new Date(e.air_date!)
@@ -442,20 +444,20 @@ function TVShowDetail() {
             <h2 className="text-xl font-bold">Episodes</h2>
             <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
           </div>
-          {episodes.length === 0 ? (
+          {episodesArray.length === 0 ? (
             <p className="text-muted-foreground">No episodes available</p>
           ) : (
             <>
               {viewMode === 'table' ? (
                 <EpisodeTable
-                  episodes={episodes}
+                  episodes={episodesArray}
                   tvShowId={tvShow.id}
                   onUpdate={handleEpisodeUpdate}
                   onEpisodeClick={handleEpisodeClick}
                 />
               ) : (
                 <EpisodeCardGrid
-                  episodes={episodes}
+                  episodes={episodesArray}
                   tvShowId={tvShow.id}
                   tvShowPoster={tvShow.poster_path}
                   onUpdate={handleEpisodeUpdate}

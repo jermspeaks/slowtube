@@ -1,36 +1,33 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { Settings } from 'lucide-react'
+import { Button } from '@/shared/components/ui/button'
 import { TVShow } from '../types/tv-show'
-import { tvShowsAPI } from '../services/api'
-import TVShowCard from '../components/TVShowCard'
+import { tvDashboardAPI } from '../services/api'
+import { TVDashboardSection } from '../types/dashboard'
+import TVShowSectionRow from '../components/TVShowSectionRow'
+import EpisodeSectionRow from '../components/EpisodeSectionRow'
 import { toast } from 'sonner'
 
 function TVShowsDashboard() {
   const navigate = useNavigate()
-  const [tvShows, setTvShows] = useState<TVShow[]>([])
-  const [tvShowsLoading, setTvShowsLoading] = useState(true)
+  const [sections, setSections] = useState<TVDashboardSection[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadTVShows()
+    loadSections()
   }, [])
 
-  const loadTVShows = async () => {
+  const loadSections = async () => {
     try {
-      setTvShowsLoading(true)
-      const response = await tvShowsAPI.getAll(
-        undefined,
-        undefined,
-        'last_episode_date',
-        'desc',
-        1,
-        12
-      )
-      setTvShows(response.tvShows || [])
+      setLoading(true)
+      const response = await tvDashboardAPI.getSections()
+      setSections(response.sections || [])
     } catch (error) {
-      console.error('Error loading TV shows:', error)
-      toast.error('Failed to load TV shows')
+      console.error('Error loading TV dashboard sections:', error)
+      toast.error('Failed to load TV dashboard')
     } finally {
-      setTvShowsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -38,42 +35,81 @@ function TVShowsDashboard() {
     navigate(`/media/tv-shows/${tvShow.id}`)
   }
 
+  const handleUpdate = () => {
+    loadSections()
+  }
+
+  const getViewAllLink = (sectionType: string) => {
+    if (sectionType === 'upcoming_episodes') {
+      return '/media/tv-shows/upcoming'
+    } else if (sectionType === 'recently_aired_episodes') {
+      return '/media/tv-shows/recently-aired'
+    }
+    return '#'
+  }
+
   return (
-    <div>
-      {/* Latest TV Shows Section */}
-      <div>
-        <div className="flex items-center justify-between mb-4 md:mb-6 flex-wrap gap-2">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">Latest TV Shows</h2>
-          <Link
-            to="/media/tv-shows/list"
-            className="text-sm md:text-base text-primary hover:underline"
-          >
-            View All
-          </Link>
-        </div>
-        {tvShowsLoading ? (
-          <div className="flex justify-center items-center py-8 md:py-12 bg-card rounded-lg">
-            <div className="text-sm md:text-base text-muted-foreground">Loading...</div>
-          </div>
-        ) : tvShows.length === 0 ? (
-          <div className="text-center py-8 md:py-12 px-4 bg-card rounded-lg">
-            <p className="text-sm md:text-base text-muted-foreground">
-              No TV shows saved
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 md:gap-6">
-            {tvShows.map(tvShow => (
-              <TVShowCard
-                key={tvShow.id}
-                tvShow={tvShow}
-                onClick={() => handleTVShowClick(tvShow)}
-              />
-            ))}
-          </div>
-        )}
+    <>
+      {/* Header with Configure button */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Welcome</h1>
+        <Button
+          variant="outline"
+          onClick={() => navigate('/media/tv-shows/list')}
+          className="gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          Manage TV Shows
+        </Button>
       </div>
-    </div>
+
+      {/* Dashboard Sections */}
+      {loading ? (
+        <div className="flex justify-center items-center py-16 bg-card rounded-lg">
+          <div className="text-lg text-muted-foreground">Loading dashboard...</div>
+        </div>
+      ) : sections.length === 0 ? (
+        <div className="text-center py-16 bg-card rounded-lg">
+          <p className="text-lg text-muted-foreground mb-4">
+            No content to display
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Add TV shows to see them on your dashboard.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {sections.map((section) => {
+            if (section.type === 'tv_shows_last_aired' && section.tvShows) {
+              return (
+                <TVShowSectionRow
+                  key={section.id}
+                  title={section.title}
+                  description={section.description}
+                  tvShows={section.tvShows}
+                  onTVShowClick={handleTVShowClick}
+                />
+              )
+            } else if (
+              (section.type === 'upcoming_episodes' || section.type === 'recently_aired_episodes') &&
+              section.episodes
+            ) {
+              return (
+                <EpisodeSectionRow
+                  key={section.id}
+                  title={section.title}
+                  description={section.description}
+                  episodes={section.episodes}
+                  viewAllLink={getViewAllLink(section.type)}
+                  onUpdate={handleUpdate}
+                />
+              )
+            }
+            return null
+          })}
+        </div>
+      )}
+    </>
   )
 }
 

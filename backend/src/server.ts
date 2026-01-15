@@ -11,6 +11,7 @@ import movieRoutes from './routes/movies.js'
 import moviePlaylistRoutes from './routes/movie-playlists.js'
 import channelListRoutes from './routes/channel-lists.js'
 import dashboardRoutes from './routes/dashboard.js'
+import tvDashboardRoutes from './routes/tv-dashboard.js'
 import calendarRoutes from './routes/calendar.js'
 import importRoutes from './routes/import.js'
 import settingsRoutes from './routes/settings.js'
@@ -74,6 +75,7 @@ app.use('/api/movies', movieRoutes)
 app.use('/api/movie-playlists', moviePlaylistRoutes)
 app.use('/api/channel-lists', channelListRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/tv-dashboard', tvDashboardRoutes)
 app.use('/api/calendar', calendarRoutes)
 app.use('/api/import', importRoutes)
 app.use('/api/settings', settingsRoutes)
