@@ -201,6 +201,10 @@ export const channelGroupsAPI = {
     const response = await api.patch(`/api/channel-lists/${id}/display-on-home`, { display_on_home: displayOnHome })
     return response.data
   },
+  reorderChannelGroups: async (groupIds: number[]) => {
+    const response = await api.patch('/api/channel-lists/reorder', { groupIds })
+    return response.data
+  },
   delete: async (id: number) => {
     const response = await api.delete(`/api/channel-lists/${id}`)
     return response.data

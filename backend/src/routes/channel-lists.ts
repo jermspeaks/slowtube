@@ -462,5 +462,41 @@ router.patch('/:id/display-on-home', (req, res) => {
   }
 })
 
+// Reorder channel groups
+router.patch('/reorder', (req, res) => {
+  try {
+    const { groupIds } = req.body
+    if (!Array.isArray(groupIds)) {
+      return res.status(400).json({ error: 'groupIds must be an array' })
+    }
+    if (!groupIds.every(id => typeof id === 'number')) {
+      return res.status(400).json({ error: 'All groupIds must be numbers' })
+    }
+    if (groupIds.length === 0) {
+      return res.status(400).json({ error: 'groupIds array cannot be empty' })
+    }
+
+    // Verify all group IDs exist
+    const allGroups = channelListQueries.getAll()
+    const allGroupIds = allGroups.map(g => g.id)
+    const invalidIds = groupIds.filter((id: number) => !allGroupIds.includes(id))
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ error: `Invalid group IDs: ${invalidIds.join(', ')}` })
+    }
+
+    // Verify all groups are included
+    if (groupIds.length !== allGroupIds.length) {
+      return res.status(400).json({ error: 'All channel groups must be included in reorder' })
+    }
+
+    channelListQueries.reorderChannelGroups(groupIds)
+    const updatedGroups = channelListQueries.getAll()
+    res.json(updatedGroups)
+  } catch (error: any) {
+    console.error('Error reordering channel groups:', error)
+    res.status(500).json({ error: error.message || 'Failed to reorder channel groups' })
+  }
+})
+
 export default router
 

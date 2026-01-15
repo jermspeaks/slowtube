@@ -2165,6 +2165,23 @@ export const channelListQueries = {
     return stmt.run(displayOnHome ? 1 : 0, id).changes
   },
 
+  reorderChannelGroups: (groupIds: number[]): void => {
+    // Use a transaction to ensure atomicity
+    const transaction = db.transaction((groupIds: number[]) => {
+      const stmt = db.prepare(`
+        UPDATE channel_lists 
+        SET sort_order = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `)
+
+      groupIds.forEach((groupId, index) => {
+        stmt.run(index, groupId)
+      })
+    })
+
+    transaction(groupIds)
+  },
+
   delete: (id: number): number => {
     return db.prepare('DELETE FROM channel_lists WHERE id = ?').run(id).changes
   },

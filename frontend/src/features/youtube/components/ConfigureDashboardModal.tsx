@@ -24,6 +24,8 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
   const [loading, setLoading] = useState(true)
   const [displayOnHomeMap, setDisplayOnHomeMap] = useState<Map<number, boolean>>(new Map())
   const [saving, setSaving] = useState(false)
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -57,11 +59,63 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
     setDisplayOnHomeMap(newMap)
   }
 
+  const handleSelectAll = () => {
+    const newMap = new Map<number, boolean>()
+    groups.forEach(group => {
+      newMap.set(group.id, true)
+    })
+    setDisplayOnHomeMap(newMap)
+  }
+
+  const handleDeselectAll = () => {
+    const newMap = new Map<number, boolean>()
+    groups.forEach(group => {
+      newMap.set(group.id, false)
+    })
+    setDisplayOnHomeMap(newMap)
+  }
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === index) return
+    setDragOverIndex(index)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+      return
+    }
+
+    const newGroups = [...groups]
+    const [draggedGroup] = newGroups.splice(draggedIndex, 1)
+    newGroups.splice(dropIndex, 0, draggedGroup)
+
+    setGroups(newGroups)
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
+
   const handleSave = async () => {
     try {
       setSaving(true)
       
-      // Update all groups that changed
+      // Update all groups that changed display_on_home
       const updates: Promise<any>[] = []
       for (const group of groups) {
         const currentValue = group.display_on_home === 1
@@ -71,6 +125,10 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
           updates.push(channelGroupsAPI.toggleDisplayOnHome(group.id, newValue))
         }
       }
+      
+      // Save the new order
+      const groupIds = groups.map(g => g.id)
+      updates.push(channelGroupsAPI.reorderChannelGroups(groupIds))
       
       await Promise.all(updates)
       
@@ -95,9 +153,32 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
         <DialogHeader>
           <DialogTitle>Display on Home</DialogTitle>
           <DialogDescription>
-            Select which channel groups should appear on your dashboard.
+            Select which channel groups should appear on your dashboard. Drag and drop to reorder them.
           </DialogDescription>
         </DialogHeader>
+
+        {!loading && groups.length > 0 && (
+          <div className="flex gap-2 pb-2 border-b">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSelectAll}
+              disabled={saving}
+              className="text-xs"
+            >
+              Select All
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDeselectAll}
+              disabled={saving}
+              className="text-xs"
+            >
+              Deselect All
+            </Button>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {loading ? (
@@ -112,18 +193,33 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
             </div>
           ) : (
             <div className="space-y-1">
-              {groups.map((group) => {
+              {groups.map((group, index) => {
                 const isDisplayed = displayOnHomeMap.get(group.id) ?? false
+                const isDragging = draggedIndex === index
+                const isDragOver = dragOverIndex === index
                 return (
                   <div
                     key={group.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-accent transition-colors"
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                    className={`
+                      flex items-center gap-3 p-3 rounded-lg border border-border
+                      transition-all cursor-move
+                      ${isDragging ? 'opacity-50' : ''}
+                      ${isDragOver ? 'border-primary border-2 bg-accent' : 'hover:bg-accent'}
+                    `}
                   >
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                        <GripVertical className="h-4 w-4" />
+                      </div>
                       {group.color && (
                         <div
-                          className="w-4 h-4 rounded-full flex-shrink-0"
+                          className="w-4 h-4 rounded-full shrink-0"
                           style={{ backgroundColor: group.color }}
                         />
                       )}
@@ -149,7 +245,8 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
                       type="checkbox"
                       checked={isDisplayed}
                       onChange={() => handleToggle(group.id)}
-                      className="w-5 h-5 cursor-pointer flex-shrink-0"
+                      className="w-5 h-5 cursor-pointer shrink-0"
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </div>
                 )
@@ -158,7 +255,7 @@ function ConfigureDashboardModal({ isOpen, onClose, onSave }: ConfigureDashboard
           )}
         </div>
 
-        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
+        <DialogFooter className="shrink-0 border-t pt-4 mt-4">
           <div className="flex items-center justify-between w-full">
             <span className="text-sm text-muted-foreground">
               {displayedCount} {displayedCount === 1 ? 'group' : 'groups'} selected
