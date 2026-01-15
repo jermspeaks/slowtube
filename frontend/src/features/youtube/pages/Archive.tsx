@@ -177,8 +177,12 @@ function Archive() {
       {selectedVideo && (
         <VideoDetailModal
           video={selectedVideo}
+          videos={videos}
           onClose={() => setSelectedVideo(null)}
           onVideoUpdated={handleVideoUpdated}
+          onVideoChange={(newVideo) => {
+            setSelectedVideo(newVideo)
+          }}
         />
       )}
     </>

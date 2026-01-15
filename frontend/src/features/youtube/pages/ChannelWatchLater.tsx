@@ -73,6 +73,13 @@ function ChannelWatchLater() {
     }
   }
 
+  const handleVideoUpdated = (updatedVideo: Video) => {
+    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
+    if (selectedVideo?.id === updatedVideo.id) {
+      setSelectedVideo(updatedVideo)
+    }
+  }
+
 
   if (loading) {
     return (
@@ -140,8 +147,12 @@ function ChannelWatchLater() {
       {selectedVideo && (
         <VideoDetailModal
           video={selectedVideo}
+          videos={videos}
           onClose={() => setSelectedVideo(null)}
           onVideoUpdated={handleVideoUpdated}
+          onVideoChange={(newVideo) => {
+            setSelectedVideo(newVideo)
+          }}
         />
       )}
     </div>

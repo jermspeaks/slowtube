@@ -95,6 +95,13 @@ function ChannelLatest() {
     }
   }
 
+  const handleVideoUpdated = (updatedVideo: Video) => {
+    setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
+    if (selectedVideo?.id === updatedVideo.id) {
+      setSelectedVideo(updatedVideo)
+    }
+  }
+
 
   const handleVideoSelect = (videoId: number, selected: boolean) => {
     setSelectedVideoIds(prev => {
@@ -309,8 +316,17 @@ function ChannelLatest() {
       {selectedVideo && (
         <VideoDetailModal
           video={selectedVideo}
+          videos={videos}
           onClose={() => setSelectedVideo(null)}
-          onVideoUpdated={handleVideoUpdated}
+          onVideoUpdated={(updatedVideo) => {
+            setVideos(prev => prev.map(v => v.id === updatedVideo.id ? updatedVideo : v))
+            if (selectedVideo?.id === updatedVideo.id) {
+              setSelectedVideo(updatedVideo)
+            }
+          }}
+          onVideoChange={(newVideo) => {
+            setSelectedVideo(newVideo)
+          }}
         />
       )}
     </div>
