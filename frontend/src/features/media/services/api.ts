@@ -46,7 +46,8 @@ export const tvShowsAPI = {
   },
   getById: async (id: number) => {
     const response = await api.get(`/api/tv-shows/${id}`)
-    return response.data
+    // Backend wraps response in { data: ... } format
+    return response.data.data || response.data
   },
   getEpisodes: async (id: number) => {
     const response = await api.get(`/api/tv-shows/${id}/episodes`)
@@ -135,7 +136,8 @@ export const moviesAPI = {
   },
   getById: async (id: number) => {
     const response = await api.get(`/api/movies/${id}`)
-    return response.data
+    // Backend wraps response in { data: ... } format
+    return response.data.data || response.data
   },
   archive: async (id: number, isArchived: boolean) => {
     const response = await api.patch(`/api/movies/${id}/archive`, { isArchived })

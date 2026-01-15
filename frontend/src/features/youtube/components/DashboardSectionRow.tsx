@@ -62,7 +62,7 @@ function DashboardSectionRow({ section, onVideoClick, onVideoStateChange }: Dash
     } else if (section.type === 'feed') {
       return '/youtube/watch-later'
     } else if (section.type === 'channel_group' && section.groupId) {
-      return `/youtube/channel-lists/${section.groupId}/watch-later`
+      return `/youtube/channel-lists/${section.groupId}/inbox`
     }
     return '#'
   }
