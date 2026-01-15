@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Movie } from '../types/movie'
 import { moviesAPI } from '../services/api'
@@ -24,16 +24,7 @@ function MovieDetail() {
   const [loading, setLoading] = useState(true)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
-  useEffect(() => {
-    if (!id) {
-      navigate('/movies')
-      return
-    }
-
-    loadMovie()
-  }, [navigate, id])
-
-  const loadMovie = async () => {
+  const loadMovie = useCallback(async () => {
     if (!id) return
 
     try {
@@ -43,11 +34,20 @@ function MovieDetail() {
     } catch (error) {
       console.error('Error loading movie:', error)
       toast.error('Failed to load movie')
-      navigate('/movies')
+      navigate('/media/movies')
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, navigate])
+
+  useEffect(() => {
+    if (!id) {
+      navigate('/media/movies')
+      return
+    }
+
+    loadMovie()
+  }, [navigate, id, loadMovie])
 
   const handleArchive = async () => {
     if (!id || !movie) return
@@ -94,7 +94,7 @@ function MovieDetail() {
     try {
       await moviesAPI.delete(parseInt(id, 10))
       toast.success('Movie deleted successfully')
-      navigate('/movies')
+      navigate('/media/movies')
     } catch (error) {
       console.error('Error deleting movie:', error)
       toast.error('Failed to delete movie')
@@ -125,7 +125,7 @@ function MovieDetail() {
           <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
             <p className="text-base md:text-lg text-muted-foreground mb-4">Movie not found</p>
             <button
-              onClick={() => navigate('/movies')}
+              onClick={() => navigate('/media/movies')}
               className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm md:text-base"
             >
               Back to Movies
@@ -160,7 +160,7 @@ function MovieDetail() {
                 <img
                   src={posterUrl}
                   alt={movie.title}
-                  className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded flex-shrink-0 shadow-lg mx-auto sm:mx-0"
+                  className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded shrink-0 shadow-lg mx-auto sm:mx-0"
                 />
               )}
               <div className="flex-1 min-w-0">
@@ -181,7 +181,7 @@ function MovieDetail() {
 
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => navigate('/movies')}
+                    onClick={() => navigate('/media/movies')}
                     className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded transition-colors backdrop-blur-sm"
                   >
                     Back to Movies

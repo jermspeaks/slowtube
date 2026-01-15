@@ -157,7 +157,7 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
                   <td className="p-2 md:p-3 max-w-[200px] md:max-w-[300px]">
                     <div
                       className="font-bold mb-1 cursor-pointer hover:text-primary transition-colors text-sm md:text-base"
-                      onClick={() => navigate(`/movies/${movie.id}`)}
+                      onClick={() => navigate(`/media/movies/${movie.id}`)}
                     >
                       {movie.title}
                     </div>

@@ -120,7 +120,7 @@ function MoviePlaylistMovieList({ movies, onRemove, onReorder }: MoviePlaylistMo
             <div className="flex-1 min-w-0">
               <h3
                 className="font-bold text-lg mb-1 cursor-pointer hover:text-primary transition-colors"
-                onClick={() => navigate(`/movies/${movie.id}`)}
+                onClick={() => navigate(`/media/movies/${movie.id}`)}
               >
                 {movie.title}
               </h3>
