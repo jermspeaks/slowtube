@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Movie } from '../types/movie'
 import { format } from 'date-fns'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { X, GripVertical } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 

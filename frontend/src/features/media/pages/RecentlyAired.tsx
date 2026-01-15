@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { calendarAPI, tvShowsAPI } from '../services/api'
 import { Episode } from '../types/episode'
 import { startOfDay, endOfDay, format, startOfToday, subDays } from 'date-fns'

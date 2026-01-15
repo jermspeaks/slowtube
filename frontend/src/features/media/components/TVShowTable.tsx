@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { TVShow } from '../types/tv-show'
 import { format } from 'date-fns'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import {
   DropdownMenu,
   DropdownMenuContent,

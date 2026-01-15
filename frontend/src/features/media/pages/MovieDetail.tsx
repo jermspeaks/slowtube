@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router'
 import { Movie } from '../types/movie'
 import { moviesAPI } from '../services/api'
 import { format } from 'date-fns'

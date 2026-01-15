@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { MoviePlaylistWithCount } from '../types/movie-playlist'
 import { format } from 'date-fns'
 import {

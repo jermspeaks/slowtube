@@ -148,6 +148,14 @@ export function validateBooleanParam(value: unknown, paramName: string): boolean
  */
 export function validateBodyField(fieldName: string, type: 'string' | 'number' | 'boolean' | 'array' = 'string') {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Express 5: req.body may be undefined if no parser is used
+    if (!req.body) {
+      return res.status(400).json({
+        error: 'Validation error',
+        message: 'Request body is required'
+      })
+    }
+    
     const value = req.body[fieldName]
     
     if (value === undefined || value === null) {

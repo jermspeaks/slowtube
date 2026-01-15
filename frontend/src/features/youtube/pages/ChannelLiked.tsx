@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router'
 import { Channel } from '../types/channel'
 import { channelsAPI } from '../services/api'
 import ChannelHeader from '../components/ChannelHeader'

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { Settings } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { TVShow } from '../types/tv-show'

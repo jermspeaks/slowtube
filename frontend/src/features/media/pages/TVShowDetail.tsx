@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router'
 import { TVShow } from '../types/tv-show'
 import { Episode } from '../types/episode'
 import { ViewMode } from '../../youtube/types/video'

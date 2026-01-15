@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useParams } from 'react-router'
 import { useEffect, useState } from 'react'
 // YouTube pages
 import YouTubeDashboard from './features/youtube/pages/Dashboard'

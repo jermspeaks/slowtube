@@ -45,7 +45,7 @@ function VideoPlayer({ video }: VideoPlayerProps) {
     <div className="w-full pt-[56.25%] relative bg-black rounded overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full">
         <ReactPlayer
-          url={youtubeUrl}
+          src={youtubeUrl}
           controls={true}
           width="100%"
           height="100%"

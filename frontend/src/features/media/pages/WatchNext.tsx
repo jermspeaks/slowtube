@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import { Movie } from '../types/movie'
 import { TVShow } from '../types/tv-show'
 import { moviesAPI, tvShowsAPI } from '../services/api'

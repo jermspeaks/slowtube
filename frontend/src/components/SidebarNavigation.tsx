@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router'
 import { Youtube, Tv, Film, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

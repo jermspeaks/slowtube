@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router'
 import { channelGroupsAPI, videosAPI } from '../services/api'
 import { ChannelGroupWithChannels } from '../types/channel-list'
 import { Video, ViewMode } from '../types/video'
