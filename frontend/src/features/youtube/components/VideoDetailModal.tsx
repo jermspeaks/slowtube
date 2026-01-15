@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Video, VideoState, Comment } from '../types/video'
 import { videosAPI } from '../services/api'
 import TagInput from './TagInput'
@@ -19,6 +19,53 @@ interface VideoDetailModalProps {
 
 function VideoDetailModal({ video, videos = [], onClose, onVideoUpdated, onVideoChange }: VideoDetailModalProps) {
   const [loading, setLoading] = useState(false)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
+  const [showExpandButton, setShowExpandButton] = useState(false)
+  const descriptionRef = useRef<HTMLParagraphElement>(null)
+  
+  // Reset expanded state when video changes
+  useEffect(() => {
+    setIsDescriptionExpanded(false)
+  }, [video?.id])
+
+  // Detect if description exceeds 3 lines
+  useEffect(() => {
+    if (!video?.description || !descriptionRef.current) {
+      setShowExpandButton(false)
+      return
+    }
+
+    // Use requestAnimationFrame to ensure DOM is ready
+    const checkOverflow = () => {
+      const element = descriptionRef.current
+      if (!element) return
+
+      // Temporarily remove line-clamp to measure full height
+      const hasLineClamp = element.classList.contains('line-clamp-3')
+      
+      if (hasLineClamp) {
+        element.classList.remove('line-clamp-3')
+        const fullHeight = element.scrollHeight
+        element.classList.add('line-clamp-3')
+        const clampedHeight = element.clientHeight
+        
+        setShowExpandButton(fullHeight > clampedHeight)
+      } else {
+        // If expanded, check if it would overflow when collapsed
+        element.classList.add('line-clamp-3')
+        const clampedHeight = element.clientHeight
+        element.classList.remove('line-clamp-3')
+        const fullHeight = element.scrollHeight
+        
+        setShowExpandButton(fullHeight > clampedHeight)
+      }
+    }
+
+    // Wait for next frame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      requestAnimationFrame(checkOverflow)
+    })
+  }, [video?.description, isDescriptionExpanded])
   
   if (!video) return null
 
@@ -169,9 +216,22 @@ function VideoDetailModal({ video, videos = [], onClose, onVideoUpdated, onVideo
           {video.description && (
             <div className="mb-3">
               <h3 className="mb-2 text-sm font-bold">Description</h3>
-              <p className="text-foreground whitespace-pre-wrap leading-relaxed text-sm">
+              <p 
+                ref={descriptionRef}
+                className={`text-foreground whitespace-pre-wrap leading-relaxed text-sm ${
+                  !isDescriptionExpanded ? 'line-clamp-3' : ''
+                }`}
+              >
                 {video.description}
               </p>
+              {showExpandButton && (
+                <button
+                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  className="mt-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-none p-0"
+                >
+                  {isDescriptionExpanded ? 'Show less' : 'Show more'}
+                </button>
+              )}
             </div>
           )}
 
