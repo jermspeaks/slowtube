@@ -44,6 +44,8 @@ function MoviesDashboard() {
   const getViewAllLink = (sectionType: string, playlistId?: number) => {
     if (sectionType === 'all_movies') {
       return '/media/movies/all'
+    } else if (sectionType === 'starred_movies') {
+      return '/media/starred'
     } else if (sectionType === 'upcoming_movies') {
       return '/media/movies/all' // Could add filter for upcoming in the future
     } else if (sectionType === 'movie_playlist' && playlistId) {

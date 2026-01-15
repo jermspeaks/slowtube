@@ -8,7 +8,7 @@ router.get('/sections', (req, res) => {
   try {
     const sections: Array<{
       id: string
-      type: 'all_movies' | 'upcoming_movies' | 'movie_playlist'
+      type: 'all_movies' | 'upcoming_movies' | 'starred_movies' | 'movie_playlist'
       title: string
       description: string
       movies?: any[]
@@ -45,7 +45,28 @@ router.get('/sections', (req, res) => {
       movies: sortedMovies,
     })
 
-    // Section 2: Upcoming Movies
+    // Section 2: Starred Movies
+    const starredMovies = movieQueries.getAll(
+      undefined, // search
+      'created_at', // sortBy
+      'desc', // sortOrder
+      20, // limit
+      0, // offset
+      'unarchived', // archiveFilter
+      'starred', // starredFilter
+      undefined, // watchedFilter
+      undefined // playlistFilter
+    )
+
+    sections.push({
+      id: 'starred_movies',
+      type: 'starred_movies',
+      title: 'Starred Movies',
+      description: 'Your favorite movies',
+      movies: starredMovies,
+    })
+
+    // Section 3: Upcoming Movies
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Set to midnight for date comparison
 
@@ -78,7 +99,7 @@ router.get('/sections', (req, res) => {
       movies: upcomingMovies,
     })
 
-    // Section 3+: Movie Playlists with display_on_home = 1
+    // Section 4+: Movie Playlists with display_on_home = 1
     const playlists = moviePlaylistQueries.getAll(true) // displayOnHome = true
 
     for (const playlist of playlists) {

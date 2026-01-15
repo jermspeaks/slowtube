@@ -17,7 +17,7 @@ export interface TVDashboardSectionsResponse {
 
 export interface MovieDashboardSection {
   id: string
-  type: 'all_movies' | 'upcoming_movies' | 'movie_playlist'
+  type: 'all_movies' | 'upcoming_movies' | 'starred_movies' | 'movie_playlist'
   title: string
   description: string
   movies?: Movie[]
