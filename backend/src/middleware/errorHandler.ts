@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express'
+import { logger } from '../utils/logger.js'
 
 /**
  * Standard error response format
@@ -94,7 +95,18 @@ export function errorHandler(
   next: NextFunction
 ): void {
   // Log error for debugging
-  console.error('Error:', err)
+  logger.error('Request error', {
+    error: err.message,
+    stack: err.stack,
+    name: err.name,
+    path: req.path,
+    method: req.method,
+    ...(err instanceof AppError && {
+      statusCode: err.statusCode,
+      code: err.code,
+      details: err.details
+    })
+  })
 
   // Handle known application errors
   if (err instanceof AppError) {

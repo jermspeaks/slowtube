@@ -1,5 +1,6 @@
 import express from 'express'
 import { moviePlaylistQueries } from '../services/database.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -20,7 +21,7 @@ router.post('/', (req, res) => {
 
     res.status(201).json(playlist)
   } catch (error: any) {
-    console.error('Error creating playlist:', error)
+    logger.error('Error creating playlist', { error: error.message, stack: error.stack })
     res.status(500).json({ error: error.message || 'Failed to create playlist' })
   }
 })
@@ -30,8 +31,8 @@ router.get('/', (req, res) => {
   try {
     const playlists = moviePlaylistQueries.getAll()
     res.json(playlists)
-  } catch (error) {
-    console.error('Error fetching playlists:', error)
+  } catch (error: any) {
+    logger.error('Error fetching playlists', { error: error.message, stack: error.stack })
     res.status(500).json({ error: 'Failed to fetch playlists' })
   }
 })
@@ -50,8 +51,8 @@ router.get('/:id', (req, res) => {
     }
 
     res.json(playlist)
-  } catch (error) {
-    console.error('Error fetching playlist:', error)
+  } catch (error: any) {
+    logger.error('Error fetching playlist', { error: error.message, stack: error.stack })
     res.status(500).json({ error: 'Failed to fetch playlist' })
   }
 })
@@ -99,7 +100,7 @@ router.patch('/:id', (req, res) => {
     const updatedPlaylist = moviePlaylistQueries.getById(id)
     res.json(updatedPlaylist)
   } catch (error: any) {
-    console.error('Error updating playlist:', error)
+    logger.error('Error updating playlist', { error: error.message, stack: error.stack, playlistId: id })
     res.status(500).json({ error: error.message || 'Failed to update playlist' })
   }
 })
@@ -123,8 +124,8 @@ router.delete('/:id', (req, res) => {
     } else {
       res.status(500).json({ error: 'Failed to delete playlist' })
     }
-  } catch (error) {
-    console.error('Error deleting playlist:', error)
+  } catch (error: any) {
+    logger.error('Error deleting playlist', { error: error.message, stack: error.stack, playlistId: id })
     res.status(500).json({ error: 'Failed to delete playlist' })
   }
 })
@@ -171,7 +172,7 @@ router.post('/:id/movies', (req, res) => {
     const updatedPlaylist = moviePlaylistQueries.getById(id)
     res.json(updatedPlaylist)
   } catch (error: any) {
-    console.error('Error adding movies to playlist:', error)
+    logger.error('Error adding movies to playlist', { error: error.message, stack: error.stack, playlistId: id })
     res.status(500).json({ error: error.message || 'Failed to add movies to playlist' })
   }
 })
@@ -198,8 +199,8 @@ router.delete('/:id/movies/:movieId', (req, res) => {
     } else {
       res.status(404).json({ error: 'Movie not found in playlist' })
     }
-  } catch (error) {
-    console.error('Error removing movie from playlist:', error)
+  } catch (error: any) {
+    logger.error('Error removing movie from playlist', { error: error.message, stack: error.stack, playlistId: id, movieId })
     res.status(500).json({ error: 'Failed to remove movie from playlist' })
   }
 })
@@ -229,7 +230,7 @@ router.post('/:id/movies/bulk-remove', (req, res) => {
     const updatedPlaylist = moviePlaylistQueries.getById(id)
     res.json({ ...updatedPlaylist, removedCount })
   } catch (error: any) {
-    console.error('Error removing movies from playlist:', error)
+    logger.error('Error removing movies from playlist', { error: error.message, stack: error.stack, playlistId: id })
     res.status(500).json({ error: error.message || 'Failed to remove movies from playlist' })
   }
 })
@@ -238,41 +239,77 @@ router.post('/:id/movies/bulk-remove', (req, res) => {
 router.patch('/reorder', (req, res) => {
   try {
     const { playlistIds } = req.body
+    
+    logger.debug('Reorder playlists request received', { 
+      playlistIds,
+      playlistIdsType: typeof playlistIds,
+      playlistIdsLength: Array.isArray(playlistIds) ? playlistIds.length : 'not an array'
+    })
+    
     if (!Array.isArray(playlistIds)) {
+      logger.warn('Reorder playlists failed: playlistIds is not an array', { playlistIds })
       return res.status(400).json({ error: 'playlistIds must be an array' })
     }
     if (!playlistIds.every(id => typeof id === 'number')) {
+      logger.warn('Reorder playlists failed: playlistIds contains non-numbers', { 
+        playlistIds,
+        types: playlistIds.map(id => typeof id)
+      })
       return res.status(400).json({ error: 'All playlistIds must be numbers' })
     }
     if (playlistIds.length === 0) {
+      logger.warn('Reorder playlists failed: playlistIds array is empty')
       return res.status(400).json({ error: 'playlistIds array cannot be empty' })
     }
 
     // Verify all playlist IDs exist
     const allPlaylists = moviePlaylistQueries.getAll()
     const allPlaylistIds = allPlaylists.map(p => p.id)
+    
+    logger.debug('Playlist validation', {
+      requestedIds: playlistIds,
+      requestedCount: playlistIds.length,
+      allPlaylistIds: allPlaylistIds,
+      allPlaylistCount: allPlaylistIds.length
+    })
+    
     const invalidIds = playlistIds.filter((id: number) => !allPlaylistIds.includes(id))
     if (invalidIds.length > 0) {
+      logger.warn('Reorder playlists failed: invalid playlist IDs', {
+        invalidIds,
+        requestedIds: playlistIds,
+        validIds: allPlaylistIds
+      })
       return res.status(400).json({ 
         error: `Invalid playlist IDs: ${invalidIds.join(', ')}`,
         details: `Requested ${playlistIds.length} playlists, but ${invalidIds.length} are invalid. Valid playlist IDs: ${allPlaylistIds.join(', ')}`
       })
     }
 
-    // Verify all playlists are included
-    if (playlistIds.length !== allPlaylistIds.length) {
-      const missingIds = allPlaylistIds.filter(id => !playlistIds.includes(id))
+    // Check for duplicate IDs in the request
+    const uniqueIds = new Set(playlistIds)
+    if (uniqueIds.size !== playlistIds.length) {
+      const duplicates = playlistIds.filter((id, index) => playlistIds.indexOf(id) !== index)
+      logger.warn('Reorder playlists failed: duplicate playlist IDs', {
+        duplicates,
+        requestedIds: playlistIds
+      })
       return res.status(400).json({ 
-        error: 'All playlists must be included in reorder',
-        details: `Requested ${playlistIds.length} playlists, but there are ${allPlaylistIds.length} total playlists. Missing playlist IDs: ${missingIds.join(', ')}`
+        error: 'Duplicate playlist IDs in request',
+        details: `Found duplicate IDs: ${[...new Set(duplicates)].join(', ')}`
       })
     }
 
+    logger.info('Reordering playlists', { playlistIds })
     moviePlaylistQueries.reorderPlaylists(playlistIds)
     const updatedPlaylists = moviePlaylistQueries.getAll()
+    logger.debug('Playlists reordered successfully', { 
+      count: updatedPlaylists.length,
+      newOrder: updatedPlaylists.map(p => ({ id: p.id, name: p.name, sort_order: p.sort_order }))
+    })
     res.json(updatedPlaylists)
   } catch (error: any) {
-    console.error('Error reordering playlists:', error)
+    logger.error('Error reordering playlists', { error: error.message, stack: error.stack })
     res.status(500).json({ error: error.message || 'Failed to reorder playlists' })
   }
 })
@@ -303,7 +340,7 @@ router.patch('/:id/display-on-home', (req, res) => {
     const updatedPlaylist = moviePlaylistQueries.getById(id)
     res.json(updatedPlaylist)
   } catch (error: any) {
-    console.error('Error updating display on home:', error)
+    logger.error('Error updating display on home', { error: error.message, stack: error.stack, playlistId: id })
     res.status(500).json({ error: error.message || 'Failed to update display on home' })
   }
 })
@@ -345,7 +382,7 @@ router.patch('/:id/movies/reorder', (req, res) => {
     const updatedPlaylist = moviePlaylistQueries.getById(id)
     res.json(updatedPlaylist)
   } catch (error: any) {
-    console.error('Error reordering movies in playlist:', error)
+    logger.error('Error reordering movies in playlist', { error: error.message, stack: error.stack, playlistId: id })
     res.status(500).json({ error: error.message || 'Failed to reorder movies in playlist' })
   }
 })

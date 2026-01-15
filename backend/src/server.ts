@@ -19,10 +19,11 @@ import settingsRoutes from './routes/settings.js'
 import authRoutes from './routes/auth.js'
 import { refreshAllTVShowEpisodes } from './services/tv-episode-refresh.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { logger } from './utils/logger.js'
 
 // Validate TMDB environment variables (warn but don't exit)
 if (!process.env.TMDB_API_KEY && !process.env.TMDB_READ_ACCESS_TOKEN) {
-  console.warn('WARNING: TMDB_API_KEY or TMDB_READ_ACCESS_TOKEN not set. TMDB features will not work.')
+  logger.warn('TMDB_API_KEY or TMDB_READ_ACCESS_TOKEN not set. TMDB features will not work.')
 }
 
 const app = express()
@@ -59,8 +60,7 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true)
     } else {
-      console.warn(`CORS: Rejected origin: ${origin}`)
-      console.warn(`CORS: Allowed origins:`, allowedOrigins)
+      logger.warn('CORS: Rejected origin', { origin, allowedOrigins })
       callback(new Error(`Not allowed by CORS: ${origin}`))
     }
   },
@@ -91,8 +91,8 @@ app.get('/health', (req, res) => {
 app.use(errorHandler)
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`)
-  console.log(`Accessible at http://0.0.0.0:${PORT}`)
+  logger.info(`Server running on port ${PORT}`)
+  logger.info(`Accessible at http://0.0.0.0:${PORT}`)
 })
 
 // Setup daily TV episode refresh job
@@ -103,21 +103,25 @@ const includeArchived = process.env.TV_EPISODE_REFRESH_INCLUDE_ARCHIVED === 'tru
 if (refreshEnabled) {
   // Validate cron schedule
   if (cron.validate(refreshCronSchedule)) {
-    console.log(`TV episode refresh scheduled: ${refreshCronSchedule} (includeArchived: ${includeArchived})`)
+    logger.info(`TV episode refresh scheduled: ${refreshCronSchedule} (includeArchived: ${includeArchived})`)
     
     cron.schedule(refreshCronSchedule, async () => {
-      console.log(`[${new Date().toISOString()}] Starting scheduled TV episode refresh...`)
+      logger.info('Starting scheduled TV episode refresh...')
       try {
         const result = await refreshAllTVShowEpisodes(includeArchived)
-        console.log(`[${new Date().toISOString()}] TV episode refresh completed: ${result.successful} successful, ${result.failed} failed out of ${result.total} total`)
+        logger.info('TV episode refresh completed', {
+          successful: result.successful,
+          failed: result.failed,
+          total: result.total
+        })
       } catch (error: any) {
-        console.error(`[${new Date().toISOString()}] TV episode refresh failed:`, error.message)
+        logger.error('TV episode refresh failed', { error: error.message, stack: error.stack })
       }
     })
   } else {
-    console.warn(`Invalid TV_EPISODE_REFRESH_TIME cron schedule: ${refreshCronSchedule}. TV episode refresh disabled.`)
+    logger.warn(`Invalid TV_EPISODE_REFRESH_TIME cron schedule: ${refreshCronSchedule}. TV episode refresh disabled.`)
   }
 } else {
-  console.log('TV episode refresh is disabled (TV_EPISODE_REFRESH_ENABLED=false)')
+  logger.info('TV episode refresh is disabled (TV_EPISODE_REFRESH_ENABLED=false)')
 }
 
