@@ -124,7 +124,7 @@ export function Navbar() {
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     <DropdownMenuItem asChild>
-                      <Link to="/media/dashboard" className="w-full flex items-center gap-2">
+                      <Link to="/media/movies/dashboard" className="w-full flex items-center gap-2">
                         <Home className="h-4 w-4" />
                         Dashboard
                       </Link>
@@ -325,7 +325,7 @@ export function Navbar() {
                         Media
                       </div>
                       <div className="pl-6 space-y-1">
-                        <MobileNavLink to="/media/dashboard" icon={Home}>
+                        <MobileNavLink to="/media/movies/dashboard" icon={Home}>
                           Dashboard
                         </MobileNavLink>
                         <MobileNavLink to="/media/movies" icon={Film}>

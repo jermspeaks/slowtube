@@ -15,7 +15,8 @@ import YouTubeWatchNext from './features/youtube/pages/WatchNext'
 import Archive from './features/youtube/pages/Archive'
 import Tags from './features/youtube/pages/Tags'
 // Media pages
-import MediaDashboard from './features/media/pages/Dashboard'
+import MoviesDashboard from './features/media/pages/MoviesDashboard'
+import TVShowsDashboard from './features/media/pages/TVShowsDashboard'
 import Calendar from './features/media/pages/Calendar'
 import MoviesList from './features/media/pages/MoviesList'
 import MovieDetail from './features/media/pages/MovieDetail'
@@ -84,7 +85,9 @@ function AppRoutes() {
         <Route path="/youtube/channel-lists/:id" element={<Navigate to="inbox" replace />} />
         
         {/* Media routes */}
-        <Route path="/media/dashboard" element={<MediaDashboard />} />
+        <Route path="/media/dashboard" element={<Navigate to="/media/movies/dashboard" replace />} />
+        <Route path="/media/movies/dashboard" element={<MoviesDashboard />} />
+        <Route path="/media/tv-shows/dashboard" element={<TVShowsDashboard />} />
         <Route path="/media/calendar" element={<Calendar />} />
         <Route path="/media/movies" element={<MoviesList />} />
         <Route path="/media/movies/:id" element={<MovieDetail />} />

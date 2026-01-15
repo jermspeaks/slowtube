@@ -7,7 +7,6 @@ import {
   BarChart,
   Tag,
   PlayCircle,
-  Tv,
   Film,
   Calendar,
   TrendingUp,
@@ -56,7 +55,6 @@ export function SecondaryNavigation() {
     if (location.pathname.startsWith('/media/calendar')) return 'tv-shows' // Calendar is for TV shows
     if (location.pathname.startsWith('/media/playlists')) return 'movies' // Playlists are for movies
     if (location.pathname.startsWith('/media/watch-next')) return 'movies' // Watch next is for movies
-    if (location.pathname.startsWith('/media/dashboard')) return 'movies' // Dashboard shows both, default to movies
     return null
   }
 
@@ -143,7 +141,7 @@ export function SecondaryNavigation() {
         {
           label: 'Dashboard',
           icon: Home,
-          path: '/media/dashboard',
+          path: '/media/tv-shows/dashboard',
         },
         {
           label: 'List',
@@ -176,7 +174,7 @@ export function SecondaryNavigation() {
         {
           label: 'Dashboard',
           icon: Home,
-          path: '/media/dashboard',
+          path: '/media/movies/dashboard',
         },
         {
           label: 'All Movies',
