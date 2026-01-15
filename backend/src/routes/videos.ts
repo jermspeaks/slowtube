@@ -2,6 +2,7 @@ import express from 'express'
 import multer from 'multer'
 import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries } from '../services/database.js'
 import { importVideosFromTakeout, processBatchVideoFetch, fetchAllVideoDetails, backfillChannelIds } from '../services/youtube.js'
+import { formatDurationExtended } from '../utils/duration.js'
 
 const router = express.Router()
 
@@ -60,24 +61,7 @@ router.get('/stats', (req, res) => {
     const totalDurationSeconds = statsQueries.getTotalDuration(validDateField, validStartDate, validEndDate)
 
     // Format total duration with days and months
-    const SECONDS_PER_MINUTE = 60
-    const SECONDS_PER_HOUR = 3600
-    const SECONDS_PER_DAY = 86400
-    const SECONDS_PER_MONTH = 2592000 // 30 days
-
-    const months = Math.floor(totalDurationSeconds / SECONDS_PER_MONTH)
-    const days = Math.floor((totalDurationSeconds % SECONDS_PER_MONTH) / SECONDS_PER_DAY)
-    const hours = Math.floor((totalDurationSeconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR)
-    const minutes = Math.floor((totalDurationSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE)
-    const seconds = totalDurationSeconds % SECONDS_PER_MINUTE
-
-    // Format duration string
-    const parts: string[] = []
-    if (months > 0) parts.push(`${months}mo`)
-    if (days > 0) parts.push(`${days}d`)
-    if (hours > 0) parts.push(`${hours}h`)
-    if (minutes > 0) parts.push(`${minutes}m`)
-    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`)
+    const totalDurationFormatted = formatDurationExtended(totalDurationSeconds)
 
     // Format time stats for frontend
     // Fill in missing hours (0-23)
@@ -115,12 +99,7 @@ router.get('/stats', (req, res) => {
       channelList: channelList.map(c => c.channel_title),
       totalDuration: {
         seconds: totalDurationSeconds,
-        months,
-        days,
-        hours,
-        minutes,
-        seconds_remainder: seconds,
-        formatted: parts.join(' '),
+        formatted: totalDurationFormatted,
       },
     })
   } catch (error) {

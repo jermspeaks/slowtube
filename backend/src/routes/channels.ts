@@ -2,6 +2,7 @@ import express from 'express'
 import { channelQueries, videoQueries, tagQueries, commentQueries, videoStateQueries } from '../services/database.js'
 import { fetchLatestVideosFromChannel, fetchSubscribedChannels, fetchChannelDetailsFromYouTube } from '../services/youtube.js'
 import { getAuthenticatedClient } from './auth.js'
+import { parseDuration } from '../utils/duration.js'
 
 const router = express.Router()
 
@@ -151,23 +152,6 @@ router.get('/:channelId/videos', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch channel videos' })
   }
 })
-
-// Helper function to parse YouTube duration (ISO 8601) to readable format
-function parseDuration(duration: string): string {
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
-  if (!match) return duration
-
-  const hours = parseInt(match[1] || '0', 10)
-  const minutes = parseInt(match[2] || '0', 10)
-  const seconds = parseInt(match[3] || '0', 10)
-
-  const parts: string[] = []
-  if (hours > 0) parts.push(`${hours}h`)
-  if (minutes > 0) parts.push(`${minutes}m`)
-  if (seconds > 0) parts.push(`${seconds}s`)
-
-  return parts.join(' ') || '0s'
-}
 
 // Helper function to process and save latest videos from a channel
 export async function processLatestVideosFromChannel(

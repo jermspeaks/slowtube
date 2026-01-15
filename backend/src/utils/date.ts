@@ -24,3 +24,64 @@ export function normalizeAirDate(airDate: string | null | undefined): string | n
   return `${airDate}T20:00:00Z`
 }
 
+/**
+ * Format a date to a string
+ * @param date - Date object or ISO string
+ * @param format - Format string (default: 'YYYY-MM-DD')
+ *   - 'YYYY-MM-DD' - ISO date format
+ *   - 'YYYY-MM-DD HH:mm:ss' - ISO datetime format
+ *   - 'RFC3339' - RFC 3339 format
+ * @returns Formatted date string
+ */
+export function formatDate(date: Date | string, format: string = 'YYYY-MM-DD'): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  
+  if (isNaN(dateObj.getTime())) {
+    throw new Error('Invalid date')
+  }
+  
+  const year = dateObj.getFullYear()
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+  const day = String(dateObj.getDate()).padStart(2, '0')
+  const hours = String(dateObj.getHours()).padStart(2, '0')
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0')
+  const seconds = String(dateObj.getSeconds()).padStart(2, '0')
+  
+  switch (format) {
+    case 'YYYY-MM-DD':
+      return `${year}-${month}-${day}`
+    case 'YYYY-MM-DD HH:mm:ss':
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    case 'RFC3339':
+      return dateObj.toISOString()
+    default:
+      // Simple format string replacement
+      return format
+        .replace('YYYY', String(year))
+        .replace('MM', month)
+        .replace('DD', day)
+        .replace('HH', hours)
+        .replace('mm', minutes)
+        .replace('ss', seconds)
+  }
+}
+
+/**
+ * Parse a date string to a Date object
+ * @param dateString - Date string in various formats
+ * @returns Date object or null if parsing fails
+ */
+export function parseDate(dateString: string): Date | null {
+  if (!dateString || typeof dateString !== 'string') {
+    return null
+  }
+  
+  const date = new Date(dateString)
+  
+  if (isNaN(date.getTime())) {
+    return null
+  }
+  
+  return date
+}
+

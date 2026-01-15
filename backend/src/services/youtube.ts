@@ -3,6 +3,7 @@ import { google } from 'googleapis'
 import ytdl from '@distube/ytdl-core'
 import { videoQueries, videoStateQueries, channelQueries } from './database.js'
 import { getAuthenticatedClient } from '../routes/auth.js'
+import { parseDuration } from '../utils/duration.js'
 
 // Google Takeout watch history entry format
 export interface GoogleTakeoutWatchHistoryEntry {
@@ -669,23 +670,6 @@ async function fetchVideoDetailsWithFallback(videoIds: string[]): Promise<Map<st
   console.log(`Fallback methods fetched ${totalSuccess} out of ${videoIds.length} videos`)
   
   return result
-}
-
-// Convert YouTube duration (ISO 8601) to readable format
-function parseDuration(duration: string): string {
-  const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
-  if (!match) return duration
-
-  const hours = parseInt(match[1] || '0', 10)
-  const minutes = parseInt(match[2] || '0', 10)
-  const seconds = parseInt(match[3] || '0', 10)
-
-  const parts: string[] = []
-  if (hours > 0) parts.push(`${hours}h`)
-  if (minutes > 0) parts.push(`${minutes}m`)
-  if (seconds > 0) parts.push(`${seconds}s`)
-
-  return parts.join(' ') || '0s'
 }
 
 // Fetch channel details from YouTube API

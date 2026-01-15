@@ -15,6 +15,7 @@ import importRoutes from './routes/import.js'
 import settingsRoutes from './routes/settings.js'
 import authRoutes from './routes/auth.js'
 import { refreshAllTVShowEpisodes } from './services/tv-episode-refresh.js'
+import { errorHandler } from './middleware/errorHandler.js'
 
 // Validate TMDB environment variables (warn but don't exit)
 if (!process.env.TMDB_API_KEY && !process.env.TMDB_READ_ACCESS_TOKEN) {
@@ -79,6 +80,9 @@ app.use('/api/auth', authRoutes)
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' })
 })
+
+// Error handler middleware (must be last)
+app.use(errorHandler)
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`)

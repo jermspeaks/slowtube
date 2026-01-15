@@ -1,4 +1,5 @@
 import db from '../config/db.js'
+import { parseDurationToSeconds, isShortVideo } from '../utils/duration.js'
 
 export interface Video {
   id: number
@@ -494,29 +495,6 @@ export const oauthQueries = {
   delete: (id: number) => {
     return db.prepare('DELETE FROM oauth_sessions WHERE id = ?').run(id).changes
   },
-}
-
-// Parse human-readable duration string (e.g., "1h 23m 45s") to seconds
-function parseDurationToSeconds(duration: string): number {
-  if (!duration || typeof duration !== 'string') return 0
-  
-  let totalSeconds = 0
-  const hourMatch = duration.match(/(\d+)h/)
-  const minuteMatch = duration.match(/(\d+)m/)
-  const secondMatch = duration.match(/(\d+)s/)
-  
-  if (hourMatch) totalSeconds += parseInt(hourMatch[1], 10) * 3600
-  if (minuteMatch) totalSeconds += parseInt(minuteMatch[1], 10) * 60
-  if (secondMatch) totalSeconds += parseInt(secondMatch[1], 10)
-  
-  return totalSeconds
-}
-
-// Check if a video is a YouTube Short (≤60 seconds)
-function isShortVideo(duration: string | null): boolean {
-  if (!duration || typeof duration !== 'string') return false
-  const seconds = parseDurationToSeconds(duration)
-  return seconds > 0 && seconds <= 60
 }
 
 // Stats operations
