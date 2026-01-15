@@ -180,9 +180,9 @@ function ChannelDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading channel...</div>
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading channel...</div>
           </div>
         </main>
       </div>
@@ -192,12 +192,12 @@ function ChannelDetail() {
   if (!channel) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">Channel not found</p>
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">Channel not found</p>
             <button
               onClick={() => navigate('/youtube/channels/watch-later')}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm md:text-base"
             >
               Back to Channels
             </button>
@@ -209,40 +209,40 @@ function ChannelDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         {/* Channel Header */}
-        <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex items-start gap-6">
+        <div className="bg-card rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+          <div className="flex flex-col sm:flex-row items-start gap-4 md:gap-6">
             {channel.thumbnail_url ? (
               <img
                 src={channel.thumbnail_url}
                 alt={channel.channel_title || 'Channel'}
-                className="w-24 h-24 rounded-full object-cover flex-shrink-0"
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover flex-shrink-0 mx-auto sm:mx-0"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                <span className="text-muted-foreground text-2xl">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0">
+                <span className="text-muted-foreground text-xl sm:text-2xl">
                   {channel.channel_title?.[0]?.toUpperCase() || '?'}
                 </span>
               </div>
             )}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-foreground mb-2">
+            <div className="flex-1 min-w-0 text-center sm:text-left">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2">
                 {channel.channel_title || 'Untitled Channel'}
               </h1>
               {channel.subscriber_count !== null && (
-                <p className="text-muted-foreground mb-2">
+                <p className="text-sm md:text-base text-muted-foreground mb-2">
                   {formatSubscriberCount(channel.subscriber_count)} subscribers
                 </p>
               )}
               {channel.description && (
-                <p className="text-muted-foreground mb-4 line-clamp-3">
+                <p className="text-sm md:text-base text-muted-foreground mb-4 line-clamp-3">
                   {channel.description}
                 </p>
               )}
               <button
                 onClick={handleSubscribe}
-                className={`px-4 py-2 rounded font-medium transition-colors ${
+                className={`px-4 py-2 rounded font-medium transition-colors text-sm md:text-base ${
                   channel.is_subscribed
                     ? 'bg-muted text-foreground hover:bg-accent'
                     : 'bg-primary text-primary-foreground hover:bg-primary/90'
@@ -255,15 +255,15 @@ function ChannelDetail() {
         </div>
 
         {/* Tabs */}
-        <div className="bg-card rounded-lg shadow-sm mb-6">
+        <div className="bg-card rounded-lg shadow-sm mb-4 md:mb-6">
           <div className="border-b border-border">
-            <nav className="flex -mb-px">
+            <nav className="flex -mb-px overflow-x-auto">
               {(['watch_later', 'latest', 'liked'] as ChannelVideoType[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`
-                    px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                    px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors whitespace-nowrap
                     ${
                       activeTab === tab
                         ? 'border-primary text-primary'
@@ -283,12 +283,12 @@ function ChannelDetail() {
         {/* Videos Content */}
         <div>
           {videosLoading ? (
-            <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-              <div className="text-lg text-muted-foreground">Loading videos...</div>
+            <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+              <div className="text-base md:text-lg text-muted-foreground">Loading videos...</div>
             </div>
           ) : activeTab === 'liked' ? (
-            <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-              <p className="text-lg text-muted-foreground mb-4">
+            <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+              <p className="text-base md:text-lg text-muted-foreground mb-4">
                 Coming soon - Liked videos will be imported separately
               </p>
             </div>
@@ -298,11 +298,11 @@ function ChannelDetail() {
               onVideosFetched={loadVideos}
             />
           ) : videos.length === 0 ? (
-            <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-              <p className="text-lg text-muted-foreground mb-4">
+            <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+              <p className="text-base md:text-lg text-muted-foreground mb-4">
                 No videos found
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm md:text-base text-muted-foreground">
                 This channel has no videos in your watch later list.
               </p>
             </div>
@@ -310,8 +310,8 @@ function ChannelDetail() {
             <>
               {activeTab === 'latest' && (
                 <div className="mb-4 flex flex-col gap-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       <Button
                         onClick={handleSelectAll}
                         variant="outline"
@@ -341,39 +341,45 @@ function ChannelDetail() {
                     </Button>
                   </div>
                   {selectedVideoIds.size > 0 && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         onClick={() => handleBulkAction('inbox')}
                         disabled={bulkActionLoading}
                         variant="default"
                         className="bg-yellow-600 hover:bg-yellow-700"
+                        size="sm"
                       >
                         <Inbox className="mr-2 h-4 w-4" />
-                        Move to Inbox ({selectedVideoIds.size})
+                        <span className="hidden sm:inline">Move to Inbox ({selectedVideoIds.size})</span>
+                        <span className="sm:hidden">Inbox ({selectedVideoIds.size})</span>
                       </Button>
                       <Button
                         onClick={() => handleBulkAction('archive')}
                         disabled={bulkActionLoading}
                         variant="default"
                         className="bg-gray-600 hover:bg-gray-700"
+                        size="sm"
                       >
                         <Archive className="mr-2 h-4 w-4" />
-                        Move to Archive ({selectedVideoIds.size})
+                        <span className="hidden sm:inline">Move to Archive ({selectedVideoIds.size})</span>
+                        <span className="sm:hidden">Archive ({selectedVideoIds.size})</span>
                       </Button>
                       <Button
                         onClick={() => handleBulkAction('feed')}
                         disabled={bulkActionLoading}
                         variant="default"
                         className="bg-blue-600 hover:bg-blue-700"
+                        size="sm"
                       >
                         <Rss className="mr-2 h-4 w-4" />
-                        Move to Feed ({selectedVideoIds.size})
+                        <span className="hidden sm:inline">Move to Feed ({selectedVideoIds.size})</span>
+                        <span className="sm:hidden">Feed ({selectedVideoIds.size})</span>
                       </Button>
                     </div>
                   )}
                 </div>
               )}
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {videos.map((video) => (
                   <VideoCard
                     key={video.id}

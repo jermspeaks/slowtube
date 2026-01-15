@@ -75,9 +75,9 @@ function WatchNext() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <h1 className="text-2xl font-bold">Watch Next</h1>
+          <h1 className="text-xl md:text-2xl font-bold">Watch Next</h1>
         </div>
 
         {/* Starred Movies Section */}
@@ -94,7 +94,7 @@ function WatchNext() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {movies.map(movie => (
                 <MovieCard
                   key={movie.id}
@@ -120,7 +120,7 @@ function WatchNext() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {tvShows.map(tvShow => (
                 <TVShowCard
                   key={tvShow.id}

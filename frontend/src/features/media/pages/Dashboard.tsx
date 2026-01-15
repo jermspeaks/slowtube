@@ -77,30 +77,30 @@ function Dashboard() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
           {/* Latest Movies Section */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground">Latest Movies</h2>
+            <div className="flex items-center justify-between mb-4 md:mb-6 flex-wrap gap-2">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground">Latest Movies</h2>
               <Link
                 to="/media/movies"
-                className="text-sm text-primary hover:underline"
+                className="text-sm md:text-base text-primary hover:underline"
               >
                 View All
               </Link>
             </div>
             {moviesLoading ? (
-              <div className="flex justify-center items-center py-8 bg-card rounded-lg">
-                <div className="text-sm text-muted-foreground">Loading...</div>
+              <div className="flex justify-center items-center py-8 md:py-12 bg-card rounded-lg">
+                <div className="text-sm md:text-base text-muted-foreground">Loading...</div>
               </div>
             ) : movies.length === 0 ? (
-              <div className="text-center py-8 px-4 bg-card rounded-lg">
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center py-8 md:py-12 px-4 bg-card rounded-lg">
+                <p className="text-sm md:text-base text-muted-foreground">
                   No movies saved
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 md:gap-6">
                 {movies.map(movie => (
                   <MovieCard
                     key={movie.id}
@@ -114,27 +114,27 @@ function Dashboard() {
 
           {/* Latest TV Shows Section */}
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-foreground">Latest TV Shows</h2>
+            <div className="flex items-center justify-between mb-4 md:mb-6 flex-wrap gap-2">
+              <h2 className="text-xl md:text-2xl font-bold text-foreground">Latest TV Shows</h2>
               <Link
                 to="/media/tv-shows/list"
-                className="text-sm text-primary hover:underline"
+                className="text-sm md:text-base text-primary hover:underline"
               >
                 View All
               </Link>
             </div>
             {tvShowsLoading ? (
-              <div className="flex justify-center items-center py-8 bg-card rounded-lg">
-                <div className="text-sm text-muted-foreground">Loading...</div>
+              <div className="flex justify-center items-center py-8 md:py-12 bg-card rounded-lg">
+                <div className="text-sm md:text-base text-muted-foreground">Loading...</div>
               </div>
             ) : tvShows.length === 0 ? (
-              <div className="text-center py-8 px-4 bg-card rounded-lg">
-                <p className="text-sm text-muted-foreground">
+              <div className="text-center py-8 md:py-12 px-4 bg-card rounded-lg">
+                <p className="text-sm md:text-base text-muted-foreground">
                   No TV shows saved
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 md:gap-6">
                 {tvShows.map(tvShow => (
                   <TVShowCard
                     key={tvShow.id}

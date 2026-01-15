@@ -32,9 +32,9 @@ function Tags() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <h1 className="text-2xl font-bold">Tags</h1>
+          <h1 className="text-xl md:text-2xl font-bold">Tags</h1>
         </div>
 
         {/* Search */}

@@ -156,8 +156,8 @@ function WatchLater() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold mb-6">Feed</h1>
-      <div className="mb-6 space-y-4">
+      <h1 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Feed</h1>
+      <div className="mb-4 md:mb-6 space-y-4">
         <div className="flex justify-between items-start flex-wrap gap-4">
           <div className="flex-1 min-w-0">
             <FiltersAndSort
@@ -204,22 +204,22 @@ function WatchLater() {
       </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading videos...</div>
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading videos...</div>
           </div>
         ) : videos.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">
               No videos found
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Import videos from the Settings page to get started.
             </p>
           </div>
         ) : (
           <>
             {viewMode === 'card' ? (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {videos.map(video => (
                   <VideoCard
                     key={video.id}

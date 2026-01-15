@@ -101,10 +101,10 @@ function RecentlyAired() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Recently Aired</h1>
+            <h1 className="text-xl md:text-2xl font-bold">Recently Aired</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Episodes from the past week
             </p>

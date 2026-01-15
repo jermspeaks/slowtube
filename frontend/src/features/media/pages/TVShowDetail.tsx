@@ -205,7 +205,7 @@ function TVShowDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
             <div className="text-lg text-muted-foreground">Loading TV show...</div>
           </div>
@@ -217,7 +217,7 @@ function TVShowDetail() {
   if (!tvShow) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
             <p className="text-lg text-muted-foreground mb-4">TV show not found</p>
             <button
@@ -260,7 +260,7 @@ function TVShowDetail() {
                 />
               )}
               <div className="flex-1 min-w-0">
-                <h1 className="text-3xl font-bold mb-3">{tvShow.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold mb-3">{tvShow.title}</h1>
                 
                 <div className="flex flex-wrap gap-3 items-center mb-4">
                   {tvShow.status && (
@@ -358,19 +358,19 @@ function TVShowDetail() {
           <h2 className="text-xl font-bold mb-4">Episode Statistics</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-2xl font-bold">{totalEpisodes}</div>
+              <div className="text-xl md:text-2xl font-bold">{totalEpisodes}</div>
               <div className="text-sm text-muted-foreground">Total Episodes</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-600">{watchedCount}</div>
+              <div className="text-xl md:text-2xl font-bold text-green-600">{watchedCount}</div>
               <div className="text-sm text-muted-foreground">Watched</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-blue-600">{unwatchedCount}</div>
+              <div className="text-xl md:text-2xl font-bold text-blue-600">{unwatchedCount}</div>
               <div className="text-sm text-muted-foreground">Unwatched</div>
             </div>
             <div>
-              <div className="text-2xl font-bold">{progressPercentage}%</div>
+              <div className="text-xl md:text-2xl font-bold">{progressPercentage}%</div>
               <div className="text-sm text-muted-foreground">Progress</div>
               <div className="mt-2 w-full bg-muted rounded-full h-2">
                 <div

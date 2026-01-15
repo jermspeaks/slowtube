@@ -78,7 +78,7 @@ function Stats() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-[1400px] mx-auto px-6 py-6">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <LoadingState message="Loading stats..." />
         </div>
       </div>
@@ -92,7 +92,7 @@ function Stats() {
   if (!stats) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-[1400px] mx-auto px-6 py-6">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <EmptyState title="No stats available" />
         </div>
       </div>
@@ -101,11 +101,11 @@ function Stats() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 pb-6">
-        <h2 className="text-2xl font-bold mb-6">Statistics</h2>
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 pb-4 md:pb-6">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Statistics</h2>
 
         {/* Date Range Filter */}
-        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-4 md:mb-6">
           <DateRangeFilter
             dateField={dateField}
             onDateFieldChange={setDateField}
@@ -117,35 +117,35 @@ function Stats() {
         </div>
 
         {/* Total Duration */}
-        <div className="bg-card rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4">Total Watch Time</h3>
-          <div className="text-3xl font-bold text-primary">
+        <div className="bg-card rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Total Watch Time</h3>
+          <div className="text-2xl md:text-3xl font-bold text-primary">
             {stats.totalDuration.formatted}
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-xs md:text-sm text-muted-foreground mt-2">
             Based on {stats.channelRankings.reduce((sum, r) => sum + r.count, 0)} videos with duration information
           </p>
         </div>
 
         {/* Channel Rankings */}
-        <div className="bg-card rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4">Top Channels</h3>
+        <div className="bg-card rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Top Channels</h3>
           {stats.channelRankings.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
+              <table className="w-full border-collapse min-w-[300px]">
                 <thead>
                   <tr className="border-b-2 border-border">
-                    <th className="p-3 text-left">Rank</th>
-                    <th className="p-3 text-left">Channel</th>
-                    <th className="p-3 text-right">Videos</th>
+                    <th className="p-2 md:p-3 text-left text-xs md:text-sm">Rank</th>
+                    <th className="p-2 md:p-3 text-left text-xs md:text-sm">Channel</th>
+                    <th className="p-2 md:p-3 text-right text-xs md:text-sm">Videos</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.channelRankings.slice(0, 20).map((ranking) => (
                     <tr key={ranking.rank} className="border-b border-border hover:bg-accent transition-colors">
-                      <td className="p-3 font-semibold">#{ranking.rank}</td>
-                      <td className="p-3">{ranking.channel_title}</td>
-                      <td className="p-3 text-right">{ranking.count}</td>
+                      <td className="p-2 md:p-3 font-semibold text-xs md:text-sm">#{ranking.rank}</td>
+                      <td className="p-2 md:p-3 text-xs md:text-sm">{ranking.channel_title}</td>
+                      <td className="p-2 md:p-3 text-right text-xs md:text-sm">{ranking.count}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -162,9 +162,9 @@ function Stats() {
         </div>
 
         {/* Time Statistics - Hour */}
-        <div className="bg-card rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4">Videos Added by Hour of Day</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="bg-card rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Videos Added by Hour of Day</h3>
+          <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
             <BarChart data={stats.timeStats.byHour}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
@@ -178,7 +178,7 @@ function Stats() {
             </BarChart>
           </ResponsiveContainer>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-xs md:text-sm min-w-[200px]">
               <thead>
                 <tr className="border-b border-border">
                   <th className="p-2 text-left">Hour</th>
@@ -198,9 +198,9 @@ function Stats() {
         </div>
 
         {/* Time Statistics - Day of Week */}
-        <div className="bg-card rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4">Videos Added by Day of Week</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="bg-card rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Videos Added by Day of Week</h3>
+          <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
             <BarChart data={stats.timeStats.byDayOfWeek}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
@@ -214,7 +214,7 @@ function Stats() {
             </BarChart>
           </ResponsiveContainer>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-xs md:text-sm min-w-[200px]">
               <thead>
                 <tr className="border-b border-border">
                   <th className="p-2 text-left">Day</th>
@@ -234,9 +234,9 @@ function Stats() {
         </div>
 
         {/* Time Statistics - Month */}
-        <div className="bg-card rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4">Videos Added by Month</h3>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="bg-card rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">Videos Added by Month</h3>
+          <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
             <BarChart data={stats.timeStats.byMonth}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
@@ -253,7 +253,7 @@ function Stats() {
             </BarChart>
           </ResponsiveContainer>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+            <table className="w-full border-collapse text-xs md:text-sm min-w-[200px]">
               <thead>
                 <tr className="border-b border-border">
                   <th className="p-2 text-left">Month</th>
@@ -273,10 +273,10 @@ function Stats() {
         </div>
 
         {/* All Channels */}
-        <div className="bg-card rounded-lg shadow-md p-6 mb-6">
-          <h3 className="text-xl font-semibold mb-4">All Channels ({stats.channelList.length})</h3>
+        <div className="bg-card rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
+          <h3 className="text-lg md:text-xl font-semibold mb-4">All Channels ({stats.channelList.length})</h3>
           {stats.channelList.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto">
               {stats.channelList.map((channel, index) => (
                 <div key={index} className="p-2 bg-muted rounded hover:bg-accent transition-colors">
                   {channel}

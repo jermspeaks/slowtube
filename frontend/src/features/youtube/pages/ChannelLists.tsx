@@ -98,31 +98,32 @@ function ChannelGroups() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
-          <h1 className="text-3xl font-bold">Channel Groups</h1>
-          <div className="flex items-center gap-4">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="flex justify-between items-start mb-4 md:mb-6 flex-wrap gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Channel Groups</h1>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
             <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             <Button
               onClick={() => setIsCreateModalOpen(true)}
               className="gap-2"
             >
               <Plus className="h-4 w-4" />
-              Create Group
+              <span className="hidden sm:inline">Create Group</span>
+              <span className="sm:hidden">Create</span>
             </Button>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading channel groups...</div>
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading channel groups...</div>
           </div>
         ) : groups.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">
               No channel groups found
             </p>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm md:text-base text-muted-foreground mb-4">
               Create your first channel group to organize your channels.
             </p>
             <Button onClick={() => setIsCreateModalOpen(true)}>
@@ -133,7 +134,7 @@ function ChannelGroups() {
         ) : (
           <>
             {viewMode === 'card' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {groups.map(group => (
                   <ChannelGroupCard
                     key={group.id}

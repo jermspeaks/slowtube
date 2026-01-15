@@ -91,7 +91,7 @@ function MoviePlaylistDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
             <div className="text-lg text-muted-foreground">Loading playlist...</div>
           </div>
@@ -103,7 +103,7 @@ function MoviePlaylistDetail() {
   if (!playlist) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
             <p className="text-lg text-muted-foreground mb-4">Playlist not found</p>
             <Button onClick={() => navigate('/media/playlists')}>
@@ -135,7 +135,7 @@ function MoviePlaylistDetail() {
                   style={{ backgroundColor: playlist.color }}
                 />
               )}
-              <h1 className="text-3xl font-bold">{playlist.name}</h1>
+              <h1 className="text-2xl md:text-3xl font-bold">{playlist.name}</h1>
             </div>
             {playlist.description && (
               <p className="text-muted-foreground">{playlist.description}</p>

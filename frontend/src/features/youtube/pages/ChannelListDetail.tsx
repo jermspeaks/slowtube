@@ -300,7 +300,7 @@ function ChannelGroupDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
             <div className="text-lg text-muted-foreground">Loading channel group...</div>
           </div>
@@ -312,7 +312,7 @@ function ChannelGroupDetail() {
   if (!group) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
             <p className="text-lg text-muted-foreground mb-4">Channel group not found</p>
             <Button onClick={() => navigate('/youtube/channel-lists')}>
@@ -347,7 +347,7 @@ function ChannelGroupDetail() {
                       style={{ backgroundColor: group.color }}
                     />
                   )}
-                  <h1 className="text-2xl font-bold text-foreground">
+                  <h1 className="text-xl md:text-2xl font-bold text-foreground">
                     {group.name}
                   </h1>
                   <span className="text-sm text-muted-foreground">
@@ -390,7 +390,7 @@ function ChannelGroupDetail() {
               <button
                 onClick={() => navigate(`/youtube/channel-lists/${id}/watch-later`)}
                 className={`
-                  px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                  px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors
                   ${
                     activeTab === 'watch_later'
                       ? 'border-primary text-primary'
@@ -403,7 +403,7 @@ function ChannelGroupDetail() {
               <button
                 onClick={() => navigate(`/youtube/channel-lists/${id}/latest`)}
                 className={`
-                  px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                  px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors
                   ${
                     activeTab === 'latest'
                       ? 'border-primary text-primary'
@@ -416,7 +416,7 @@ function ChannelGroupDetail() {
               <button
                 onClick={() => navigate(`/youtube/channel-lists/${id}/liked`)}
                 className={`
-                  px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                  px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm font-medium border-b-2 transition-colors
                   ${
                     activeTab === 'liked'
                       ? 'border-primary text-primary'
@@ -616,7 +616,7 @@ function ChannelGroupDetail() {
                 </div>
               )}
               {viewMode === 'card' ? (
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                   {videos.map((video) => (
                     <VideoCard
                       key={video.id}

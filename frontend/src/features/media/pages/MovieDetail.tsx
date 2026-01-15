@@ -109,9 +109,9 @@ function MovieDetail() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading movie...</div>
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading movie...</div>
           </div>
         </main>
       </div>
@@ -121,12 +121,12 @@ function MovieDetail() {
   if (!movie) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">Movie not found</p>
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">Movie not found</p>
             <button
               onClick={() => navigate('/movies')}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm md:text-base"
             >
               Back to Movies
             </button>
@@ -141,9 +141,9 @@ function MovieDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         {/* Header Section with Backdrop */}
-        <div className="relative rounded-lg overflow-hidden mb-6 shadow-lg">
+        <div className="relative rounded-lg overflow-hidden mb-4 md:mb-6 shadow-lg">
           {backdropUrl && (
             <div className="absolute inset-0">
               <img
@@ -154,26 +154,26 @@ function MovieDetail() {
               <div className="absolute inset-0 bg-black/60" />
             </div>
           )}
-          <div className={`relative p-6 ${backdropUrl ? 'text-white' : 'bg-card'}`}>
-            <div className="flex items-start gap-6">
+          <div className={`relative p-4 md:p-6 ${backdropUrl ? 'text-white' : 'bg-card'}`}>
+            <div className="flex flex-col sm:flex-row items-start gap-4 md:gap-6">
               {posterUrl && (
                 <img
                   src={posterUrl}
                   alt={movie.title}
-                  className="w-32 h-48 object-cover rounded flex-shrink-0 shadow-lg"
+                  className="w-24 h-36 sm:w-32 sm:h-48 object-cover rounded flex-shrink-0 shadow-lg mx-auto sm:mx-0"
                 />
               )}
               <div className="flex-1 min-w-0">
-                <h1 className="text-3xl font-bold mb-3">{movie.title}</h1>
+                <h1 className="text-2xl md:text-3xl font-bold mb-3">{movie.title}</h1>
                 
-                <div className="flex flex-wrap gap-3 items-center mb-4">
+                <div className="flex flex-wrap gap-2 md:gap-3 items-center mb-4">
                   {movie.release_date && (
-                    <span className="text-sm opacity-90">
+                    <span className="text-xs md:text-sm opacity-90">
                       Released: {format(new Date(movie.release_date), 'MMM d, yyyy')}
                     </span>
                   )}
                   {movie.saved_at && (
-                    <span className="text-sm opacity-90">
+                    <span className="text-xs md:text-sm opacity-90">
                       Saved: {format(new Date(movie.saved_at), 'MMM d, yyyy')}
                     </span>
                   )}
@@ -256,15 +256,15 @@ function MovieDetail() {
 
         {/* Overview Section */}
         {movie.overview && (
-          <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
-            <h2 className="text-xl font-bold mb-3">Overview</h2>
-            <p className="text-muted-foreground leading-relaxed">{movie.overview}</p>
+          <div className="bg-card rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+            <h2 className="text-lg md:text-xl font-bold mb-3">Overview</h2>
+            <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{movie.overview}</p>
           </div>
         )}
 
         {/* Statistics Section */}
-        <div className="bg-card rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-bold mb-4">Details</h2>
+        <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold mb-4">Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {movie.release_date && (
               <div>

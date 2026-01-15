@@ -91,7 +91,7 @@ function VideoTable({
         <thead>
           <tr className="bg-muted">
             {selectable && (
-              <th className="p-3 text-left border-b-2 border-border w-12">
+              <th className="p-2 md:p-3 text-left border-b-2 border-border w-10 md:w-12">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -103,19 +103,19 @@ function VideoTable({
                 />
               </th>
             )}
-            <th className="p-3 text-left border-b-2 border-border">Thumbnail</th>
-            <th className="p-3 text-left border-b-2 border-border">Title</th>
-            <th className="p-3 text-left border-b-2 border-border">Channel</th>
-            <th className="p-3 text-left border-b-2 border-border">Duration</th>
-            <th className="p-3 text-left border-b-2 border-border">Published</th>
+            <th className="p-2 md:p-3 text-left border-b-2 border-border">Thumbnail</th>
+            <th className="p-2 md:p-3 text-left border-b-2 border-border">Title</th>
+            <th className="p-2 md:p-3 text-left border-b-2 border-border hidden md:table-cell">Channel</th>
+            <th className="p-2 md:p-3 text-left border-b-2 border-border hidden lg:table-cell">Duration</th>
+            <th className="p-2 md:p-3 text-left border-b-2 border-border hidden lg:table-cell">Published</th>
             {showAddedDate && (
               showFeedDate ? (
-                <th className="p-3 text-left border-b-2 border-border">Added to Latest</th>
+                <th className="p-2 md:p-3 text-left border-b-2 border-border hidden md:table-cell">Added to Latest</th>
               ) : (
-                <th className="p-3 text-left border-b-2 border-border">Added</th>
+                <th className="p-2 md:p-3 text-left border-b-2 border-border hidden md:table-cell">Added</th>
               )
             )}
-            <th className="p-3 text-left border-b-2 border-border">Actions</th>
+            <th className="p-2 md:p-3 text-left border-b-2 border-border">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -125,7 +125,7 @@ function VideoTable({
               className="border-b border-border hover:bg-accent transition-colors"
             >
               {selectable && (
-                <td className="p-3">
+                <td className="p-2 md:p-3">
                   <input
                     type="checkbox"
                     checked={selectedVideoIds.has(video.id)}
@@ -143,12 +143,12 @@ function VideoTable({
                   <img
                     src={video.thumbnail_url}
                     alt={video.title}
-                    className="w-[120px] h-[67px] object-cover rounded"
+                    className="w-20 h-11 md:w-[120px] md:h-[67px] object-cover rounded"
                   />
                 )}
               </td>
-              <td className="p-3 max-w-[400px]">
-                <div className="font-bold mb-1 overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-2">
+              <td className="p-2 md:p-3 max-w-[200px] md:max-w-[400px]">
+                <div className="font-bold mb-1 overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-2 text-xs md:text-sm">
                   {video.title}
                   {video.fetch_status === 'pending' && (
                     <span className="text-[10px] text-yellow-500 font-normal">(fetching...)</span>
@@ -158,22 +158,27 @@ function VideoTable({
                   )}
                 </div>
                 {video.description && (
-                  <div className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
+                  <div className="text-xs text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap hidden md:block">
                     {video.description}
                   </div>
                 )}
+                {video.channel_title && (
+                  <div className="text-xs text-muted-foreground md:hidden mt-1">
+                    {video.channel_title}
+                  </div>
+                )}
               </td>
-              <td className="p-3 text-muted-foreground text-xs">
+              <td className="p-2 md:p-3 text-muted-foreground text-xs hidden md:table-cell">
                 {video.channel_title || '-'}
               </td>
-              <td className="p-3 text-muted-foreground text-xs">
+              <td className="p-2 md:p-3 text-muted-foreground text-xs hidden lg:table-cell">
                 {video.duration || '-'}
               </td>
-              <td className="p-3 text-muted-foreground text-xs">
+              <td className="p-2 md:p-3 text-muted-foreground text-xs hidden lg:table-cell">
                 {video.published_at ? format(new Date(video.published_at), 'MMM d, yyyy') : '-'}
               </td>
               {showAddedDate && (
-                <td className="p-3 text-muted-foreground text-xs">
+                <td className="p-2 md:p-3 text-muted-foreground text-xs hidden md:table-cell">
                   {showFeedDate && video.added_to_latest_at
                     ? format(new Date(video.added_to_latest_at), 'MMM d, yyyy')
                     : !showFeedDate && video.added_to_playlist_at
@@ -181,7 +186,7 @@ function VideoTable({
                     : '-'}
                 </td>
               )}
-              <td className="p-3">
+              <td className="p-2 md:p-3">
                 {onStateChange && (
                   <div className="flex items-center gap-2">
                     {(video.state === 'inbox' || video.state === 'archive') && (

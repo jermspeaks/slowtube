@@ -209,20 +209,20 @@ function ChannelsList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="mb-6 flex justify-between items-start gap-4 flex-wrap">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="mb-4 md:mb-6 flex justify-between items-start gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
               {filterType === 'subscribed' ? 'Subscribed Channels' : 'Watch Later Channels'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               {filterType === 'subscribed' 
                 ? 'Channels you are subscribed to' 
                 : 'Channels with videos in your watch later list'}
             </p>
           </div>
           {filterType === 'subscribed' && (
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
               <Button
                 onClick={handleRefreshLatestVideos}
                 disabled={refreshing || syncing}
@@ -230,7 +230,8 @@ function ChannelsList() {
                 variant="outline"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                {refreshing ? 'Refreshing...' : 'Refresh Latest Videos'}
+                <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh Latest Videos'}</span>
+                <span className="sm:hidden">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
               </Button>
               <Button
                 onClick={handleSyncSubscriptions}
@@ -238,14 +239,15 @@ function ChannelsList() {
                 className="gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-                {syncing ? 'Syncing...' : 'Sync Subscriptions'}
+                <span className="hidden sm:inline">{syncing ? 'Syncing...' : 'Sync Subscriptions'}</span>
+                <span className="sm:hidden">{syncing ? 'Syncing...' : 'Sync'}</span>
               </Button>
             </div>
           )}
         </div>
 
         {/* Filters and Sort Panel */}
-        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-4 md:mb-6">
           {/* Always visible section */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex gap-2 items-center w-full sm:w-auto">
@@ -328,15 +330,15 @@ function ChannelsList() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading channels...</div>
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading channels...</div>
           </div>
         ) : channels.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">
               No channels found
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               {filterType === 'subscribed' 
                 ? 'Subscribe to channels to see them here.'
                 : 'Channels will appear here once you have videos in your watch later list.'}
@@ -349,7 +351,7 @@ function ChannelsList() {
                 Showing {channels.length} of {total} channels
               </div>
             )}
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {channels.map((channel) => (
                 <div
                   key={channel.youtube_channel_id}

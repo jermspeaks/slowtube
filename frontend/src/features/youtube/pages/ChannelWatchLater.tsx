@@ -84,7 +84,7 @@ function ChannelWatchLater() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
             <div className="text-lg text-muted-foreground">Loading channel...</div>
           </div>
@@ -96,7 +96,7 @@ function ChannelWatchLater() {
   if (!channel) {
     return (
       <div className="min-h-screen bg-background">
-        <main className="max-w-[1400px] mx-auto px-6 py-6">
+        <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
           <div className="text-center py-[60px] px-5 bg-card rounded-lg">
             <p className="text-lg text-muted-foreground mb-4">Channel not found</p>
             <button
@@ -131,7 +131,7 @@ function ChannelWatchLater() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {videos.map((video) => (
               <VideoCard
                 key={video.id}

@@ -353,32 +353,32 @@ function Settings() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="bg-card rounded-lg shadow-sm p-6">
-          <h1 className="text-2xl font-bold mb-6">Settings</h1>
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="bg-card rounded-lg shadow-sm p-4 md:p-6">
+          <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Settings</h1>
           
-          <div className="space-y-8">
+          <div className="space-y-6 md:space-y-8">
             {/* YouTube Authentication Section */}
-            <div className="space-y-4 border-b pb-6">
-              <h2 className="text-xl font-semibold">YouTube Authentication</h2>
-              <p className="text-sm text-muted-foreground">
+            <div className="space-y-4 border-b pb-4 md:pb-6">
+              <h2 className="text-lg md:text-xl font-semibold">YouTube Authentication</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Connect your YouTube account to sync subscribed channels and fetch latest videos. This is optional and only required for subscription features.
               </p>
               
               {youtubeAuthStatus.loading ? (
-                <div className="text-sm text-muted-foreground">Checking authentication status...</div>
+                <div className="text-xs md:text-sm text-muted-foreground">Checking authentication status...</div>
               ) : (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     {youtubeAuthStatus.authenticated ? (
                       <>
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        <span className="text-sm text-green-600">YouTube account connected</span>
+                        <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
+                        <span className="text-xs md:text-sm text-green-600">YouTube account connected</span>
                       </>
                     ) : (
                       <>
-                        <XCircle className="h-5 w-5 text-gray-400" />
-                        <span className="text-sm text-muted-foreground">YouTube account not connected</span>
+                        <XCircle className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                        <span className="text-xs md:text-sm text-muted-foreground">YouTube account not connected</span>
                       </>
                     )}
                   </div>
@@ -386,15 +386,16 @@ function Settings() {
                   {!youtubeAuthStatus.authenticated && (
                     <Button
                       onClick={handleConnectYouTube}
-                      className="gap-2"
+                      className="gap-2 w-full sm:w-auto"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      Connect YouTube Account
+                      <span className="hidden sm:inline">Connect YouTube Account</span>
+                      <span className="sm:hidden">Connect</span>
                     </Button>
                   )}
                   
                   {youtubeAuthStatus.authenticated && (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Button
                         onClick={handleSyncSubscriptions}
                         disabled={syncingSubscriptions}
@@ -418,8 +419,8 @@ function Settings() {
 
             {/* Import Section */}
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold">Import Videos</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="text-lg md:text-xl font-semibold">Import Videos</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Upload your watch-history.json or watch-history.csv file from Google Takeout to import your YouTube watch history.
               </p>
               
@@ -440,23 +441,24 @@ function Settings() {
               <Button
                 onClick={handleImportClick}
                 disabled={uploading || fetchingDetails}
-                className="gap-2"
+                className="gap-2 w-full sm:w-auto"
               >
                 <Upload className="h-4 w-4" />
-                {uploading ? 'Uploading...' : 'Import Google Takeout File'}
+                <span className="hidden sm:inline">{uploading ? 'Uploading...' : 'Import Google Takeout File'}</span>
+                <span className="sm:hidden">{uploading ? 'Uploading...' : 'Import'}</span>
               </Button>
             </div>
 
             {/* Import TMDB Section */}
-            <div className="space-y-4 border-t pt-6">
-              <h2 className="text-xl font-semibold">Import TV Shows & Movies</h2>
-              <p className="text-sm text-muted-foreground">
+            <div className="space-y-4 border-t pt-4 md:pt-6">
+              <h2 className="text-lg md:text-xl font-semibold">Import TV Shows & Movies</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Import TV shows and movies from data files using TMDB API. This will fetch details for all entries and import episodes for TV shows.
               </p>
               
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2">
                     Import from data.json (TMDB IDs - numeric IDs)
                   </p>
                   {tmdbImportProgress && (
@@ -475,7 +477,7 @@ function Settings() {
                 </div>
                 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2">
                     Import from data2.json (IMDb IDs - IDs starting with "tt")
                   </p>
                   {imdbImportProgress && (
@@ -494,7 +496,7 @@ function Settings() {
                 </div>
                 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2">
                     Import from Letterboxd watchlist CSV export
                   </p>
                   <input
@@ -522,9 +524,9 @@ function Settings() {
             </div>
 
             {/* Timezone Settings Section */}
-            <div className="space-y-4 border-t pt-6">
-              <h2 className="text-xl font-semibold">Timezone Settings</h2>
-              <p className="text-sm text-muted-foreground">
+            <div className="space-y-4 border-t pt-4 md:pt-6">
+              <h2 className="text-lg md:text-xl font-semibold">Timezone Settings</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Set your preferred timezone for displaying dates in the calendar views. Dates in the database remain stored as UTC.
               </p>
               
@@ -570,9 +572,9 @@ function Settings() {
             </div>
 
             {/* Theme Settings Section */}
-            <div className="space-y-4 border-t pt-6">
-              <h2 className="text-xl font-semibold">Theme Settings</h2>
-              <p className="text-sm text-muted-foreground">
+            <div className="space-y-4 border-t pt-4 md:pt-6">
+              <h2 className="text-lg md:text-xl font-semibold">Theme Settings</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">
                 Choose your preferred color theme. System will follow your device's theme preference.
               </p>
               
@@ -607,12 +609,12 @@ function Settings() {
             </div>
 
             {/* Clear All Section */}
-            <div className="space-y-4 border-t pt-6">
-              <h2 className="text-xl font-semibold text-destructive">Danger Zone</h2>
+            <div className="space-y-4 border-t pt-4 md:pt-6">
+              <h2 className="text-lg md:text-xl font-semibold text-destructive">Danger Zone</h2>
               
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2">
                     Permanently delete all videos from your database. This action cannot be undone.
                   </p>
                   <Button
@@ -626,13 +628,13 @@ function Settings() {
                 </div>
                 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">
+                  <p className="text-xs md:text-sm text-muted-foreground mb-2">
                     Permanently delete all TV shows, episodes, and movies from your database. This action cannot be undone.
                   </p>
                   <Button
                     onClick={handleResetTVShows}
                     variant="destructive"
-                    className="gap-2"
+                    className="gap-2 w-full sm:w-auto"
                   >
                     <Trash2 className="h-4 w-4" />
                     Reset TV Shows & Movies

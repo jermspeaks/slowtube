@@ -285,10 +285,10 @@ function TVShowsList() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
-          <h1 className="text-3xl font-bold">TV Shows</h1>
-          <div className="flex gap-2">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="flex justify-between items-start mb-4 md:mb-6 flex-wrap gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">TV Shows</h1>
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -298,14 +298,14 @@ function TVShowsList() {
             </button>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm md:text-base"
             >
               Add TV Show
             </button>
           </div>
         </div>
 
-        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-4 md:mb-6">
           {/* Always visible section */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex gap-2 items-center w-full sm:w-auto sm:flex-1 sm:max-w-md">
@@ -444,15 +444,15 @@ function TVShowsList() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading TV shows...</div>
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading TV shows...</div>
           </div>
         ) : tvShows.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">
               No TV shows found
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Click "Add TV Show" to search and add TV shows from TMDB.
             </p>
           </div>
@@ -461,7 +461,8 @@ function TVShowsList() {
             <div className="mb-4 text-sm text-muted-foreground">
               Showing {tvShows.length} of {total} TV shows
             </div>
-            <TVShowTable 
+            <div className="overflow-x-auto">
+              <TVShowTable 
               tvShows={tvShows} 
               onDelete={handleDelete} 
               onArchive={async (tvShow, isArchived) => {
@@ -476,6 +477,7 @@ function TVShowsList() {
               }}
               onStartedChange={loadTVShows}
             />
+            </div>
             <Pagination
               currentPage={filters.currentPage}
               totalPages={totalPages}

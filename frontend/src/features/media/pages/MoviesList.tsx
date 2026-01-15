@@ -333,17 +333,17 @@ function MoviesList() {
 
   return (
     <>
-      <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
-          <h1 className="text-3xl font-bold">Movies</h1>
+      <div className="flex justify-between items-start mb-4 md:mb-6 flex-wrap gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold">Movies</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors text-sm md:text-base"
           >
             Add Movie
           </button>
         </div>
 
-        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-6">
+        <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-4 md:mb-6">
           {/* Always visible section */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
             <div className="flex gap-2 items-center w-full sm:w-auto sm:flex-1 sm:max-w-md">
@@ -452,15 +452,15 @@ function MoviesList() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading movies...</div>
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading movies...</div>
           </div>
         ) : movies.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">
               No movies found
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Click "Add Movie" to search and add movies from TMDB.
             </p>
           </div>
@@ -473,11 +473,11 @@ function MoviesList() {
               const hasWatched = selectedMovies.some(m => m.is_watched)
               
               return (
-                <div className="mb-4 p-4 bg-card rounded-lg border border-border flex items-center justify-between">
+                <div className="mb-4 p-3 md:p-4 bg-card rounded-lg border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
                   <div className="text-sm text-foreground">
                     {selectedMovieIds.size} {selectedMovieIds.size === 1 ? 'movie' : 'movies'} selected
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -486,7 +486,8 @@ function MoviesList() {
                       className="gap-2"
                     >
                       <Check className="h-4 w-4" />
-                      Mark as Watched
+                      <span className="hidden sm:inline">Mark as Watched</span>
+                      <span className="sm:hidden">Watched</span>
                     </Button>
                     <Button
                       variant="outline"
@@ -496,7 +497,8 @@ function MoviesList() {
                       className="gap-2"
                     >
                       <X className="h-4 w-4" />
-                      Mark as Unwatched
+                      <span className="hidden sm:inline">Mark as Unwatched</span>
+                      <span className="sm:hidden">Unwatched</span>
                     </Button>
                     <Button
                       variant="outline"
@@ -505,7 +507,8 @@ function MoviesList() {
                       className="gap-2"
                     >
                       <ListPlus className="h-4 w-4" />
-                      Add to Playlist
+                      <span className="hidden sm:inline">Add to Playlist</span>
+                      <span className="sm:hidden">Add</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -523,15 +526,17 @@ function MoviesList() {
             <div className="mb-4 text-sm text-muted-foreground">
               Showing {movies.length} of {total} movies
             </div>
-            <MovieTable 
-              movies={movies} 
-              onDelete={handleDelete}
-              onArchive={handleArchive}
-              onStar={handleStar}
-              onWatched={handleWatched}
-              selectedMovieIds={selectedMovieIds}
-              onSelectionChange={setSelectedMovieIds}
-            />
+            <div className="overflow-x-auto">
+              <MovieTable 
+                movies={movies} 
+                onDelete={handleDelete}
+                onArchive={handleArchive}
+                onStar={handleStar}
+                onWatched={handleWatched}
+                selectedMovieIds={selectedMovieIds}
+                onSelectionChange={setSelectedMovieIds}
+              />
+            </div>
             <Pagination
               currentPage={filters.currentPage}
               totalPages={totalPages}

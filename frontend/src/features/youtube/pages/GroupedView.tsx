@@ -134,8 +134,8 @@ function GroupedView() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-[1400px] mx-auto px-6 py-6">
-        <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
+        <div className="flex justify-between items-start mb-4 md:mb-6 flex-wrap gap-4">
           <div className="flex-1 min-w-0">
             <FiltersAndSort
               searchQuery={searchQuery}
@@ -159,33 +159,33 @@ function GroupedView() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-[60px] px-5 bg-card rounded-lg">
-            <div className="text-lg text-muted-foreground">Loading videos...</div>
+          <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <div className="text-base md:text-lg text-muted-foreground">Loading videos...</div>
           </div>
         ) : videos.length === 0 ? (
-          <div className="text-center py-[60px] px-5 bg-card rounded-lg">
-            <p className="text-lg text-muted-foreground mb-4">
+          <div className="text-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
+            <p className="text-base md:text-lg text-muted-foreground mb-4">
               No videos found
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground">
               Import videos from the Settings page to get started.
             </p>
           </div>
         ) : (
           <>
             {viewMode === 'card' ? (
-              <div className="space-y-8">
+              <div className="space-y-6 md:space-y-8">
                 {paginatedChannelNames.map(channelName => (
                   <div key={channelName}>
                     <div className="mb-4 pb-2 border-b-2 border-border">
-                      <h2 className="text-xl font-bold text-foreground">
+                      <h2 className="text-lg md:text-xl font-bold text-foreground">
                         {channelName}
-                        <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        <span className="ml-2 text-xs md:text-sm font-normal text-muted-foreground">
                           ({groupedVideos[channelName].length} {groupedVideos[channelName].length === 1 ? 'video' : 'videos'})
                         </span>
                       </h2>
                     </div>
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                       {groupedVideos[channelName].map(video => (
                         <VideoCard
                           key={video.id}
@@ -199,22 +199,24 @@ function GroupedView() {
                 ))}
               </div>
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-6 md:space-y-8">
                 {paginatedChannelNames.map(channelName => (
                   <div key={channelName}>
                     <div className="mb-4 pb-2 border-b-2 border-border">
-                      <h2 className="text-xl font-bold text-foreground">
+                      <h2 className="text-lg md:text-xl font-bold text-foreground">
                         {channelName}
-                        <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        <span className="ml-2 text-xs md:text-sm font-normal text-muted-foreground">
                           ({groupedVideos[channelName].length} {groupedVideos[channelName].length === 1 ? 'video' : 'videos'})
                         </span>
                       </h2>
                     </div>
-                    <VideoTable
-                      videos={groupedVideos[channelName]}
-                      onVideoClick={handleVideoClick}
-                      onStateChange={handleStateChange}
-                    />
+                    <div className="overflow-x-auto">
+                      <VideoTable
+                        videos={groupedVideos[channelName]}
+                        onVideoClick={handleVideoClick}
+                        onStateChange={handleStateChange}
+                      />
+                    </div>
                   </div>
                 ))}
               </div>

@@ -103,7 +103,7 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
           <thead>
             <tr className="bg-muted">
               {onSelectionChange && (
-                <th className="p-3 text-left border-b-2 border-border w-12">
+                <th className="p-2 md:p-3 text-left border-b-2 border-border w-10 md:w-12">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -115,12 +115,12 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
                   />
                 </th>
               )}
-              <th className="p-3 text-left border-b-2 border-border">Poster</th>
-              <th className="p-3 text-left border-b-2 border-border">Title</th>
-              <th className="p-3 text-left border-b-2 border-border">Overview</th>
-              <th className="p-3 text-left border-b-2 border-border">Release Date</th>
-              <th className="p-3 text-left border-b-2 border-border">Created At</th>
-              <th className="p-3 text-left border-b-2 border-border">Actions</th>
+              <th className="p-2 md:p-3 text-left border-b-2 border-border">Poster</th>
+              <th className="p-2 md:p-3 text-left border-b-2 border-border">Title</th>
+              <th className="p-2 md:p-3 text-left border-b-2 border-border hidden md:table-cell">Overview</th>
+              <th className="p-2 md:p-3 text-left border-b-2 border-border">Release Date</th>
+              <th className="p-2 md:p-3 text-left border-b-2 border-border hidden lg:table-cell">Created At</th>
+              <th className="p-2 md:p-3 text-left border-b-2 border-border">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -132,7 +132,7 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
                   className={`border-b border-border hover:bg-accent transition-colors ${isSelected(movie.id) ? 'bg-accent' : ''}`}
                 >
                   {onSelectionChange && (
-                    <td className="p-3">
+                    <td className="p-2 md:p-3">
                       <input
                         type="checkbox"
                         checked={isSelected(movie.id)}
@@ -141,22 +141,22 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
                       />
                     </td>
                   )}
-                  <td className="p-2">
+                  <td className="p-2 md:p-3">
                     {posterUrl ? (
                       <img
                         src={posterUrl}
                         alt={movie.title}
-                        className="w-20 h-[120px] object-cover rounded"
+                        className="w-16 h-24 md:w-20 md:h-[120px] object-cover rounded"
                       />
                     ) : (
-                      <div className="w-20 h-[120px] bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
+                      <div className="w-16 h-24 md:w-20 md:h-[120px] bg-muted rounded flex items-center justify-center text-xs text-muted-foreground">
                         No poster
                       </div>
                     )}
                   </td>
-                  <td className="p-3 max-w-[300px]">
+                  <td className="p-2 md:p-3 max-w-[200px] md:max-w-[300px]">
                     <div
-                      className="font-bold mb-1 cursor-pointer hover:text-primary transition-colors"
+                      className="font-bold mb-1 cursor-pointer hover:text-primary transition-colors text-sm md:text-base"
                       onClick={() => navigate(`/movies/${movie.id}`)}
                     >
                       {movie.title}
@@ -165,7 +165,7 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
                       <div className="text-xs text-muted-foreground">TMDB: {movie.tmdb_id}</div>
                     )}
                   </td>
-                  <td className="p-3 max-w-[400px]">
+                  <td className="p-2 md:p-3 max-w-[400px] hidden md:table-cell">
                     {movie.overview ? (
                       <div className="text-sm text-muted-foreground line-clamp-3">
                         {movie.overview}
@@ -174,21 +174,21 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
                   </td>
-                  <td className="p-3 text-muted-foreground text-sm">
+                  <td className="p-2 md:p-3 text-muted-foreground text-xs md:text-sm">
                     {movie.release_date ? (
                       format(new Date(movie.release_date), 'MMM d, yyyy')
                     ) : (
                       '-'
                     )}
                   </td>
-                  <td className="p-3 text-muted-foreground text-sm">
+                  <td className="p-2 md:p-3 text-muted-foreground text-xs md:text-sm hidden lg:table-cell">
                     {movie.created_at ? (
                       format(new Date(movie.created_at), 'MMM d, yyyy')
                     ) : (
                       '-'
                     )}
                   </td>
-                  <td className="p-3">
+                  <td className="p-2 md:p-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="p-1 hover:bg-accent rounded transition-colors">

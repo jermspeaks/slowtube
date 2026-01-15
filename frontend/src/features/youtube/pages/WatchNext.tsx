@@ -109,7 +109,7 @@ function WatchNext() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold mb-6">Inbox</h1>
+      <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Inbox</h1>
       <div className="mb-6 space-y-4">
         <div className="flex justify-between items-start flex-wrap gap-4">
           <div className="flex-1 min-w-0">
@@ -151,7 +151,7 @@ function WatchNext() {
       ) : (
         <>
           {viewMode === 'card' ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {videos.map(video => (
                 <VideoCard
                   key={video.id}
