@@ -225,7 +225,7 @@ export function Navbar() {
                 <Button
                   variant="ghost"
                   className={`gap-2 ${
-                    location.pathname.startsWith('/youtube/watch-next') || location.pathname.startsWith('/media/watch-next') ? 'bg-accent' : ''
+                    location.pathname.startsWith('/youtube/watch-next') || location.pathname.startsWith('/media/starred') ? 'bg-accent' : ''
                   }`}
                 >
                   <PlayCircle className="h-4 w-4" />
@@ -241,9 +241,9 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/media/watch-next" className="w-full flex items-center gap-2">
+                  <Link to="/media/starred" className="w-full flex items-center gap-2">
                     <Film className="h-4 w-4" />
-                    Media Watch Next
+                    Media Starred
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -381,8 +381,8 @@ export function Navbar() {
                     <MobileNavLink to="/youtube/watch-next" icon={Youtube}>
                       YouTube Inbox
                     </MobileNavLink>
-                    <MobileNavLink to="/media/watch-next" icon={Film}>
-                      Media Watch Next
+                    <MobileNavLink to="/media/starred" icon={Film}>
+                      Media Starred
                     </MobileNavLink>
                   </div>
                 </div>

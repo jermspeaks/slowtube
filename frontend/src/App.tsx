@@ -24,7 +24,7 @@ import TVShowsList from './features/media/pages/TVShowsList'
 import TVShowDetail from './features/media/pages/TVShowDetail'
 import Upcoming from './features/media/pages/Upcoming'
 import RecentlyAired from './features/media/pages/RecentlyAired'
-import MediaWatchNext from './features/media/pages/WatchNext'
+import MediaStarred from './features/media/pages/Starred'
 import MoviePlaylists from './features/media/pages/MoviePlaylists'
 import MoviePlaylistDetail from './features/media/pages/MoviePlaylistDetail'
 // Shared pages
@@ -97,7 +97,8 @@ function AppRoutes() {
         <Route path="/media/tv-shows/recently-aired" element={<RecentlyAired />} />
         <Route path="/media/tv-shows/:id" element={<TVShowDetail />} />
         <Route path="/media/tv-shows" element={<Navigate to="/media/tv-shows/dashboard" replace />} />
-        <Route path="/media/watch-next" element={<MediaWatchNext />} />
+        <Route path="/media/starred" element={<MediaStarred />} />
+        <Route path="/media/watch-next" element={<Navigate to="/media/starred" replace />} />
         <Route path="/media/playlists" element={<MoviePlaylists />} />
         <Route path="/media/playlists/:id" element={<MoviePlaylistDetail />} />
         

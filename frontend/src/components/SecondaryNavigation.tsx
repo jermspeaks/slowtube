@@ -54,7 +54,7 @@ export function SecondaryNavigation() {
     // Handle other media routes
     if (location.pathname.startsWith('/media/calendar')) return 'tv-shows' // Calendar is for TV shows
     if (location.pathname.startsWith('/media/playlists')) return 'movies' // Playlists are for movies
-    if (location.pathname.startsWith('/media/watch-next')) return 'movies' // Watch next is for movies
+    if (location.pathname.startsWith('/media/starred')) return 'movies' // Starred is for movies
     return null
   }
 
@@ -187,9 +187,9 @@ export function SecondaryNavigation() {
           path: '/media/playlists',
         },
         {
-          label: 'Watch Next',
+          label: 'Starred',
           icon: PlayCircle,
-          path: '/media/watch-next',
+          path: '/media/starred',
         },
       ],
     },
