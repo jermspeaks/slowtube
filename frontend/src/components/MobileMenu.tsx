@@ -49,13 +49,13 @@ export function MobileMenu() {
     {
       label: 'TV Shows',
       icon: Tv,
-      path: '/media/tv-shows/list',
+      path: '/media/tv-shows/dashboard',
       activePath: '/media/tv-shows',
     },
     {
       label: 'Movies',
       icon: Film,
-      path: '/media/movies/all',
+      path: '/media/movies/dashboard',
       activePath: '/media/movies',
     },
   ]
