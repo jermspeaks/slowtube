@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react'
 import { moviePlaylistsAPI } from '../services/api'
 import { MoviePlaylistWithCount } from '../types/movie-playlist'
-import MoviePlaylistCard from '../components/MoviePlaylistCard'
 import MoviePlaylistTable from '../components/MoviePlaylistTable'
 import MoviePlaylistForm from '../components/MoviePlaylistForm'
-import ViewToggle from '../../youtube/components/ViewToggle'
-import { ViewMode } from '../../youtube/types/video'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +18,6 @@ import { Plus } from 'lucide-react'
 function MoviePlaylists() {
   const [playlists, setPlaylists] = useState<MoviePlaylistWithCount[]>([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -102,17 +98,14 @@ function MoviePlaylists() {
       <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         <div className="flex justify-between items-start mb-4 md:mb-6 flex-wrap gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">Movie Playlists</h1>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Create Playlist</span>
-              <span className="sm:hidden">Create</span>
-            </Button>
-          </div>
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Create Playlist</span>
+            <span className="sm:hidden">Create</span>
+          </Button>
         </div>
 
         {loading ? (
@@ -133,26 +126,11 @@ function MoviePlaylists() {
             </Button>
           </div>
         ) : (
-          <>
-            {viewMode === 'card' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {playlists.map(playlist => (
-                  <MoviePlaylistCard
-                    key={playlist.id}
-                    playlist={playlist}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteClick}
-                  />
-                ))}
-              </div>
-            ) : (
-              <MoviePlaylistTable
-                playlists={playlists}
-                onEdit={handleEdit}
-                onDelete={handleDeleteClick}
-              />
-            )}
-          </>
+          <MoviePlaylistTable
+            playlists={playlists}
+            onEdit={handleEdit}
+            onDelete={handleDeleteClick}
+          />
         )}
       </main>
 
