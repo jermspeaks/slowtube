@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Home,
   Clock,
-  Radio,
+  Youtube,
   List,
   BarChart,
   Tag,
@@ -99,7 +99,7 @@ export function SecondaryNavigation() {
       items: [
         {
           label: 'Subscribed',
-          icon: Radio,
+          icon: Youtube,
           path: '/youtube/channels/subscribed',
         },
         {

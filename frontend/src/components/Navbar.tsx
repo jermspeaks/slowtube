@@ -7,7 +7,7 @@ import {
   Home,
   Film,
   Tv,
-  Radio,
+  Youtube,
   Clock,
   Layers,
   BarChart,
@@ -84,7 +84,7 @@ export function Navbar() {
               <DropdownMenuContent align="start">
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger className={isYouTubeActive() ? 'bg-accent' : ''}>
-                    <Radio className="h-4 w-4" />
+                    <Youtube className="h-4 w-4" />
                     YouTube
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
@@ -236,7 +236,7 @@ export function Navbar() {
               <DropdownMenuContent align="start">
                 <DropdownMenuItem asChild>
                   <Link to="/youtube/watch-next" className="w-full flex items-center gap-2">
-                    <Radio className="h-4 w-4" />
+                    <Youtube className="h-4 w-4" />
                     YouTube Inbox
                   </Link>
                 </DropdownMenuItem>
@@ -298,20 +298,20 @@ export function Navbar() {
                   <div className="space-y-1">
                     <div className="px-4 py-2">
                       <div className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                        <Radio className="h-4 w-4" />
+                        <Youtube className="h-4 w-4" />
                         YouTube
                       </div>
                       <div className="pl-6 space-y-1">
                         <MobileNavLink to="/youtube/dashboard" icon={Home}>
                           Home
                         </MobileNavLink>
-                        <MobileNavLink to="/youtube/watch-later" icon={Radio}>
+                        <MobileNavLink to="/youtube/watch-later" icon={Youtube}>
                           Feed
                         </MobileNavLink>
-                        <MobileNavLink to="/youtube/channels/subscribed" icon={Radio}>
+                        <MobileNavLink to="/youtube/channels/subscribed" icon={Youtube}>
                           Subscribed Channels
                         </MobileNavLink>
-                        <MobileNavLink to="/youtube/channels/watch-later" icon={Radio}>
+                        <MobileNavLink to="/youtube/channels/watch-later" icon={Youtube}>
                           Watch Later Channels
                         </MobileNavLink>
                         <MobileNavLink to="/youtube/channel-lists" icon={List}>
@@ -378,7 +378,7 @@ export function Navbar() {
                     Watch
                   </h3>
                   <div className="space-y-1">
-                    <MobileNavLink to="/youtube/watch-next" icon={Radio}>
+                    <MobileNavLink to="/youtube/watch-next" icon={Youtube}>
                       YouTube Inbox
                     </MobileNavLink>
                     <MobileNavLink to="/media/watch-next" icon={Film}>

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Radio, Tv, Film, Settings } from 'lucide-react'
+import { Youtube, Tv, Film, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface SidebarNavigationProps {
@@ -25,7 +25,7 @@ export function SidebarNavigation({ onNavigate }: SidebarNavigationProps) {
   const navItems = [
     {
       label: 'YouTube',
-      icon: Radio,
+      icon: Youtube,
       path: '/youtube/dashboard',
       activePath: '/youtube',
     },

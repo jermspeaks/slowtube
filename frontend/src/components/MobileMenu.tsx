@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, Radio, Tv, Film, Settings } from 'lucide-react'
+import { Menu, Youtube, Tv, Film, Settings } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import {
   Sheet,
@@ -30,7 +30,7 @@ export function MobileMenu() {
   const navItems = [
     {
       label: 'YouTube',
-      icon: Radio,
+      icon: Youtube,
       path: '/youtube/dashboard',
       activePath: '/youtube',
     },
