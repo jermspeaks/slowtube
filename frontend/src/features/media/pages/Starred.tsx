@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useLocation } from 'react-router'
 import { Movie } from '../types/movie'
 import { moviesAPI } from '../services/api'
 import MovieCard from '../components/MovieCard'
@@ -7,26 +7,27 @@ import { toast } from 'sonner'
 
 function Starred() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [movies, setMovies] = useState<Movie[]>([])
   const [moviesLoading, setMoviesLoading] = useState(true)
 
   useEffect(() => {
     loadStarredMovies()
-  }, [])
+  }, [location.pathname])
 
   const loadStarredMovies = async () => {
     try {
       setMoviesLoading(true)
       const response = await moviesAPI.getAll(
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        1,
-        100,
-        undefined,
-        'starred',
-        undefined
+        undefined,        // search
+        undefined,        // sortBy
+        undefined,        // sortOrder
+        1,                // page
+        100,              // limit
+        undefined,        // archiveFilter
+        'starred',        // starredFilter
+        undefined,        // watchedFilter
+        undefined         // playlistFilter
       )
       setMovies(response.movies || [])
     } catch (error) {

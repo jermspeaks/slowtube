@@ -1434,31 +1434,11 @@ export const movieQueries = {
       ${limitClause}
     `
 
-    // Debug logging for starred filter
-    if (starredFilter === 'starred') {
-      console.log('[DEBUG] getAll query with starred filter:')
-      console.log('[DEBUG] Query:', query)
-      console.log('[DEBUG] Params:', params)
-      console.log('[DEBUG] Where clause:', whereClause)
-    }
-
     const results = db.prepare(query).all(...params) as (Movie & {
       is_archived: number
       is_starred: number
       is_watched: number
     })[]
-
-    // Debug logging for starred filter results
-    if (starredFilter === 'starred') {
-      console.log(`[DEBUG] Found ${results.length} starred movies`)
-      if (results.length > 0) {
-        console.log('[DEBUG] Sample result:', {
-          id: results[0].id,
-          title: results[0].title,
-          is_starred: results[0].is_starred
-        })
-      }
-    }
 
     // Convert to Movie format with boolean fields
     return results.map(r => ({
