@@ -172,8 +172,16 @@ export const moviePlaylistsAPI = {
     const response = await api.post('/api/movie-playlists', { name, description, color })
     return response.data
   },
-  update: async (id: number, updates: { name?: string; description?: string | null; color?: string | null }) => {
+  update: async (id: number, updates: { name?: string; description?: string | null; color?: string | null; display_on_home?: boolean }) => {
     const response = await api.patch(`/api/movie-playlists/${id}`, updates)
+    return response.data
+  },
+  toggleDisplayOnHome: async (id: number, displayOnHome: boolean) => {
+    const response = await api.patch(`/api/movie-playlists/${id}/display-on-home`, { display_on_home: displayOnHome })
+    return response.data
+  },
+  reorderPlaylists: async (playlistIds: number[]) => {
+    const response = await api.patch('/api/movie-playlists/reorder', { playlistIds })
     return response.data
   },
   delete: async (id: number) => {
@@ -241,6 +249,14 @@ export const importAPI = {
 export const tvDashboardAPI = {
   getSections: async () => {
     const response = await api.get('/api/tv-dashboard/sections')
+    return response.data
+  },
+}
+
+// Movie Dashboard API
+export const movieDashboardAPI = {
+  getSections: async () => {
+    const response = await api.get('/api/movie-dashboard/sections')
     return response.data
   },
 }

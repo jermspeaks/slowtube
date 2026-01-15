@@ -1,87 +1,113 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { Settings } from 'lucide-react'
+import { Button } from '@/shared/components/ui/button'
 import { Movie } from '../types/movie'
-import { moviesAPI } from '../services/api'
-import MovieCard from '../components/MovieCard'
+import { movieDashboardAPI } from '../services/api'
+import { MovieDashboardSection } from '../types/dashboard'
+import MovieSectionRow from '../components/MovieSectionRow'
+import ConfigureMovieDashboardModal from '../components/ConfigureMovieDashboardModal'
 import { toast } from 'sonner'
 
 function MoviesDashboard() {
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [moviesLoading, setMoviesLoading] = useState(true)
+  const navigate = useNavigate()
+  const [sections, setSections] = useState<MovieDashboardSection[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isConfigureModalOpen, setIsConfigureModalOpen] = useState(false)
 
   useEffect(() => {
-    loadMovies()
+    loadSections()
   }, [])
 
-  const loadMovies = async () => {
+  const loadSections = async () => {
     try {
-      setMoviesLoading(true)
-      // Fetch movies and sort by saved_at on frontend
-      const response = await moviesAPI.getAll(
-        undefined,
-        'created_at',
-        'desc',
-        1,
-        100 // Fetch more to ensure we have enough to sort by saved_at
-      )
-      const allMovies = response.movies || []
-      // Sort by saved_at descending, then filter out nulls and take first 12
-      const sortedMovies = allMovies
-        .filter(movie => movie.saved_at !== null)
-        .sort((a, b) => {
-          if (!a.saved_at || !b.saved_at) return 0
-          return new Date(b.saved_at).getTime() - new Date(a.saved_at).getTime()
-        })
-        .slice(0, 12)
-      setMovies(sortedMovies)
+      setLoading(true)
+      const response = await movieDashboardAPI.getSections()
+      setSections(response.sections || [])
     } catch (error) {
-      console.error('Error loading movies:', error)
-      toast.error('Failed to load movies')
+      console.error('Error loading Movie dashboard sections:', error)
+      toast.error('Failed to load Movie dashboard')
     } finally {
-      setMoviesLoading(false)
+      setLoading(false)
     }
   }
 
-  const handleMovieClick = () => {
-    // Could navigate to movie detail if needed
+  const handleMovieClick = (movie: Movie) => {
+    navigate(`/media/movies/${movie.id}`)
+  }
+
+  const handleConfigureSave = () => {
+    // Reload sections after configuration change
+    loadSections()
+  }
+
+  const getViewAllLink = (sectionType: string, playlistId?: number) => {
+    if (sectionType === 'all_movies') {
+      return '/media/movies/all'
+    } else if (sectionType === 'upcoming_movies') {
+      return '/media/movies/all' // Could add filter for upcoming in the future
+    } else if (sectionType === 'movie_playlist' && playlistId) {
+      return `/media/playlists/${playlistId}`
+    }
+    return '#'
   }
 
   return (
-    <div>
-      {/* Latest Movies Section */}
-      <div>
-        <div className="flex items-center justify-between mb-4 md:mb-6 flex-wrap gap-2">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">Latest Movies</h2>
-          <Link
-            to="/media/movies/all"
-            className="text-sm md:text-base text-primary hover:underline"
-          >
-            View All
-          </Link>
-        </div>
-        {moviesLoading ? (
-          <div className="flex justify-center items-center py-8 md:py-12 bg-card rounded-lg">
-            <div className="text-sm md:text-base text-muted-foreground">Loading...</div>
-          </div>
-        ) : movies.length === 0 ? (
-          <div className="text-center py-8 md:py-12 px-4 bg-card rounded-lg">
-            <p className="text-sm md:text-base text-muted-foreground">
-              No movies saved
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4 md:gap-6">
-            {movies.map(movie => (
-              <MovieCard
-                key={movie.id}
-                movie={movie}
-                onClick={handleMovieClick}
-              />
-            ))}
-          </div>
-        )}
+    <>
+      {/* Header with Configure button */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">Welcome</h1>
+        <Button
+          variant="outline"
+          onClick={() => setIsConfigureModalOpen(true)}
+          className="gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          Configure
+        </Button>
       </div>
-    </div>
+
+      {/* Dashboard Sections */}
+      {loading ? (
+        <div className="flex justify-center items-center py-16 bg-card rounded-lg">
+          <div className="text-lg text-muted-foreground">Loading dashboard...</div>
+        </div>
+      ) : sections.length === 0 ? (
+        <div className="text-center py-16 bg-card rounded-lg">
+          <p className="text-lg text-muted-foreground mb-4">
+            No content to display
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Configure your dashboard to show movie playlists, or add movies to your collection.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {sections.map((section) => {
+            if (section.movies && section.movies.length > 0) {
+              return (
+                <MovieSectionRow
+                  key={section.id}
+                  title={section.title}
+                  description={section.description}
+                  movies={section.movies}
+                  onMovieClick={handleMovieClick}
+                  viewAllLink={getViewAllLink(section.type, section.playlistId)}
+                />
+              )
+            }
+            return null
+          })}
+        </div>
+      )}
+
+      {/* Configure Dashboard Modal */}
+      <ConfigureMovieDashboardModal
+        isOpen={isConfigureModalOpen}
+        onClose={() => setIsConfigureModalOpen(false)}
+        onSave={handleConfigureSave}
+      />
+    </>
   )
 }
 

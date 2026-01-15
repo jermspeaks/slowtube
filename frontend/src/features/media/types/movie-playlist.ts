@@ -6,6 +6,7 @@ export interface MoviePlaylist {
   description: string | null
   color: string | null
   sort_order: number
+  display_on_home?: number
   created_at: string
   updated_at: string
 }
@@ -25,5 +26,6 @@ export interface MoviePlaylistWithMovies extends MoviePlaylist {
 
 export interface MoviePlaylistWithCount extends MoviePlaylist {
   movie_count: number
+  display_on_home?: number
 }
 

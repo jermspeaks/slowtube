@@ -69,8 +69,8 @@ router.patch('/:id', (req, res) => {
       return res.status(404).json({ error: 'Playlist not found' })
     }
 
-    const { name, description, color } = req.body
-    const updates: { name?: string; description?: string | null; color?: string | null } = {}
+    const { name, description, color, display_on_home } = req.body
+    const updates: { name?: string; description?: string | null; color?: string | null; display_on_home?: number } = {}
 
     if (name !== undefined) {
       if (typeof name !== 'string' || name.trim().length === 0) {
@@ -83,6 +83,12 @@ router.patch('/:id', (req, res) => {
     }
     if (color !== undefined) {
       updates.color = color === null || color === '' ? null : color
+    }
+    if (display_on_home !== undefined) {
+      if (typeof display_on_home !== 'boolean') {
+        return res.status(400).json({ error: 'display_on_home must be a boolean' })
+      }
+      updates.display_on_home = display_on_home ? 1 : 0
     }
 
     const changes = moviePlaylistQueries.update(id, updates)
@@ -225,6 +231,80 @@ router.post('/:id/movies/bulk-remove', (req, res) => {
   } catch (error: any) {
     console.error('Error removing movies from playlist:', error)
     res.status(500).json({ error: error.message || 'Failed to remove movies from playlist' })
+  }
+})
+
+// Reorder playlists (must be before /:id routes to avoid route matching conflicts)
+router.patch('/reorder', (req, res) => {
+  try {
+    const { playlistIds } = req.body
+    if (!Array.isArray(playlistIds)) {
+      return res.status(400).json({ error: 'playlistIds must be an array' })
+    }
+    if (!playlistIds.every(id => typeof id === 'number')) {
+      return res.status(400).json({ error: 'All playlistIds must be numbers' })
+    }
+    if (playlistIds.length === 0) {
+      return res.status(400).json({ error: 'playlistIds array cannot be empty' })
+    }
+
+    // Verify all playlist IDs exist
+    const allPlaylists = moviePlaylistQueries.getAll()
+    const allPlaylistIds = allPlaylists.map(p => p.id)
+    const invalidIds = playlistIds.filter((id: number) => !allPlaylistIds.includes(id))
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ 
+        error: `Invalid playlist IDs: ${invalidIds.join(', ')}`,
+        details: `Requested ${playlistIds.length} playlists, but ${invalidIds.length} are invalid. Valid playlist IDs: ${allPlaylistIds.join(', ')}`
+      })
+    }
+
+    // Verify all playlists are included
+    if (playlistIds.length !== allPlaylistIds.length) {
+      const missingIds = allPlaylistIds.filter(id => !playlistIds.includes(id))
+      return res.status(400).json({ 
+        error: 'All playlists must be included in reorder',
+        details: `Requested ${playlistIds.length} playlists, but there are ${allPlaylistIds.length} total playlists. Missing playlist IDs: ${missingIds.join(', ')}`
+      })
+    }
+
+    moviePlaylistQueries.reorderPlaylists(playlistIds)
+    const updatedPlaylists = moviePlaylistQueries.getAll()
+    res.json(updatedPlaylists)
+  } catch (error: any) {
+    console.error('Error reordering playlists:', error)
+    res.status(500).json({ error: error.message || 'Failed to reorder playlists' })
+  }
+})
+
+// Toggle display on home for a playlist
+router.patch('/:id/display-on-home', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid playlist ID' })
+    }
+
+    const playlist = moviePlaylistQueries.getById(id)
+    if (!playlist) {
+      return res.status(404).json({ error: 'Playlist not found' })
+    }
+
+    const { display_on_home } = req.body
+    if (typeof display_on_home !== 'boolean') {
+      return res.status(400).json({ error: 'display_on_home must be a boolean' })
+    }
+
+    const changes = moviePlaylistQueries.updateDisplayOnHome(id, display_on_home)
+    if (changes === 0) {
+      return res.status(500).json({ error: 'Failed to update display on home' })
+    }
+
+    const updatedPlaylist = moviePlaylistQueries.getById(id)
+    res.json(updatedPlaylist)
+  } catch (error: any) {
+    console.error('Error updating display on home:', error)
+    res.status(500).json({ error: error.message || 'Failed to update display on home' })
   }
 })
 

@@ -1,5 +1,6 @@
 import { TVShow } from './tv-show'
 import { Episode } from './episode'
+import { Movie } from './movie'
 
 export interface TVDashboardSection {
   id: string
@@ -12,4 +13,17 @@ export interface TVDashboardSection {
 
 export interface TVDashboardSectionsResponse {
   sections: TVDashboardSection[]
+}
+
+export interface MovieDashboardSection {
+  id: string
+  type: 'all_movies' | 'upcoming_movies' | 'movie_playlist'
+  title: string
+  description: string
+  movies?: Movie[]
+  playlistId?: number
+}
+
+export interface MovieDashboardSectionsResponse {
+  sections: MovieDashboardSection[]
 }
