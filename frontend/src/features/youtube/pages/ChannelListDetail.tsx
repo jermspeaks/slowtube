@@ -168,6 +168,15 @@ function ChannelGroupDetail() {
     }
   }
 
+  const handleVideoUpdated = async (video: Video) => {
+    // Refresh the video list to reflect any state changes
+    await loadVideos()
+    
+    // Update the selected video if it's the one that was updated
+    if (selectedVideo && selectedVideo.id === video.id) {
+      setSelectedVideo(video)
+    }
+  }
 
   const handleVideoSelect = (videoId: number, selected: boolean) => {
     setSelectedVideoIds(prev => {
