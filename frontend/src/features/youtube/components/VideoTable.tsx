@@ -1,9 +1,10 @@
 import { Video } from '../types/video'
 import { format } from 'date-fns'
-import { Inbox, Archive, Rss } from 'lucide-react'
+import { Inbox, Archive, Rss, Play } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { videosAPI } from '../services/api'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router'
 
 interface VideoTableProps {
   videos: Video[]
@@ -28,10 +29,18 @@ function VideoTable({
   showFeedDate = false,
   showAddedDate = true
 }: VideoTableProps) {
+  const navigate = useNavigate()
+  
   const handleStateChange = (updatedVideo: Video) => {
     if (onStateChange) {
       onStateChange(updatedVideo)
     }
+  }
+
+  const handleOpenInPlayer = (video: Video, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const listType = video.state || 'inbox'
+    navigate(`/youtube/player?id=${video.id}&list=${listType}`)
   }
 
   const handleMoveToInbox = async (video: Video, e: React.MouseEvent) => {
@@ -187,9 +196,19 @@ function VideoTable({
                 </td>
               )}
               <td className="p-2 md:p-3">
-                {onStateChange && (
-                  <div className="flex items-center gap-2">
-                    {(video.state === 'inbox' || video.state === 'archive') && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={(e) => handleOpenInPlayer(video, e)}
+                    variant="default"
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 h-7 w-7 p-0"
+                    title="Open in Player"
+                  >
+                    <Play className="h-3 w-3" />
+                  </Button>
+                  {onStateChange && (
+                    <>
+                      {(video.state === 'inbox' || video.state === 'archive') && (
                       <Button
                         onClick={(e) => handleMoveToFeed(video, e)}
                         variant="default"
@@ -222,8 +241,9 @@ function VideoTable({
                         <Archive className="h-3 w-3" />
                       </Button>
                     )}
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

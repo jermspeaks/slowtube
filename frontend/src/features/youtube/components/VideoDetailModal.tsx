@@ -7,7 +7,8 @@ import VideoPlayer from './VideoPlayer'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
-import { ChevronLeft, ChevronRight, Inbox, Archive, Rss } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Inbox, Archive, Rss, Play } from 'lucide-react'
+import { useNavigate } from 'react-router'
 
 interface VideoDetailModalProps {
   video: Video | null
@@ -18,10 +19,17 @@ interface VideoDetailModalProps {
 }
 
 function VideoDetailModal({ video, videos = [], onClose, onVideoUpdated, onVideoChange }: VideoDetailModalProps) {
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
   const [showExpandButton, setShowExpandButton] = useState(false)
   const descriptionRef = useRef<HTMLParagraphElement>(null)
+
+  const handleOpenInPlayer = () => {
+    const listType = video.state || 'inbox'
+    navigate(`/youtube/player?id=${video.id}&list=${listType}`)
+    onClose()
+  }
   
   // Reset expanded state when video changes
   useEffect(() => {
@@ -201,12 +209,24 @@ function VideoDetailModal({ video, videos = [], onClose, onVideoUpdated, onVideo
         <div className="p-3">
           <div className="flex justify-between items-start mb-3">
             <h2 className="m-0 flex-1 text-lg">{video.title}</h2>
-            <button
-              onClick={onClose}
-              className="border-none bg-transparent text-2xl cursor-pointer p-0 ml-4 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              ×
-            </button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleOpenInPlayer}
+                variant="default"
+                size="sm"
+                className="bg-primary hover:bg-primary/90"
+                title="Open in Player"
+              >
+                <Play className="h-3 w-3 mr-1" />
+                Open in Player
+              </Button>
+              <button
+                onClick={onClose}
+                className="border-none bg-transparent text-2xl cursor-pointer p-0 ml-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           <div className="mb-3">

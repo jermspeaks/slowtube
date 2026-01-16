@@ -1,9 +1,10 @@
 import { Video } from '../types/video'
 import { format } from 'date-fns'
-import { Inbox, Archive, Rss } from 'lucide-react'
+import { Inbox, Archive, Rss, Play } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { videosAPI } from '../services/api'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router'
 
 interface VideoCardProps {
   video: Video
@@ -17,10 +18,18 @@ interface VideoCardProps {
 }
 
 function VideoCard({ video, onClick, onStateChange, showFeedDate = false, showAddedDate = true, selectable = false, selected = false, onSelectChange }: VideoCardProps) {
+  const navigate = useNavigate()
+  
   const handleStateChange = (updatedVideo: Video) => {
     if (onStateChange) {
       onStateChange(updatedVideo)
     }
+  }
+
+  const handleOpenInPlayer = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const listType = video.state || 'inbox'
+    navigate(`/youtube/player?id=${video.id}&list=${listType}`)
   }
 
   const handleMoveToInbox = async (e: React.MouseEvent) => {
@@ -146,6 +155,17 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, showAd
             </div>
           )}
         </div>
+      </div>
+      <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+        <Button
+          onClick={handleOpenInPlayer}
+          variant="default"
+          size="sm"
+          className="bg-primary hover:bg-primary/90 h-7 w-7 p-0"
+          title="Open in Player"
+        >
+          <Play className="h-3 w-3" />
+        </Button>
       </div>
       {onStateChange && (
         <div className="absolute bottom-3 right-3 flex items-center gap-2 z-10">

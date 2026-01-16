@@ -105,6 +105,31 @@ export const videosAPI = {
     const response = await api.get('/api/videos/stats', { params })
     return response.data
   },
+  getProgress: async (id: number) => {
+    const response = await api.get(`/api/videos/${id}/progress`)
+    return response.data
+  },
+  updateProgress: async (id: number, progressSeconds: number) => {
+    const response = await api.post(`/api/videos/${id}/progress`, { progress_seconds: progressSeconds })
+    return response.data
+  },
+  getPlayerSettings: async (id: number) => {
+    const response = await api.get(`/api/videos/${id}/player-settings`)
+    return response.data
+  },
+  updatePlayerSettings: async (
+    id: number,
+    settings: {
+      start_time_seconds?: number | null
+      end_time_seconds?: number | null
+      playback_speed?: number
+      volume?: number
+      autoplay_next?: boolean
+    }
+  ) => {
+    const response = await api.patch(`/api/videos/${id}/player-settings`, settings)
+    return response.data
+  },
 }
 
 // Channels API

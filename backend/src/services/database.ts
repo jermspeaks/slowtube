@@ -459,6 +459,125 @@ export const videoStateQueries = {
   },
 }
 
+// Video progress operations
+export interface VideoProgress {
+  video_id: number
+  progress_seconds: number
+  last_watched_at: string
+  updated_at: string
+}
+
+export const videoProgressQueries = {
+  getByVideoId: (videoId: number) => {
+    return db.prepare('SELECT * FROM video_progress WHERE video_id = ?').get(videoId) as VideoProgress | undefined
+  },
+
+  updateProgress: (videoId: number, progressSeconds: number) => {
+    const stmt = db.prepare(`
+      INSERT INTO video_progress (video_id, progress_seconds, last_watched_at, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT(video_id) DO UPDATE SET
+        progress_seconds = excluded.progress_seconds,
+        last_watched_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    return stmt.run(videoId, progressSeconds).changes
+  },
+
+  getAllProgress: () => {
+    return db.prepare('SELECT * FROM video_progress').all() as VideoProgress[]
+  },
+}
+
+// Video player settings operations
+export interface VideoPlayerSettings {
+  video_id: number
+  start_time_seconds: number | null
+  end_time_seconds: number | null
+  playback_speed: number
+  volume: number
+  autoplay_next: boolean
+  updated_at: string
+}
+
+export const videoPlayerSettingsQueries = {
+  getByVideoId: (videoId: number) => {
+    return db.prepare('SELECT * FROM video_player_settings WHERE video_id = ?').get(videoId) as VideoPlayerSettings | undefined
+  },
+
+  updateSettings: (videoId: number, settings: Partial<Omit<VideoPlayerSettings, 'video_id' | 'updated_at'>>) => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    Object.entries(settings).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    })
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(videoId)
+
+    const stmt = db.prepare(`
+      INSERT INTO video_player_settings (video_id, ${Object.keys(settings).join(', ')}, updated_at)
+      VALUES (?, ${Object.keys(settings).map(() => '?').join(', ')}, CURRENT_TIMESTAMP)
+      ON CONFLICT(video_id) DO UPDATE SET
+        ${fields.join(', ')}
+    `)
+    
+    const insertValues = [videoId, ...Object.values(settings).filter(v => v !== undefined), ...values]
+    return stmt.run(...insertValues).changes
+  },
+}
+
+// User player preferences operations
+export interface UserPlayerPreferences {
+  id: number
+  user_id: string
+  default_playback_speed: number
+  default_volume: number
+  autoplay_enabled: boolean
+  keyboard_shortcuts_enabled: boolean
+  light_mode_enabled: boolean
+  updated_at: string
+}
+
+export const userPlayerPreferencesQueries = {
+  getByUserId: (userId: string) => {
+    return db.prepare('SELECT * FROM user_player_preferences WHERE user_id = ?').get(userId) as UserPlayerPreferences | undefined
+  },
+
+  updatePreferences: (userId: string, preferences: Partial<Omit<UserPlayerPreferences, 'id' | 'user_id' | 'updated_at'>>) => {
+    const fields: string[] = []
+    const values: any[] = []
+
+    Object.entries(preferences).forEach(([key, value]) => {
+      if (value !== undefined) {
+        fields.push(`${key} = ?`)
+        values.push(value)
+      }
+    })
+
+    if (fields.length === 0) return 0
+
+    fields.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(userId)
+
+    const stmt = db.prepare(`
+      INSERT INTO user_player_preferences (user_id, ${Object.keys(preferences).join(', ')}, updated_at)
+      VALUES (?, ${Object.keys(preferences).map(() => '?').join(', ')}, CURRENT_TIMESTAMP)
+      ON CONFLICT(user_id) DO UPDATE SET
+        ${fields.join(', ')}
+    `)
+    
+    const insertValues = [userId, ...Object.values(preferences).filter(v => v !== undefined), ...values]
+    return stmt.run(...insertValues).changes
+  },
+}
+
 // OAuth session operations
 export const oauthQueries = {
   getLatest: () => {

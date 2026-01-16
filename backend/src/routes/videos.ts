@@ -1,6 +1,6 @@
 import express from 'express'
 import multer from 'multer'
-import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries } from '../services/database.js'
+import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries, videoProgressQueries, videoPlayerSettingsQueries } from '../services/database.js'
 import { importVideosFromTakeout, processBatchVideoFetch, fetchAllVideoDetails, backfillChannelIds } from '../services/youtube.js'
 import { formatDurationExtended } from '../utils/duration.js'
 
@@ -722,6 +722,148 @@ router.delete('/all', (req, res) => {
   } catch (error) {
     console.error('Error deleting all videos:', error)
     res.status(500).json({ error: 'Failed to delete all videos' })
+  }
+})
+
+// Get video progress
+router.get('/:id/progress', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid video ID' })
+    }
+
+    const progress = videoProgressQueries.getByVideoId(id)
+    if (!progress) {
+      return res.json({ progress_seconds: 0, last_watched_at: null })
+    }
+
+    res.json({
+      progress_seconds: progress.progress_seconds,
+      last_watched_at: progress.last_watched_at,
+    })
+  } catch (error) {
+    console.error('Error getting video progress:', error)
+    res.status(500).json({ error: 'Failed to get video progress' })
+  }
+})
+
+// Update video progress
+router.post('/:id/progress', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid video ID' })
+    }
+
+    const { progress_seconds } = req.body
+    if (typeof progress_seconds !== 'number' || progress_seconds < 0) {
+      return res.status(400).json({ error: 'Invalid progress_seconds. Must be a non-negative number' })
+    }
+
+    // Verify video exists
+    const video = videoQueries.getById(id)
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' })
+    }
+
+    videoProgressQueries.updateProgress(id, progress_seconds)
+    res.json({ message: 'Progress updated successfully', progress_seconds })
+  } catch (error) {
+    console.error('Error updating video progress:', error)
+    res.status(500).json({ error: 'Failed to update video progress' })
+  }
+})
+
+// Get video player settings
+router.get('/:id/player-settings', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid video ID' })
+    }
+
+    const settings = videoPlayerSettingsQueries.getByVideoId(id)
+    if (!settings) {
+      return res.json({
+        start_time_seconds: null,
+        end_time_seconds: null,
+        playback_speed: 1.0,
+        volume: 1.0,
+        autoplay_next: true,
+      })
+    }
+
+    res.json({
+      start_time_seconds: settings.start_time_seconds,
+      end_time_seconds: settings.end_time_seconds,
+      playback_speed: settings.playback_speed,
+      volume: settings.volume,
+      autoplay_next: settings.autoplay_next === 1,
+    })
+  } catch (error) {
+    console.error('Error getting player settings:', error)
+    res.status(500).json({ error: 'Failed to get player settings' })
+  }
+})
+
+// Update video player settings
+router.patch('/:id/player-settings', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid video ID' })
+    }
+
+    const { start_time_seconds, end_time_seconds, playback_speed, volume, autoplay_next } = req.body
+
+    // Verify video exists
+    const video = videoQueries.getById(id)
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' })
+    }
+
+    const settings: any = {}
+    if (start_time_seconds !== undefined) {
+      if (start_time_seconds !== null && (typeof start_time_seconds !== 'number' || start_time_seconds < 0)) {
+        return res.status(400).json({ error: 'Invalid start_time_seconds' })
+      }
+      settings.start_time_seconds = start_time_seconds
+    }
+    if (end_time_seconds !== undefined) {
+      if (end_time_seconds !== null && (typeof end_time_seconds !== 'number' || end_time_seconds < 0)) {
+        return res.status(400).json({ error: 'Invalid end_time_seconds' })
+      }
+      settings.end_time_seconds = end_time_seconds
+    }
+    if (playback_speed !== undefined) {
+      if (typeof playback_speed !== 'number' || playback_speed < 0.25 || playback_speed > 2) {
+        return res.status(400).json({ error: 'Invalid playback_speed. Must be between 0.25 and 2.0' })
+      }
+      settings.playback_speed = playback_speed
+    }
+    if (volume !== undefined) {
+      if (typeof volume !== 'number' || volume < 0 || volume > 1) {
+        return res.status(400).json({ error: 'Invalid volume. Must be between 0 and 1' })
+      }
+      settings.volume = volume
+    }
+    if (autoplay_next !== undefined) {
+      if (typeof autoplay_next !== 'boolean') {
+        return res.status(400).json({ error: 'Invalid autoplay_next. Must be a boolean' })
+      }
+      settings.autoplay_next = autoplay_next ? 1 : 0
+    }
+
+    if (Object.keys(settings).length === 0) {
+      return res.status(400).json({ error: 'No valid settings provided' })
+    }
+
+    videoPlayerSettingsQueries.updateSettings(id, settings)
+    res.json({ message: 'Player settings updated successfully', settings })
+  } catch (error) {
+    console.error('Error updating player settings:', error)
+    res.status(500).json({ error: 'Failed to update player settings' })
   }
 })
 
