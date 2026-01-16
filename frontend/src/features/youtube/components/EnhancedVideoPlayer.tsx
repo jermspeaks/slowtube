@@ -16,6 +16,7 @@ interface EnhancedVideoPlayerProps {
   startTime?: number | null
   endTime?: number | null
   lightMode?: boolean
+  playing?: boolean
 }
 
 const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
@@ -34,11 +35,12 @@ const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
       startTime,
       endTime,
       lightMode = false,
+      playing: playingProp,
     },
     ref
   ) => {
     const playerRef = useRef<ReactPlayer>(null)
-    const [playing, setPlaying] = useState(false)
+    const [playing, setPlaying] = useState(playingProp ?? false)
     const [hasSeekedToStart, setHasSeekedToStart] = useState(false)
     const [hasReachedEnd, setHasReachedEnd] = useState(false)
     const [currentTime, setCurrentTime] = useState(0)
@@ -76,6 +78,19 @@ const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
 
   const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_id}`
 
+  // Sync playing state with prop
+  useEffect(() => {
+    if (playingProp !== undefined) {
+      setPlaying(playingProp)
+    }
+  }, [playingProp])
+
+  // Reset state when video changes
+  useEffect(() => {
+    setHasReachedEnd(false)
+    setHasSeekedToStart(false)
+  }, [video.id])
+
   // Seek to start time when video is ready
   useEffect(() => {
     if (startTime !== null && startTime !== undefined && startTime > 0 && !hasSeekedToStart && playerRef.current) {
@@ -98,40 +113,37 @@ const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
     }
   }, [initialProgress, hasSeekedToStart])
 
-  // Check for end time
   const handleProgress = useCallback(
     (state: { played: number; playedSeconds: number }) => {
       if (onProgress) {
         onProgress(state.playedSeconds)
       }
 
-      // Update current time
       setCurrentTime(state.playedSeconds)
-      
-      // Note: Progress saving is handled by the parent component via onProgress callback
 
       // Check if we've reached the end time
       if (endTime !== null && endTime !== undefined && state.playedSeconds >= endTime && !hasReachedEnd) {
         setHasReachedEnd(true)
         setPlaying(false)
         if (onEnded) {
-          // Small delay to ensure the pause is registered
           setTimeout(() => {
             onEnded()
           }, 100)
         }
       }
     },
-    [onProgress, saveProgress, endTime, hasReachedEnd, onEnded]
+    [onProgress, endTime, hasReachedEnd, onEnded]
   )
 
   const handleReady = useCallback(() => {
+    console.log('[EnhancedVideoPlayer] onReady fired')
     if (onReady) {
       onReady()
     }
   }, [onReady])
 
   const handlePlay = useCallback(() => {
+    console.log('[EnhancedVideoPlayer] onPlay fired')
     setPlaying(true)
     if (onPlay) {
       onPlay()
@@ -139,6 +151,7 @@ const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
   }, [onPlay])
 
   const handlePause = useCallback(() => {
+    console.log('[EnhancedVideoPlayer] onPause fired')
     setPlaying(false)
     if (onPause) {
       onPause()
@@ -155,7 +168,7 @@ const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
 
   const handleError = useCallback(
     (error: Error) => {
-      console.error('Video player error:', error)
+      console.error('[EnhancedVideoPlayer] Error:', error)
       if (onError) {
         onError(error)
       }
@@ -178,18 +191,21 @@ const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
     getCurrentTime: () => currentTime,
   }))
 
+  console.log('[EnhancedVideoPlayer] Rendering with playing=', playing)
+
   return (
     <div className={`w-full pt-[56.25%] relative bg-black rounded overflow-hidden ${lightMode ? 'player-light-mode' : ''}`}>
       <div className="absolute top-0 left-0 w-full h-full">
         <ReactPlayer
           ref={playerRef}
-          url={youtubeUrl}
+          src={youtubeUrl}
           playing={playing}
           controls={true}
           width="100%"
           height="100%"
           playbackRate={playbackSpeed}
           volume={volume}
+          muted={volume === 0}
           onProgress={handleProgress}
           onReady={handleReady}
           onPlay={handlePlay}
@@ -201,7 +217,6 @@ const EnhancedVideoPlayer = forwardRef<any, EnhancedVideoPlayerProps>(
               playerVars: {
                 modestbranding: 1,
                 rel: 0,
-                start: startTime ? Math.floor(startTime) : undefined,
               },
             },
           }}

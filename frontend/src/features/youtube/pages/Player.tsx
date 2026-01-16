@@ -139,10 +139,12 @@ function Player() {
 
   // Playback handlers
   const handlePlay = useCallback(() => {
+    console.log('[Player] handlePlay called')
     setIsPlaying(true)
   }, [])
 
   const handlePause = useCallback(() => {
+    console.log('[Player] handlePause called')
     setIsPlaying(false)
   }, [])
 
@@ -315,23 +317,38 @@ function Player() {
 
       {/* Video Player */}
       <div className={lightMode ? 'player-light-mode' : ''}>
-        <EnhancedVideoPlayer
-          ref={playerRef}
-          video={video}
-          onProgress={(progressSeconds) => {
-            // Save progress (debounced in hook)
-            saveProgress(progressSeconds)
-          }}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onEnded={handleEnded}
-          initialProgress={progress}
-          playbackSpeed={settings.playback_speed}
-          volume={isMuted ? 0 : settings.volume}
-          startTime={settings.start_time_seconds}
-          endTime={settings.end_time_seconds}
-          lightMode={lightMode}
-        />
+        {(() => {
+          console.log('[Player] Rendering EnhancedVideoPlayer with props', {
+            videoId: video.id,
+            youtubeId: video.youtube_id,
+            isPlaying,
+            progress,
+            playbackSpeed: settings.playback_speed,
+            volume: isMuted ? 0 : settings.volume,
+            startTime: settings.start_time_seconds,
+            endTime: settings.end_time_seconds,
+          })
+          return (
+            <EnhancedVideoPlayer
+              ref={playerRef}
+              video={video}
+              playing={isPlaying}
+              onProgress={(progressSeconds) => {
+                // Save progress (debounced in hook)
+                saveProgress(progressSeconds)
+              }}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onEnded={handleEnded}
+              initialProgress={progress}
+              playbackSpeed={settings.playback_speed}
+              volume={isMuted ? 0 : settings.volume}
+              startTime={settings.start_time_seconds}
+              endTime={settings.end_time_seconds}
+              lightMode={lightMode}
+            />
+          )
+        })()}
       </div>
 
       {/* Controls */}
@@ -344,6 +361,7 @@ function Player() {
         onMuteToggle={handleMuteToggle}
         isPlaying={isPlaying}
         onPlayPause={() => {
+          console.log('[Player] PlayPause button clicked', { currentIsPlaying: isPlaying })
           if (isPlaying) {
             handlePause()
           } else {
