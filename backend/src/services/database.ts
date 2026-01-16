@@ -507,28 +507,30 @@ export const videoPlayerSettingsQueries = {
 
   updateSettings: (videoId: number, settings: Partial<Omit<VideoPlayerSettings, 'video_id' | 'updated_at'>>) => {
     const fields: string[] = []
-    const values: any[] = []
+    const settingsValues: any[] = []
+    const settingsKeys: string[] = []
 
     Object.entries(settings).forEach(([key, value]) => {
       if (value !== undefined) {
         fields.push(`${key} = ?`)
-        values.push(value)
+        settingsValues.push(value)
+        settingsKeys.push(key)
       }
     })
 
     if (fields.length === 0) return 0
 
     fields.push('updated_at = CURRENT_TIMESTAMP')
-    values.push(videoId)
 
     const stmt = db.prepare(`
-      INSERT INTO video_player_settings (video_id, ${Object.keys(settings).join(', ')}, updated_at)
-      VALUES (?, ${Object.keys(settings).map(() => '?').join(', ')}, CURRENT_TIMESTAMP)
+      INSERT INTO video_player_settings (video_id, ${settingsKeys.join(', ')}, updated_at)
+      VALUES (?, ${settingsKeys.map(() => '?').join(', ')}, CURRENT_TIMESTAMP)
       ON CONFLICT(video_id) DO UPDATE SET
         ${fields.join(', ')}
     `)
     
-    const insertValues = [videoId, ...Object.values(settings).filter(v => v !== undefined), ...values]
+    // Parameters: videoId for INSERT, then settings values for INSERT VALUES, then settings values again for UPDATE SET
+    const insertValues = [videoId, ...settingsValues, ...settingsValues]
     return stmt.run(...insertValues).changes
   },
 }

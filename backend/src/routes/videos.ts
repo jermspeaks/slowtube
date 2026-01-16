@@ -757,8 +757,25 @@ router.post('/:id/progress', (req, res) => {
     }
 
     const { progress_seconds } = req.body
-    if (typeof progress_seconds !== 'number' || progress_seconds < 0) {
-      return res.status(400).json({ error: 'Invalid progress_seconds. Must be a non-negative number' })
+    
+    // Validate progress_seconds: must be a finite number >= 0
+    if (
+      typeof progress_seconds !== 'number' ||
+      isNaN(progress_seconds) ||
+      !isFinite(progress_seconds) ||
+      progress_seconds < 0
+    ) {
+      console.error('Invalid progress_seconds received:', {
+        value: progress_seconds,
+        type: typeof progress_seconds,
+        isNaN: isNaN(progress_seconds),
+        isFinite: isFinite(progress_seconds),
+        body: req.body,
+      })
+      return res.status(400).json({ 
+        error: 'Invalid progress_seconds. Must be a finite non-negative number',
+        received: progress_seconds 
+      })
     }
 
     // Verify video exists
