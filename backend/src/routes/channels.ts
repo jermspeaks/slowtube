@@ -197,6 +197,9 @@ export async function processLatestVideosFromChannel(
           state = 'feed'
         }
 
+        // Set timestamp for latest videos
+        const latestTimestamp = new Date().toISOString()
+
         // Update existing video metadata but preserve state
         const updateData: any = {
           title: videoDetails.title,
@@ -207,7 +210,12 @@ export async function processLatestVideosFromChannel(
           duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
           fetch_status: 'completed',
           youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
-          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
+          added_to_latest_at: latestTimestamp, // Set timestamp for latest videos
+        }
+
+        // Set added_to_playlist_at if it's NULL (preserve existing values)
+        if (existingVideo.added_to_playlist_at === null) {
+          updateData.added_to_playlist_at = latestTimestamp
         }
 
         // Update thumbnail if we got a better one
@@ -228,6 +236,7 @@ export async function processLatestVideosFromChannel(
         })
       } else {
         // Create new video
+        const latestTimestamp = new Date().toISOString()
         const videoData = {
           youtube_id: videoDetails.id,
           title: videoDetails.title,
@@ -238,12 +247,12 @@ export async function processLatestVideosFromChannel(
             || null,
           duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
           published_at: videoDetails.publishedAt,
-          added_to_playlist_at: null,
+          added_to_playlist_at: latestTimestamp, // Set to same timestamp as added_to_latest_at
           fetch_status: 'completed' as const,
           channel_title: videoDetails.channelTitle,
           youtube_channel_id: videoDetails.channelId,
           youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
-          added_to_latest_at: new Date().toISOString(), // Set timestamp for latest videos
+          added_to_latest_at: latestTimestamp, // Set timestamp for latest videos
         }
 
         const videoId = videoQueries.create(videoData)
