@@ -2336,6 +2336,11 @@ export const channelListQueries = {
           orderBy = `ORDER BY 
             CASE WHEN v.title IS NULL THEN 1 ELSE 0 END,
             v.title ${order}`
+        } else if (sortBy === 'published_at') {
+          // Cast published_at to datetime for proper chronological sorting
+          orderBy = `ORDER BY 
+            CASE WHEN v.published_at IS NULL THEN 1 ELSE 0 END,
+            datetime(v.published_at) ${order}`
         } else {
           orderBy = `ORDER BY 
             CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,
@@ -2372,6 +2377,11 @@ export const channelListQueries = {
           orderBy = `ORDER BY 
             CASE WHEN v.title IS NULL THEN 1 ELSE 0 END,
             v.title ${order}`
+        } else if (sortBy === 'published_at') {
+          // Cast published_at to datetime for proper chronological sorting
+          orderBy = `ORDER BY 
+            CASE WHEN v.published_at IS NULL THEN 1 ELSE 0 END,
+            datetime(v.published_at) ${order}`
         } else {
           orderBy = `ORDER BY 
             CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,
