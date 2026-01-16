@@ -64,18 +64,24 @@ function ChannelGroupDetail() {
     }
   }, [id])
 
+  // Reset sort to default when switching tabs
   useEffect(() => {
     if (group && activeTab) {
-      // Reset sort to default when switching tabs
       if (activeTab === 'latest') {
         setSortBy('added_to_latest_at')
       } else if (activeTab === 'inbox' || activeTab === 'feed' || activeTab === 'archive') {
         setSortBy('added_to_playlist_at')
       }
       setSortOrder('desc')
-      loadVideos()
       // Clear selection when switching tabs
       setSelectedVideoIds(new Set())
+    }
+  }, [group, activeTab])
+
+  // Load videos when sort, filter, or tab changes
+  useEffect(() => {
+    if (group && activeTab) {
+      loadVideos()
     }
   }, [group, activeTab, sortBy, sortOrder, shortsFilter])
 
@@ -678,4 +684,3 @@ function ChannelGroupDetail() {
 }
 
 export default ChannelGroupDetail
-
