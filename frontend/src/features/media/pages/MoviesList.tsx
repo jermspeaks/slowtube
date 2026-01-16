@@ -25,7 +25,7 @@ type MoviesListFilters = {
   starredFilter: 'all' | 'starred' | 'unstarred'
   watchedFilter: 'all' | 'watched' | 'unwatched'
   playlistFilter: 'all' | 'in_playlist' | 'not_in_playlist'
-  sortBy: 'title' | 'release_date' | 'created_at' | null
+  sortBy: 'title' | 'release_date' | null
   sortOrder: 'asc' | 'desc'
   currentPage: number
 }
@@ -322,9 +322,9 @@ function MoviesList() {
     } else {
       const lastUnderscoreIndex = value.lastIndexOf('_')
       if (lastUnderscoreIndex !== -1) {
-        const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'release_date' | 'created_at'
+        const by = value.substring(0, lastUnderscoreIndex) as 'title' | 'release_date'
         const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
-        if ((by === 'title' || by === 'release_date' || by === 'created_at') && (order === 'asc' || order === 'desc')) {
+        if ((by === 'title' || by === 'release_date') && (order === 'asc' || order === 'desc')) {
           updateFilters({ sortBy: by, sortOrder: order })
         }
       }
@@ -368,8 +368,6 @@ function MoviesList() {
                 <option value="title_desc">Title (Z-A)</option>
                 <option value="release_date_desc">Release Date (Newest)</option>
                 <option value="release_date_asc">Release Date (Oldest)</option>
-                <option value="created_at_desc">Created At (Newest)</option>
-                <option value="created_at_asc">Created At (Oldest)</option>
               </select>
             </div>
           </div>

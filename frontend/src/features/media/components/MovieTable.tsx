@@ -3,12 +3,6 @@ import { Movie } from '../types/movie'
 import { format } from 'date-fns'
 import { useNavigate } from 'react-router'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/components/ui/dropdown-menu'
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -17,7 +11,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Button } from '@/shared/components/ui/button'
-import { MoreVertical, Trash2, Archive, ArchiveRestore, Star, Check, X } from 'lucide-react'
+import { Trash2, Archive, ArchiveRestore, Star, Check, X } from 'lucide-react'
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -119,7 +113,6 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
               <th className="p-2 md:p-3 text-left border-b-2 border-border">Title</th>
               <th className="p-2 md:p-3 text-left border-b-2 border-border hidden md:table-cell">Overview</th>
               <th className="p-2 md:p-3 text-left border-b-2 border-border">Release Date</th>
-              <th className="p-2 md:p-3 text-left border-b-2 border-border hidden lg:table-cell">Created At</th>
               <th className="p-2 md:p-3 text-left border-b-2 border-border">Actions</th>
             </tr>
           </thead>
@@ -181,84 +174,63 @@ function MovieTable({ movies, onDelete, onArchive, onStar, onWatched, selectedMo
                       '-'
                     )}
                   </td>
-                  <td className="p-2 md:p-3 text-muted-foreground text-xs md:text-sm hidden lg:table-cell">
-                    {movie.created_at ? (
-                      format(new Date(movie.created_at), 'MMM d, yyyy')
-                    ) : (
-                      '-'
-                    )}
-                  </td>
                   <td className="p-2 md:p-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="p-1 hover:bg-accent rounded transition-colors">
-                          <MoreVertical className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {onStar && (
-                          <DropdownMenuItem
-                            onClick={() => handleStarClick(movie)}
-                            className="cursor-pointer"
-                          >
-                            {movie.is_starred ? (
-                              <>
-                                <Star className="mr-2 h-4 w-4 fill-current" />
-                                Unstar
-                              </>
-                            ) : (
-                              <>
-                                <Star className="mr-2 h-4 w-4" />
-                                Star
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        )}
-                        {onWatched && (
-                          <DropdownMenuItem
-                            onClick={() => handleWatchedClick(movie)}
-                            className="cursor-pointer"
-                          >
-                            {movie.is_watched ? (
-                              <>
-                                <X className="mr-2 h-4 w-4" />
-                                Mark as Unwatched
-                              </>
-                            ) : (
-                              <>
-                                <Check className="mr-2 h-4 w-4" />
-                                Mark as Watched
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        )}
-                        {onArchive && (
-                          <DropdownMenuItem
-                            onClick={() => handleArchiveClick(movie)}
-                            className="cursor-pointer"
-                          >
-                            {movie.is_archived ? (
-                              <>
-                                <ArchiveRestore className="mr-2 h-4 w-4" />
-                                Unarchive
-                              </>
-                            ) : (
-                              <>
-                                <Archive className="mr-2 h-4 w-4" />
-                                Archive
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(movie)}
-                          className="cursor-pointer text-red-600 focus:text-red-600"
+                    <div className="flex items-center gap-2">
+                      {onStar && (
+                        <Button
+                          onClick={() => handleStarClick(movie)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          title={movie.is_starred ? 'Unstar' : 'Star'}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {movie.is_starred ? (
+                            <Star className="h-4 w-4 fill-current" />
+                          ) : (
+                            <Star className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                      {onWatched && (
+                        <Button
+                          onClick={() => handleWatchedClick(movie)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          title={movie.is_watched ? 'Mark as Unwatched' : 'Mark as Watched'}
+                        >
+                          {movie.is_watched ? (
+                            <X className="h-4 w-4" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                      {onArchive && (
+                        <Button
+                          onClick={() => handleArchiveClick(movie)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          title={movie.is_archived ? 'Unarchive' : 'Archive'}
+                        >
+                          {movie.is_archived ? (
+                            <ArchiveRestore className="h-4 w-4" />
+                          ) : (
+                            <Archive className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => handleDeleteClick(movie)}
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               )
