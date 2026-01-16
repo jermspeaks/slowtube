@@ -80,10 +80,18 @@ export const videoQueries = {
     const conditions: string[] = []
     const params: any[] = []
 
-    // State filter
+    // State filter - use media_states instead of video_states
+    // Treat NULL state as 'feed' for backward compatibility
     if (state) {
-      conditions.push('vs.state = ?')
-      params.push(state)
+      if (state === 'feed') {
+        // Include videos with NULL state (defaults to feed) or explicit 'feed' state
+        conditions.push('(ms.state IS NULL OR ms.state = ?)')
+        params.push(state)
+      } else {
+        // For 'inbox' and 'archive', only match explicit states
+        conditions.push('ms.state = ?')
+        params.push(state)
+      }
     }
 
     // Search filter (case-insensitive search on title and description)
@@ -133,10 +141,10 @@ export const videoQueries = {
     } else if (sortBy === 'archived_at') {
       const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
       // Handle NULL values - put them at the end
-      // archived_at comes from vs.updated_at when state is 'archive'
+      // archived_at comes from ms.updated_at when state is 'archive'
       orderBy = `ORDER BY 
-        CASE WHEN vs.updated_at IS NULL THEN 1 ELSE 0 END,
-        vs.updated_at ${order}`
+        CASE WHEN ms.updated_at IS NULL THEN 1 ELSE 0 END,
+        ms.updated_at ${order}`
     }
 
     // Build LIMIT and OFFSET clauses
@@ -151,9 +159,9 @@ export const videoQueries = {
     }
 
     const query = `
-      SELECT v.*, vs.state, vs.updated_at as archived_at, c.channel_title
+      SELECT v.*, ms.state, ms.updated_at as archived_at, c.channel_title
       FROM videos v
-      LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
       LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       ${whereClause}
       ${orderBy}
@@ -175,10 +183,18 @@ export const videoQueries = {
     const conditions: string[] = []
     const params: any[] = []
 
-    // State filter
+    // State filter - use media_states instead of video_states
+    // Treat NULL state as 'feed' for backward compatibility
     if (state) {
-      conditions.push('vs.state = ?')
-      params.push(state)
+      if (state === 'feed') {
+        // Include videos with NULL state (defaults to feed) or explicit 'feed' state
+        conditions.push('(ms.state IS NULL OR ms.state = ?)')
+        params.push(state)
+      } else {
+        // For 'inbox' and 'archive', only match explicit states
+        conditions.push('ms.state = ?')
+        params.push(state)
+      }
     }
 
     // Search filter (case-insensitive search on title and description)
@@ -220,7 +236,7 @@ export const videoQueries = {
     const query = `
       SELECT COUNT(*) as count
       FROM videos v
-      LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
       ${channelJoin}
       ${whereClause}
     `
@@ -231,9 +247,9 @@ export const videoQueries = {
 
   getById: (id: number) => {
     return db.prepare(`
-      SELECT v.*, vs.state, c.channel_title
+      SELECT v.*, ms.state, c.channel_title
       FROM videos v
-      LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
       LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       WHERE v.id = ?
     `).get(id) as (Video & { state: string | null; channel_title: string | null }) | undefined
@@ -361,9 +377,9 @@ export const videoQueries = {
 
   getWatchLaterVideosByChannel: (channelId: string) => {
     return db.prepare(`
-      SELECT v.*, vs.state 
+      SELECT v.*, ms.state 
       FROM videos v
-      LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
       WHERE v.youtube_channel_id = ?
       ORDER BY v.added_to_playlist_at DESC
     `).all(channelId) as (Video & { state: string | null })[]
@@ -1124,9 +1140,9 @@ export const channelQueries = {
 
   getWatchLaterVideosByChannel: (channelId: string) => {
     return db.prepare(`
-      SELECT v.*, vs.state 
+      SELECT v.*, ms.state 
       FROM videos v
-      LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
       WHERE v.youtube_channel_id = ?
       ORDER BY v.added_to_playlist_at DESC
     `).all(channelId) as (Video & { state: string | null })[]
@@ -1150,13 +1166,13 @@ export const channelQueries = {
     }
 
     return db.prepare(`
-      SELECT v.*, vs.state, c.channel_title
+      SELECT v.*, ms.state, c.channel_title
       FROM videos v
-      LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
       LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       WHERE v.youtube_channel_id = ?
         AND v.added_to_latest_at IS NOT NULL
-        AND (vs.state IS NULL OR vs.state = 'feed')
+        AND (ms.state IS NULL OR ms.state = 'feed')
       ${orderBy}
     `).all(channelId) as (Video & { state: string | null; channel_title: string | null })[]
   },
@@ -2529,13 +2545,13 @@ export const channelListQueries = {
       let stateCondition = ''
       if (stateFilter === 'exclude_archived') {
         // Default: show videos with no state, feed, or inbox (exclude archived)
-        stateCondition = 'AND (vs.state IS NULL OR vs.state IN (\'feed\', \'inbox\'))'
+        stateCondition = 'AND (ms.state IS NULL OR ms.state IN (\'feed\', \'inbox\'))'
       } else if (stateFilter === 'feed') {
-        stateCondition = 'AND vs.state = \'feed\''
+        stateCondition = 'AND ms.state = \'feed\''
       } else if (stateFilter === 'inbox') {
-        stateCondition = 'AND vs.state = \'inbox\''
+        stateCondition = 'AND ms.state = \'inbox\''
       } else if (stateFilter === 'archive') {
-        stateCondition = 'AND vs.state = \'archive\''
+        stateCondition = 'AND ms.state = \'archive\''
       }
       // If stateFilter is 'all' or undefined, show all videos (no state condition)
 
@@ -2562,9 +2578,9 @@ export const channelListQueries = {
 
       // Get videos from channels in the list (watch later videos) with optional state filtering
       let videos = db.prepare(`
-        SELECT v.*, vs.state, c.channel_title
+        SELECT v.*, ms.state, c.channel_title
         FROM videos v
-        LEFT JOIN video_states vs ON v.id = vs.video_id
+        LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
         LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
         WHERE v.youtube_channel_id IN (${placeholders})
         ${stateCondition}
@@ -2604,13 +2620,13 @@ export const channelListQueries = {
       
       // Get latest videos (with added_to_latest_at and feed state or no state)
       let videos = db.prepare(`
-        SELECT v.*, vs.state, c.channel_title
+        SELECT v.*, ms.state, c.channel_title
         FROM videos v
-        LEFT JOIN video_states vs ON v.id = vs.video_id
+        LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
         LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
         WHERE v.youtube_channel_id IN (${placeholders})
           AND v.added_to_latest_at IS NOT NULL
-          AND (vs.state IS NULL OR vs.state = 'feed')
+          AND (ms.state IS NULL OR ms.state = 'feed')
         ${orderBy}
       `).all(...channelIdValues) as (Video & { state: string | null; channel_title: string | null })[]
 
