@@ -203,7 +203,7 @@ function ChannelGroupDetail() {
     }
   }
 
-  // Helper function to check if a video is a short (≤60 seconds)
+  // Helper function to check if a video is a short (≤3 minutes / 180 seconds)
   const isShortVideo = (duration: string | null): boolean => {
     if (!duration || typeof duration !== 'string') return false
     
@@ -216,7 +216,7 @@ function ChannelGroupDetail() {
     if (minuteMatch) totalSeconds += parseInt(minuteMatch[1], 10) * 60
     if (secondMatch) totalSeconds += parseInt(secondMatch[1], 10)
     
-    return totalSeconds > 0 && totalSeconds <= 60
+    return totalSeconds > 0 && totalSeconds <= 180
   }
 
   const handleSelectAllShorts = () => {

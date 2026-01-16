@@ -124,9 +124,9 @@ export function parseDuration(iso: string): string {
 }
 
 /**
- * Check if a video is a YouTube Short (≤60 seconds)
+ * Check if a video is a YouTube Short (≤3 minutes / 180 seconds)
  * @param duration - Duration string (ISO 8601 or human-readable)
- * @returns true if duration is ≤60 seconds
+ * @returns true if duration is ≤180 seconds
  */
 export function isShortVideo(duration: string | null): boolean {
   if (!duration || typeof duration !== 'string') return false
@@ -139,5 +139,5 @@ export function isShortVideo(duration: string | null): boolean {
     seconds = parseDurationToSeconds(duration)
   }
   
-  return seconds > 0 && seconds <= 60
+  return seconds > 0 && seconds <= 180
 }
