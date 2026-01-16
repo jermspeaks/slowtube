@@ -12,8 +12,8 @@ export interface Video {
   added_to_playlist_at: string | null
   added_to_latest_at: string | null
   fetch_status: 'pending' | 'completed' | 'unavailable' | 'failed' | null
-  channel_title: string | null
   youtube_channel_id: string | null
+  channel_id: number | null
   youtube_url: string | null
   created_at: string
   updated_at: string
@@ -42,7 +42,6 @@ export interface VideoState {
 
 export interface OAuthSession {
   id: number
-  user_id: string
   access_token: string
   refresh_token: string | null
   expires_at: string | null
@@ -94,10 +93,12 @@ export const videoQueries = {
       params.push(searchTerm, searchTerm)
     }
 
-    // Channel filter
+    // Channel filter - join with channels table
+    let channelJoin = ''
     if (channels && channels.length > 0) {
+      channelJoin = 'LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id'
       const placeholders = channels.map(() => '?').join(',')
-      conditions.push(`v.channel_title IN (${placeholders})`)
+      conditions.push(`c.channel_title IN (${placeholders})`)
       params.push(...channels)
     }
 
@@ -150,15 +151,16 @@ export const videoQueries = {
     }
 
     const query = `
-      SELECT v.*, vs.state, vs.updated_at as archived_at
+      SELECT v.*, vs.state, vs.updated_at as archived_at, c.channel_title
       FROM videos v
       LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       ${whereClause}
       ${orderBy}
       ${limitClause}
     `
 
-    return db.prepare(query).all(...params) as (Video & { state: string | null })[]
+    return db.prepare(query).all(...params) as (Video & { state: string | null; channel_title: string | null })[]
   },
 
   getCount: (
@@ -186,10 +188,12 @@ export const videoQueries = {
       params.push(searchTerm, searchTerm)
     }
 
-    // Channel filter
+    // Channel filter - join with channels table
+    let channelJoin = ''
     if (channels && channels.length > 0) {
+      channelJoin = 'LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id'
       const placeholders = channels.map(() => '?').join(',')
-      conditions.push(`v.channel_title IN (${placeholders})`)
+      conditions.push(`c.channel_title IN (${placeholders})`)
       params.push(...channels)
     }
 
@@ -217,6 +221,7 @@ export const videoQueries = {
       SELECT COUNT(*) as count
       FROM videos v
       LEFT JOIN video_states vs ON v.id = vs.video_id
+      ${channelJoin}
       ${whereClause}
     `
 
@@ -226,11 +231,12 @@ export const videoQueries = {
 
   getById: (id: number) => {
     return db.prepare(`
-      SELECT v.*, vs.state 
+      SELECT v.*, vs.state, c.channel_title
       FROM videos v
       LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       WHERE v.id = ?
-    `).get(id) as (Video & { state: string | null }) | undefined
+    `).get(id) as (Video & { state: string | null; channel_title: string | null }) | undefined
   },
 
   getByYoutubeId: (youtubeId: string) => {
@@ -238,8 +244,15 @@ export const videoQueries = {
   },
 
   create: (video: Omit<Video, 'id' | 'created_at' | 'updated_at'>) => {
+    // If channel_id is not provided but youtube_channel_id is, try to find channel_id
+    let channelId = video.channel_id
+    if (!channelId && video.youtube_channel_id) {
+      const channel = db.prepare('SELECT id FROM channels WHERE youtube_channel_id = ?').get(video.youtube_channel_id) as { id: number } | undefined
+      channelId = channel?.id || null
+    }
+
     const stmt = db.prepare(`
-      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, added_to_latest_at, fetch_status, channel_title, youtube_channel_id, youtube_url)
+      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, added_to_latest_at, fetch_status, youtube_channel_id, channel_id, youtube_url)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const result = stmt.run(
@@ -252,8 +265,8 @@ export const videoQueries = {
       video.added_to_playlist_at,
       video.added_to_latest_at || null,
       video.fetch_status || 'pending',
-      video.channel_title,
       video.youtube_channel_id || null,
+      channelId,
       video.youtube_url
     )
     return result.lastInsertRowid as number
@@ -304,10 +317,7 @@ export const videoQueries = {
         (
           fetch_status = 'completed' 
           AND youtube_id IS NOT NULL
-          AND (
-            title = 'Untitled Video' 
-            OR channel_title IS NULL
-          )
+          AND title = 'Untitled Video'
         )
       )
       ORDER BY created_at ASC
@@ -327,10 +337,7 @@ export const videoQueries = {
         (
           fetch_status = 'completed' 
           AND youtube_id IS NOT NULL
-          AND (
-            title = 'Untitled Video' 
-            OR channel_title IS NULL
-          )
+          AND title = 'Untitled Video'
         )
       )
     `).get() as { count: number }
@@ -344,10 +351,11 @@ export const videoQueries = {
 
   getAllUniqueChannels: () => {
     return db.prepare(`
-      SELECT DISTINCT channel_title 
-      FROM videos 
-      WHERE channel_title IS NOT NULL AND channel_title != ''
-      ORDER BY channel_title ASC
+      SELECT DISTINCT c.channel_title 
+      FROM channels c
+      INNER JOIN videos v ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
+      WHERE c.channel_title IS NOT NULL AND c.channel_title != ''
+      ORDER BY c.channel_title ASC
     `).all() as { channel_title: string }[]
   },
 
@@ -437,7 +445,7 @@ export const commentQueries = {
   },
 }
 
-// Video state operations
+// Video state operations (legacy - use mediaStateQueries for new code)
 export const videoStateQueries = {
   getByVideoId: (videoId: number) => {
     return db.prepare('SELECT * FROM video_states WHERE video_id = ?').get(videoId) as VideoState | undefined
@@ -451,11 +459,86 @@ export const videoStateQueries = {
         state = excluded.state,
         updated_at = CURRENT_TIMESTAMP
     `)
-    return stmt.run(videoId, state).changes
+    const changes = stmt.run(videoId, state).changes
+    
+    // Also update unified media_states
+    if (changes > 0) {
+      mediaStateQueries.setState('video', videoId, state)
+    }
+    
+    return changes
   },
 
   getByState: (state: 'feed' | 'inbox' | 'archive') => {
     return db.prepare('SELECT * FROM video_states WHERE state = ?').all(state) as VideoState[]
+  },
+}
+
+// Unified media state operations
+export interface MediaState {
+  id: number
+  media_type: 'video' | 'movie' | 'tv_show' | 'episode'
+  media_id: number
+  state: 'feed' | 'inbox' | 'archive' | 'watched' | 'started' | 'starred'
+  updated_at: string
+}
+
+export const mediaStateQueries = {
+  getByMediaId: (mediaType: 'video' | 'movie' | 'tv_show' | 'episode', mediaId: number) => {
+    return db.prepare('SELECT * FROM media_states WHERE media_type = ? AND media_id = ?').get(mediaType, mediaId) as MediaState | undefined
+  },
+
+  setState: (mediaType: 'video' | 'movie' | 'tv_show' | 'episode', mediaId: number, state: 'feed' | 'inbox' | 'archive' | 'watched' | 'started' | 'starred') => {
+    // Get old state for history
+    const oldState = db.prepare('SELECT state FROM media_states WHERE media_type = ? AND media_id = ?').get(mediaType, mediaId) as { state: string } | undefined
+    
+    // Update state
+    const stmt = db.prepare(`
+      INSERT INTO media_states (media_type, media_id, state, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(media_type, media_id) DO UPDATE SET
+        state = excluded.state,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    const changes = stmt.run(mediaType, mediaId, state).changes
+    
+    // Log state change to history
+    if (changes > 0) {
+      const oldStateValue = oldState?.state || null
+      if (oldStateValue !== state) {
+        db.prepare(`
+          INSERT INTO state_history (media_type, media_id, old_state, new_state, changed_at)
+          VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `).run(mediaType, mediaId, oldStateValue, state)
+      }
+    }
+    
+    return changes
+  },
+
+  removeState: (mediaType: 'video' | 'movie' | 'tv_show' | 'episode', mediaId: number) => {
+    // Get old state for history
+    const oldState = db.prepare('SELECT state FROM media_states WHERE media_type = ? AND media_id = ?').get(mediaType, mediaId) as { state: string } | undefined
+    
+    const changes = db.prepare('DELETE FROM media_states WHERE media_type = ? AND media_id = ?').run(mediaType, mediaId).changes
+    
+    // Log state removal to history
+    if (changes > 0 && oldState) {
+      db.prepare(`
+        INSERT INTO state_history (media_type, media_id, old_state, new_state, changed_at)
+        VALUES (?, ?, ?, NULL, CURRENT_TIMESTAMP)
+      `).run(mediaType, mediaId, oldState.state)
+    }
+    
+    return changes
+  },
+
+  getByState: (state: 'feed' | 'inbox' | 'archive' | 'watched' | 'started' | 'starred') => {
+    return db.prepare('SELECT * FROM media_states WHERE state = ?').all(state) as MediaState[]
+  },
+
+  getByMediaType: (mediaType: 'video' | 'movie' | 'tv_show' | 'episode') => {
+    return db.prepare('SELECT * FROM media_states WHERE media_type = ?').all(mediaType) as MediaState[]
   },
 }
 
@@ -538,7 +621,6 @@ export const videoPlayerSettingsQueries = {
 // User player preferences operations
 export interface UserPlayerPreferences {
   id: number
-  user_id: string
   default_playback_speed: number
   default_volume: number
   autoplay_enabled: boolean
@@ -548,35 +630,42 @@ export interface UserPlayerPreferences {
 }
 
 export const userPlayerPreferencesQueries = {
-  getByUserId: (userId: string) => {
-    return db.prepare('SELECT * FROM user_player_preferences WHERE user_id = ?').get(userId) as UserPlayerPreferences | undefined
+  get: () => {
+    return db.prepare('SELECT * FROM user_player_preferences LIMIT 1').get() as UserPlayerPreferences | undefined
   },
 
-  updatePreferences: (userId: string, preferences: Partial<Omit<UserPlayerPreferences, 'id' | 'user_id' | 'updated_at'>>) => {
+  updatePreferences: (preferences: Partial<Omit<UserPlayerPreferences, 'id' | 'updated_at'>>) => {
     const fields: string[] = []
     const values: any[] = []
+    const keys: string[] = []
 
     Object.entries(preferences).forEach(([key, value]) => {
       if (value !== undefined) {
         fields.push(`${key} = ?`)
         values.push(value)
+        keys.push(key)
       }
     })
 
     if (fields.length === 0) return 0
 
     fields.push('updated_at = CURRENT_TIMESTAMP')
-    values.push(userId)
 
-    const stmt = db.prepare(`
-      INSERT INTO user_player_preferences (user_id, ${Object.keys(preferences).join(', ')}, updated_at)
-      VALUES (?, ${Object.keys(preferences).map(() => '?').join(', ')}, CURRENT_TIMESTAMP)
-      ON CONFLICT(user_id) DO UPDATE SET
-        ${fields.join(', ')}
-    `)
+    // Check if preferences exist
+    const existing = db.prepare('SELECT id FROM user_player_preferences LIMIT 1').get()
     
-    const insertValues = [userId, ...Object.values(preferences).filter(v => v !== undefined), ...values]
-    return stmt.run(...insertValues).changes
+    if (existing) {
+      // Update existing
+      const stmt = db.prepare(`UPDATE user_player_preferences SET ${fields.join(', ')}`)
+      return stmt.run(...values).changes
+    } else {
+      // Insert new
+      const stmt = db.prepare(`
+        INSERT INTO user_player_preferences (${keys.join(', ')}, updated_at)
+        VALUES (${keys.map(() => '?').join(', ')}, CURRENT_TIMESTAMP)
+      `)
+      return stmt.run(...values).changes
+    }
   },
 }
 
@@ -588,11 +677,10 @@ export const oauthQueries = {
 
   create: (session: Omit<OAuthSession, 'id' | 'created_at' | 'updated_at'>) => {
     const stmt = db.prepare(`
-      INSERT INTO oauth_sessions (user_id, access_token, refresh_token, expires_at)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO oauth_sessions (access_token, refresh_token, expires_at)
+      VALUES (?, ?, ?)
     `)
     const result = stmt.run(
-      session.user_id,
       session.access_token,
       session.refresh_token,
       session.expires_at
@@ -632,7 +720,7 @@ export const statsQueries = {
     startDate?: string,
     endDate?: string
   ) => {
-    const conditions: string[] = ['channel_title IS NOT NULL AND channel_title != \'\'']
+    const conditions: string[] = ['c.channel_title IS NOT NULL AND c.channel_title != \'\'']
     const params: any[] = []
 
     // Date range filter
@@ -640,11 +728,11 @@ export const statsQueries = {
       if (startDate || endDate) {
         const dateConditions: string[] = []
         if (startDate) {
-          dateConditions.push(`DATE(${dateField}) >= DATE(?)`)
+          dateConditions.push(`DATE(v.${dateField}) >= DATE(?)`)
           params.push(startDate)
         }
         if (endDate) {
-          dateConditions.push(`DATE(${dateField}) <= DATE(?)`)
+          dateConditions.push(`DATE(v.${dateField}) <= DATE(?)`)
           params.push(endDate)
         }
         if (dateConditions.length > 0) {
@@ -657,12 +745,13 @@ export const statsQueries = {
 
     return db.prepare(`
       SELECT 
-        channel_title,
+        c.channel_title,
         COUNT(*) as count
-      FROM videos
+      FROM videos v
+      LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       ${whereClause}
-      GROUP BY channel_title
-      ORDER BY count DESC, channel_title ASC
+      GROUP BY c.channel_title
+      ORDER BY count DESC, c.channel_title ASC
     `).all(...params) as Array<{ channel_title: string; count: number }>
   },
 
@@ -737,7 +826,7 @@ export const statsQueries = {
     startDate?: string,
     endDate?: string
   ) => {
-    const conditions: string[] = ['channel_title IS NOT NULL AND channel_title != \'\'']
+    const conditions: string[] = ['c.channel_title IS NOT NULL AND c.channel_title != \'\'']
     const params: any[] = []
 
     // Date range filter
@@ -745,11 +834,11 @@ export const statsQueries = {
       if (startDate || endDate) {
         const dateConditions: string[] = []
         if (startDate) {
-          dateConditions.push(`DATE(${dateField}) >= DATE(?)`)
+          dateConditions.push(`DATE(v.${dateField}) >= DATE(?)`)
           params.push(startDate)
         }
         if (endDate) {
-          dateConditions.push(`DATE(${dateField}) <= DATE(?)`)
+          dateConditions.push(`DATE(v.${dateField}) <= DATE(?)`)
           params.push(endDate)
         }
         if (dateConditions.length > 0) {
@@ -761,10 +850,11 @@ export const statsQueries = {
     const whereClause = `WHERE ${conditions.join(' AND ')}`
 
     return db.prepare(`
-      SELECT DISTINCT channel_title
-      FROM videos
+      SELECT DISTINCT c.channel_title
+      FROM videos v
+      LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       ${whereClause}
-      ORDER BY channel_title ASC
+      ORDER BY c.channel_title ASC
     `).all(...params) as Array<{ channel_title: string }>
   },
 
@@ -1060,14 +1150,15 @@ export const channelQueries = {
     }
 
     return db.prepare(`
-      SELECT v.*, vs.state 
+      SELECT v.*, vs.state, c.channel_title
       FROM videos v
       LEFT JOIN video_states vs ON v.id = vs.video_id
+      LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
       WHERE v.youtube_channel_id = ?
         AND v.added_to_latest_at IS NOT NULL
         AND (vs.state IS NULL OR vs.state = 'feed')
       ${orderBy}
-    `).all(channelId) as (Video & { state: string | null })[]
+    `).all(channelId) as (Video & { state: string | null; channel_title: string | null })[]
   },
 
   subscribe: (youtubeChannelId: string) => {
@@ -2418,7 +2509,7 @@ export const channelListQueries = {
     `).all(listId) as Channel[]
   },
 
-  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked', sortBy?: 'title' | 'added_to_latest_at' | 'published_at' | 'added_to_playlist_at', sortOrder?: 'asc' | 'desc', stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive', shortsFilter?: 'all' | 'exclude' | 'only'): (Video & { state: string | null })[] => {
+  getVideosForList: (listId: number, type: 'watch_later' | 'latest' | 'liked', sortBy?: 'title' | 'added_to_latest_at' | 'published_at' | 'added_to_playlist_at', sortOrder?: 'asc' | 'desc', stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive', shortsFilter?: 'all' | 'exclude' | 'only'): (Video & { state: string | null; channel_title: string | null })[] => {
     // Get channel IDs in this list
     const channelIds = db.prepare(`
       SELECT youtube_channel_id
@@ -2471,13 +2562,14 @@ export const channelListQueries = {
 
       // Get videos from channels in the list (watch later videos) with optional state filtering
       let videos = db.prepare(`
-        SELECT v.*, vs.state 
+        SELECT v.*, vs.state, c.channel_title
         FROM videos v
         LEFT JOIN video_states vs ON v.id = vs.video_id
+        LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
         WHERE v.youtube_channel_id IN (${placeholders})
         ${stateCondition}
         ${orderBy}
-      `).all(...channelIdValues) as (Video & { state: string | null })[]
+      `).all(...channelIdValues) as (Video & { state: string | null; channel_title: string | null })[]
 
       // Apply shorts filter if specified
       if (shortsFilter === 'exclude') {
@@ -2512,14 +2604,15 @@ export const channelListQueries = {
       
       // Get latest videos (with added_to_latest_at and feed state or no state)
       let videos = db.prepare(`
-        SELECT v.*, vs.state 
+        SELECT v.*, vs.state, c.channel_title
         FROM videos v
         LEFT JOIN video_states vs ON v.id = vs.video_id
+        LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
         WHERE v.youtube_channel_id IN (${placeholders})
           AND v.added_to_latest_at IS NOT NULL
           AND (vs.state IS NULL OR vs.state = 'feed')
         ${orderBy}
-      `).all(...channelIdValues) as (Video & { state: string | null })[]
+      `).all(...channelIdValues) as (Video & { state: string | null; channel_title: string | null })[]
 
       // Apply shorts filter if specified
       if (shortsFilter === 'exclude') {
