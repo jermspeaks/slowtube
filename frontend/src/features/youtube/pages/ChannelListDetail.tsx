@@ -48,7 +48,9 @@ function ChannelGroupDetail() {
     // Initialize based on current active tab
     if (location.pathname.includes('/latest')) {
       return 'added_to_latest_at'
-    } else if (location.pathname.includes('/inbox') || location.pathname.includes('/feed') || location.pathname.includes('/archive')) {
+    } else if (location.pathname.includes('/feed')) {
+      return 'published_at'
+    } else if (location.pathname.includes('/inbox') || location.pathname.includes('/archive')) {
       return 'added_to_playlist_at'
     }
     return 'added_to_playlist_at'
@@ -69,7 +71,9 @@ function ChannelGroupDetail() {
     if (group && activeTab) {
       if (activeTab === 'latest') {
         setSortBy('added_to_latest_at')
-      } else if (activeTab === 'inbox' || activeTab === 'feed' || activeTab === 'archive') {
+      } else if (activeTab === 'feed') {
+        setSortBy('published_at')
+      } else if (activeTab === 'inbox' || activeTab === 'archive') {
         setSortBy('added_to_playlist_at')
       }
       setSortOrder('desc')
@@ -644,6 +648,7 @@ function ChannelGroupDetail() {
                   onSelectionChange={handleVideoSelect}
                   onSelectAll={handleSelectAll}
                   showFeedDate={activeTab === 'latest'}
+                  showAddedDate={activeTab !== 'feed'}
                 />
               )}
             </>
