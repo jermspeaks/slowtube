@@ -88,7 +88,7 @@ router.get('/:channelId', (req, res) => {
 router.get('/:channelId/videos', async (req, res) => {
   try {
     const { channelId } = req.params
-    const { type, sortBy, sortOrder } = req.query
+    const { type, sortBy, sortOrder, stateFilter } = req.query
     
     // Verify channel exists
     const channel = channelQueries.getByChannelId(channelId)
@@ -97,8 +97,14 @@ router.get('/:channelId/videos', async (req, res) => {
     }
     
     if (type === 'watch_later') {
+      // Validate stateFilter for watch_later
+      let validStateFilter: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive' | undefined = undefined
+      if (stateFilter === 'all' || stateFilter === 'exclude_archived' || stateFilter === 'feed' || stateFilter === 'inbox' || stateFilter === 'archive') {
+        validStateFilter = stateFilter
+      }
+      
       // Get watch later videos for this channel
-      const videos = channelQueries.getWatchLaterVideosByChannel(channelId)
+      const videos = channelQueries.getWatchLaterVideosByChannel(channelId, validStateFilter)
       
       // Get tags and comments for each video
       const videosWithDetails = videos.map(video => {

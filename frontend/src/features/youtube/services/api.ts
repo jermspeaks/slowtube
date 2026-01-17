@@ -163,12 +163,14 @@ export const channelsAPI = {
     channelId: string,
     type: 'watch_later' | 'latest' | 'liked',
     sortBy?: 'title' | 'added_to_latest_at' | 'published_at',
-    sortOrder?: 'asc' | 'desc'
+    sortOrder?: 'asc' | 'desc',
+    stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive'
   ) => {
     const params = buildQueryParams({
       type,
       sortBy,
       sortOrder,
+      stateFilter,
     })
     const response = await api.get(`/api/channels/${channelId}/videos`, { params })
     return response.data

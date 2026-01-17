@@ -54,7 +54,7 @@ function ChannelWatchLater() {
 
     try {
       setVideosLoading(true)
-      const data = await channelsAPI.getVideos(channelId, 'watch_later')
+      const data = await channelsAPI.getVideos(channelId, 'watch_later', undefined, undefined, 'exclude_archived')
       setVideos(data.videos || [])
     } catch (error) {
       console.error('Error loading videos:', error)

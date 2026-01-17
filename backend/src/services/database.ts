@@ -1194,12 +1194,27 @@ export const channelQueries = {
     }
   },
 
-  getWatchLaterVideosByChannel: (channelId: string) => {
+  getWatchLaterVideosByChannel: (channelId: string, stateFilter?: 'all' | 'exclude_archived' | 'feed' | 'inbox' | 'archive') => {
+    // Build state filter condition
+    let stateCondition = ''
+    if (stateFilter === 'exclude_archived') {
+      // Default: show videos with no state, feed, or inbox (exclude archived)
+      stateCondition = 'AND (ms.state IS NULL OR ms.state IN (\'feed\', \'inbox\'))'
+    } else if (stateFilter === 'feed') {
+      stateCondition = 'AND ms.state = \'feed\''
+    } else if (stateFilter === 'inbox') {
+      stateCondition = 'AND ms.state = \'inbox\''
+    } else if (stateFilter === 'archive') {
+      stateCondition = 'AND ms.state = \'archive\''
+    }
+    // If stateFilter is 'all' or undefined, show all videos (no state condition)
+
     return db.prepare(`
       SELECT v.*, ms.state 
       FROM videos v
       LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
       WHERE v.youtube_channel_id = ?
+      ${stateCondition}
       ORDER BY v.added_to_playlist_at DESC
     `).all(channelId) as (Video & { state: string | null })[]
   },
