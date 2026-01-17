@@ -14,6 +14,7 @@ import { useEntityListState } from '@/shared/hooks/useEntityListState'
 
 function WatchLater() {
   const [loading, setLoading] = useState(true)
+  const isInitialLoad = useRef(true)
   const {
     items: videos,
     setItems: setVideos,
@@ -23,7 +24,7 @@ function WatchLater() {
     handleStateChange,
   } = useEntityListState<Video>({
     onStateChange: () => {
-      loadVideos()
+      loadVideos(false)
     },
   })
   const [viewMode, setViewMode] = useState<ViewMode>('card')
@@ -47,7 +48,7 @@ function WatchLater() {
 
   useEffect(() => {
     loadChannels()
-    loadVideos()
+    loadVideos(true)
     loadFetchStatus()
   }, [])
 
@@ -69,9 +70,11 @@ function WatchLater() {
     }
   }
 
-  const loadVideos = async () => {
+  const loadVideos = async (showLoading: boolean = true) => {
     try {
-      setLoading(true)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(true)
+      }
       const response = await videosAPI.getAll(
         'feed', // Always fetch feed videos
         debouncedSearchQuery || undefined,
@@ -95,7 +98,10 @@ function WatchLater() {
       console.error('Error loading videos:', error)
       toast.error('Failed to load videos')
     } finally {
-      setLoading(false)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(false)
+        isInitialLoad.current = false
+      }
     }
   }
 
@@ -136,7 +142,7 @@ function WatchLater() {
       }
       
       // Reload videos to show updated data
-      await loadVideos()
+      await loadVideos(false)
     } catch (error) {
       console.error('Error resuming fetch:', error)
       toast.error('Failed to resume fetching videos')
@@ -152,7 +158,8 @@ function WatchLater() {
   }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
 
   useEffect(() => {
-    loadVideos()
+    // Only show loading on initial load, not for filter changes
+    loadVideos(isInitialLoad.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate, shortsFilter])
 
