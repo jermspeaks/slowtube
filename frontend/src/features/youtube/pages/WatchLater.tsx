@@ -39,7 +39,7 @@ function WatchLater() {
   const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
-  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('only')
+  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('all')
   const [fetchStatus, setFetchStatus] = useState<{ remaining: number; status: string } | null>(null)
   const [isFetching, setIsFetching] = useState(false)
 
