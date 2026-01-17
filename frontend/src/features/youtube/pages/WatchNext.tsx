@@ -38,6 +38,7 @@ function WatchNext() {
   const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
+  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('all')
 
   // Preserve scroll position when navigating
   usePreserveScrollPosition(loading)
@@ -70,7 +71,8 @@ function WatchNext() {
         100, // Limit
         dateField || undefined,
         startDate || undefined,
-        endDate || undefined
+        endDate || undefined,
+        shortsFilter
       )
       setVideos(response.videos || [])
       if (response.pagination) {
@@ -100,12 +102,12 @@ function WatchNext() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
 
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate, shortsFilter])
 
   return (
     <>
@@ -129,6 +131,8 @@ function WatchNext() {
               onStartDateChange={setStartDate}
               endDate={endDate}
               onEndDateChange={setEndDate}
+              shortsFilter={shortsFilter}
+              onShortsFilterChange={setShortsFilter}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />

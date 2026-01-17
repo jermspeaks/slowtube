@@ -29,7 +29,7 @@ function WatchLater() {
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const debouncedSearchQuery = useDebounce(searchQuery, 500)
-  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
+  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('published_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [availableChannels, setAvailableChannels] = useState<string[]>([])
@@ -38,6 +38,7 @@ function WatchLater() {
   const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
+  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('only')
   const [fetchStatus, setFetchStatus] = useState<{ remaining: number; status: string } | null>(null)
   const [isFetching, setIsFetching] = useState(false)
 
@@ -81,7 +82,8 @@ function WatchLater() {
         100,
         dateField || undefined,
         startDate || undefined,
-        endDate || undefined
+        endDate || undefined,
+        shortsFilter
       )
       setVideos(response.videos || [])
       if (response.pagination) {
@@ -147,12 +149,12 @@ function WatchLater() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
 
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate, shortsFilter])
 
   return (
     <>
@@ -176,6 +178,8 @@ function WatchLater() {
               onStartDateChange={setStartDate}
               endDate={endDate}
               onEndDateChange={setEndDate}
+              shortsFilter={shortsFilter}
+              onShortsFilterChange={setShortsFilter}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />

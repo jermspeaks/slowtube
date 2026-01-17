@@ -17,6 +17,8 @@ interface FiltersAndSortProps {
   onStartDateChange: (value: string | null) => void
   endDate: string | null
   onEndDateChange: (value: string | null) => void
+  shortsFilter: 'all' | 'exclude' | 'only'
+  onShortsFilterChange: (value: 'all' | 'exclude' | 'only') => void
 }
 
 function FiltersAndSort({
@@ -35,6 +37,8 @@ function FiltersAndSort({
   onStartDateChange,
   endDate,
   onEndDateChange,
+  shortsFilter,
+  onShortsFilterChange,
 }: FiltersAndSortProps) {
   const [showMore, setShowMore] = useState(false)
 
@@ -137,6 +141,20 @@ function FiltersAndSort({
               endDate={endDate}
               onEndDateChange={onEndDateChange}
             />
+
+            {/* Shorts filter section */}
+            <div className="flex gap-2 items-center">
+              <label className="font-semibold text-sm text-foreground whitespace-nowrap">Shorts:</label>
+              <select
+                value={shortsFilter}
+                onChange={(e) => onShortsFilterChange(e.target.value as 'all' | 'exclude' | 'only')}
+                className="px-3 py-2 border border-border rounded text-sm bg-background"
+              >
+                <option value="all">All</option>
+                <option value="exclude">Exclude Shorts</option>
+                <option value="only">Only Shorts</option>
+              </select>
+            </div>
 
             {/* Sort section */}
             <div className="flex gap-2 items-center">

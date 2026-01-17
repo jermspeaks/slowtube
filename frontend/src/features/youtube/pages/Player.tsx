@@ -12,7 +12,7 @@ import { usePlayerSettings } from '../hooks/usePlayerSettings'
 import { usePlayerShortcuts } from '../hooks/usePlayerShortcuts'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, HelpCircle } from 'lucide-react'
 
 function Player() {
   const [searchParams] = useSearchParams()
@@ -80,6 +80,16 @@ function Player() {
 
     loadVideoList()
   }, [listType, listId])
+
+  // Update current index when videoId changes
+  useEffect(() => {
+    if (videoId && videos.length > 0) {
+      const index = videos.findIndex((v) => v.id === parseInt(videoId, 10))
+      if (index >= 0) {
+        setCurrentIndex(index)
+      }
+    }
+  }, [videoId, videos])
 
   // Load current video
   useEffect(() => {
@@ -308,11 +318,21 @@ function Player() {
           Back
         </Button>
         <h1 className="text-xl font-bold">Video Player</h1>
-        {autoplayCountdown !== null && (
-          <div className="ml-auto text-sm text-muted-foreground">
-            Next video in {autoplayCountdown}s...
-          </div>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowHelp(true)}
+            aria-label="Show keyboard shortcuts"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+          {autoplayCountdown !== null && (
+            <div className="text-sm text-muted-foreground">
+              Next video in {autoplayCountdown}s...
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Video Player */}

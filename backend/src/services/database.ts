@@ -74,7 +74,8 @@ export const videoQueries = {
     offset?: number,
     dateField?: 'published_at' | 'added_to_playlist_at',
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    shortsFilter?: 'all' | 'exclude' | 'only'
   ) => {
     // Build WHERE clause conditions
     const conditions: string[] = []
@@ -147,7 +148,38 @@ export const videoQueries = {
         ms.updated_at ${order}`
     }
 
-    // Build LIMIT and OFFSET clauses
+    // When shortsFilter is used, we need to fetch all videos, filter, then paginate
+    // because duration filtering can't be done efficiently in SQL
+    if (shortsFilter && shortsFilter !== 'all') {
+      // Fetch all matching videos
+      const query = `
+        SELECT v.*, ms.state, ms.updated_at as archived_at, c.channel_title
+        FROM videos v
+        LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
+        LEFT JOIN channels c ON v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id
+        ${whereClause}
+        ${orderBy}
+      `
+      
+      let videos = db.prepare(query).all(...params) as (Video & { state: string | null; channel_title: string | null })[]
+      
+      // Apply shorts filter
+      if (shortsFilter === 'exclude') {
+        videos = videos.filter(v => !isShortVideo(v.duration))
+      } else if (shortsFilter === 'only') {
+        videos = videos.filter(v => isShortVideo(v.duration))
+      }
+      
+      // Apply pagination after filtering
+      if (limit !== undefined) {
+        const startIndex = offset !== undefined ? offset : 0
+        videos = videos.slice(startIndex, startIndex + limit)
+      }
+      
+      return videos
+    }
+
+    // Build LIMIT and OFFSET clauses (when no shortsFilter or shortsFilter is 'all')
     let limitClause = ''
     if (limit !== undefined) {
       limitClause = `LIMIT ?`
@@ -177,7 +209,8 @@ export const videoQueries = {
     channels?: string[],
     dateField?: 'published_at' | 'added_to_playlist_at',
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    shortsFilter?: 'all' | 'exclude' | 'only'
   ) => {
     // Build WHERE clause conditions (same as getAll)
     const conditions: string[] = []
@@ -233,6 +266,29 @@ export const videoQueries = {
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
 
+    // If shortsFilter is specified, we need to fetch all videos and filter them
+    // since duration filtering can't be done efficiently in SQL
+    if (shortsFilter && shortsFilter !== 'all') {
+      const query = `
+        SELECT v.*
+        FROM videos v
+        LEFT JOIN media_states ms ON ms.media_type = 'video' AND ms.media_id = v.id
+        ${channelJoin}
+        ${whereClause}
+      `
+      let videos = db.prepare(query).all(...params) as Video[]
+      
+      // Apply shorts filter
+      if (shortsFilter === 'exclude') {
+        videos = videos.filter(v => !isShortVideo(v.duration))
+      } else if (shortsFilter === 'only') {
+        videos = videos.filter(v => isShortVideo(v.duration))
+      }
+      
+      return videos.length
+    }
+
+    // Otherwise, use efficient SQL COUNT
     const query = `
       SELECT COUNT(*) as count
       FROM videos v

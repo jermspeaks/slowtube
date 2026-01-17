@@ -35,6 +35,7 @@ function GroupedView() {
   const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
   const [startDate, setStartDate] = useState<string | null>(null)
   const [endDate, setEndDate] = useState<string | null>(null)
+  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('all')
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -64,7 +65,8 @@ function GroupedView() {
         100000, // limit - use a very large number to fetch all videos for grouping
         dateField || undefined,
         startDate || undefined,
-        endDate || undefined
+        endDate || undefined,
+        shortsFilter
       )
       // Extract videos array from response (response has { videos: [...], pagination: {... } })
       setVideos(response.videos || response || [])
@@ -120,12 +122,12 @@ function GroupedView() {
   useEffect(() => {
     // Reset to page 1 when filters change
     setCurrentPage(1)
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
 
   useEffect(() => {
     loadVideos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate])
+  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
 
   const groupedVideos = groupVideosByChannel(videos)
   const allChannelNames = Object.keys(groupedVideos).sort()
@@ -153,6 +155,8 @@ function GroupedView() {
               onStartDateChange={setStartDate}
               endDate={endDate}
               onEndDateChange={setEndDate}
+              shortsFilter={shortsFilter}
+              onShortsFilterChange={setShortsFilter}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />

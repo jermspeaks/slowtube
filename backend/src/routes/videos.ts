@@ -123,7 +123,7 @@ router.get('/channels', (req, res) => {
 // Get all videos with optional filters
 router.get('/', (req, res) => {
   try {
-    const { state, search, sortBy, sortOrder, channels, page, limit, dateField, startDate, endDate } = req.query
+    const { state, search, sortBy, sortOrder, channels, page, limit, dateField, startDate, endDate, shortsFilter } = req.query
     
     // Validate sortBy and sortOrder
     let validSortBy: 'published_at' | 'added_to_playlist_at' | 'archived_at' | undefined
@@ -169,6 +169,12 @@ router.get('/', (req, res) => {
       }
     }
     
+    // Validate shortsFilter
+    let validShortsFilter: 'all' | 'exclude' | 'only' | undefined = undefined
+    if (shortsFilter === 'all' || shortsFilter === 'exclude' || shortsFilter === 'only') {
+      validShortsFilter = shortsFilter
+    }
+    
     // Parse pagination parameters
     const pageNum = page ? parseInt(String(page), 10) : 1
     const limitNum = limit ? parseInt(String(limit), 10) : 100
@@ -181,7 +187,8 @@ router.get('/', (req, res) => {
       channelArray,
       validDateField,
       validStartDate,
-      validEndDate
+      validEndDate,
+      validShortsFilter
     )
     
     const totalPages = Math.ceil(total / limitNum)
@@ -197,7 +204,8 @@ router.get('/', (req, res) => {
       offsetNum,
       validDateField,
       validStartDate,
-      validEndDate
+      validEndDate,
+      validShortsFilter
     )
     
     // Get tags and comments for each video

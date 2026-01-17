@@ -13,7 +13,8 @@ export const videosAPI = {
     limit?: number,
     dateField?: 'added_to_playlist_at' | 'published_at',
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    shortsFilter?: 'all' | 'exclude' | 'only'
   ) => {
     const params = buildQueryParams({
       state,
@@ -26,6 +27,7 @@ export const videosAPI = {
       dateField,
       startDate,
       endDate,
+      shortsFilter,
     })
     const response = await api.get('/api/videos', { params })
     return response.data
