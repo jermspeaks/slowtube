@@ -236,7 +236,6 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
           published_at: null, // Will be fetched from YouTube API
           added_to_playlist_at: video.watchedAt, // Store CSV timestamp here
           fetch_status: 'pending' as const, // Mark as pending for YouTube API fetch
-          channel_title: null, // Will be updated by YouTube API fetch
           youtube_channel_id: null, // Will be updated by YouTube API fetch
           youtube_url: `https://www.youtube.com/watch?v=${video.id}`, // Construct URL from video ID
         }
@@ -851,7 +850,6 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
         const updateData: any = {
           title: details.title,
           description: details.description,
-          channel_title: details.channelTitle,
           youtube_channel_id: details.channelId,
           published_at: details.publishedAt,
           duration: details.duration ? parseDuration(details.duration) : null,

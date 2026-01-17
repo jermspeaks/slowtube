@@ -204,7 +204,6 @@ export async function processLatestVideosFromChannel(
         const updateData: any = {
           title: videoDetails.title,
           description: videoDetails.description,
-          channel_title: videoDetails.channelTitle,
           youtube_channel_id: videoDetails.channelId,
           published_at: videoDetails.publishedAt,
           duration: videoDetails.duration ? parseDuration(videoDetails.duration) : null,
@@ -249,7 +248,6 @@ export async function processLatestVideosFromChannel(
           published_at: videoDetails.publishedAt,
           added_to_playlist_at: latestTimestamp, // Set to same timestamp as added_to_latest_at
           fetch_status: 'completed' as const,
-          channel_title: videoDetails.channelTitle,
           youtube_channel_id: videoDetails.channelId,
           youtube_url: `https://www.youtube.com/watch?v=${videoDetails.id}`,
           added_to_latest_at: latestTimestamp, // Set timestamp for latest videos
