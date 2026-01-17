@@ -4,7 +4,7 @@ import { Inbox, Archive, Rss, Play } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { videosAPI } from '../services/api'
 import { toast } from 'sonner'
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 
 interface VideoTableProps {
   videos: Video[]
@@ -173,12 +173,36 @@ function VideoTable({
                 )}
                 {video.channel_title && (
                   <div className="text-xs text-muted-foreground md:hidden mt-1">
-                    {video.channel_title}
+                    {video.youtube_channel_id ? (
+                      <Link
+                        to={`/youtube/channels/${video.youtube_channel_id}/watch-later`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:text-primary hover:underline transition-colors"
+                      >
+                        {video.channel_title}
+                      </Link>
+                    ) : (
+                      video.channel_title
+                    )}
                   </div>
                 )}
               </td>
               <td className="p-2 md:p-3 text-muted-foreground text-xs hidden md:table-cell">
-                {video.channel_title || '-'}
+                {video.channel_title ? (
+                  video.youtube_channel_id ? (
+                    <Link
+                      to={`/youtube/channels/${video.youtube_channel_id}/watch-later`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hover:text-primary hover:underline transition-colors"
+                    >
+                      {video.channel_title}
+                    </Link>
+                  ) : (
+                    video.channel_title
+                  )
+                ) : (
+                  '-'
+                )}
               </td>
               <td className="p-2 md:p-3 text-muted-foreground text-xs hidden lg:table-cell">
                 {video.duration || '-'}

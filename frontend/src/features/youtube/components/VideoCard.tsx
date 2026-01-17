@@ -4,7 +4,7 @@ import { Inbox, Archive, Rss, Play } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { videosAPI } from '../services/api'
 import { toast } from 'sonner'
-import { useNavigate } from 'react-router'
+import { useNavigate, Link } from 'react-router'
 
 interface VideoCardProps {
   video: Video
@@ -118,7 +118,17 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, showAd
         </h3>
         {video.channel_title && (
           <div className="mb-2 text-xs text-muted-foreground">
-            {video.channel_title}
+            {video.youtube_channel_id ? (
+              <Link
+                to={`/youtube/channels/${video.youtube_channel_id}/watch-later`}
+                onClick={(e) => e.stopPropagation()}
+                className="hover:text-primary hover:underline transition-colors"
+              >
+                {video.channel_title}
+              </Link>
+            ) : (
+              video.channel_title
+            )}
           </div>
         )}
         {video.tags && video.tags.length > 0 && (
