@@ -1206,7 +1206,7 @@ export const channelQueries = {
 
   getLatestVideosByChannel: (channelId: string, sortBy?: 'title' | 'added_to_latest_at' | 'published_at', sortOrder?: 'asc' | 'desc') => {
     // Build ORDER BY clause
-    let orderBy = 'ORDER BY v.added_to_latest_at DESC' // Default sort
+    let orderBy = 'ORDER BY datetime(v.published_at) DESC' // Default sort
     if (sortBy && (sortBy === 'title' || sortBy === 'added_to_latest_at' || sortBy === 'published_at')) {
       const order = sortOrder === 'desc' ? 'DESC' : 'ASC'
       // Handle NULL values - put them at the end
@@ -1214,6 +1214,11 @@ export const channelQueries = {
         orderBy = `ORDER BY 
           CASE WHEN v.title IS NULL THEN 1 ELSE 0 END,
           v.title ${order}`
+      } else if (sortBy === 'published_at') {
+        // Cast published_at to datetime for proper chronological sorting
+        orderBy = `ORDER BY 
+          CASE WHEN v.published_at IS NULL THEN 1 ELSE 0 END,
+          datetime(v.published_at) ${order}`
       } else {
         orderBy = `ORDER BY 
           CASE WHEN v.${sortBy} IS NULL THEN 1 ELSE 0 END,

@@ -24,8 +24,8 @@ function ChannelLatest() {
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
   
-  // Sort state - default to Date Added (Newest) to match current behavior
-  const [sortBy, setSortBy] = useState<'title' | 'added_to_latest_at' | 'published_at'>('added_to_latest_at')
+  // Sort state - default to Date Published (Newest)
+  const [sortBy, setSortBy] = useState<'title' | 'added_to_latest_at' | 'published_at'>('published_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
