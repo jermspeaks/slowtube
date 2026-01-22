@@ -14,6 +14,7 @@ import { useEntityListState } from '@/shared/hooks/useEntityListState'
 
 function LikedVideos() {
   const [loading, setLoading] = useState(true)
+  const isInitialLoad = useRef(true)
   const {
     items: videos,
     setItems: setVideos,
@@ -23,7 +24,7 @@ function LikedVideos() {
     handleStateChange,
   } = useEntityListState<Video>({
     onStateChange: () => {
-      loadVideos()
+      loadVideos(false)
     },
   })
   const [viewMode, setViewMode] = useState<ViewMode>('card')
@@ -46,7 +47,7 @@ function LikedVideos() {
 
   useEffect(() => {
     loadChannels()
-    loadVideos()
+    loadVideos(true)
   }, [])
 
   const loadChannels = async () => {
@@ -58,9 +59,11 @@ function LikedVideos() {
     }
   }
 
-  const loadVideos = async () => {
+  const loadVideos = async (showLoading: boolean = true) => {
     try {
-      setLoading(true)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(true)
+      }
       const limit = 100
       const offset = (currentPage - 1) * limit
       
@@ -92,7 +95,10 @@ function LikedVideos() {
         toast.error('Failed to load liked videos')
       }
     } finally {
-      setLoading(false)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(false)
+        isInitialLoad.current = false
+      }
     }
   }
 
@@ -114,7 +120,8 @@ function LikedVideos() {
   }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter, stateFilter])
 
   useEffect(() => {
-    loadVideos()
+    // Only show loading on initial load, not for filter changes
+    loadVideos(isInitialLoad.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate, shortsFilter, stateFilter])
 
