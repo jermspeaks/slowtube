@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { Channel } from '../types/channel'
 import { channelsAPI } from '../services/api'
+import AddToChannelGroupModal from './AddToChannelListModal'
+import { Button } from '@/shared/components/ui/button'
 import { toast } from 'sonner'
 
 interface ChannelHeaderProps {
@@ -8,6 +11,8 @@ interface ChannelHeaderProps {
 }
 
 export default function ChannelHeader({ channel, onChannelUpdated }: ChannelHeaderProps) {
+  const [isAddToGroupModalOpen, setIsAddToGroupModalOpen] = useState(false)
+
   const formatSubscriberCount = (count: number | null) => {
     if (!count) return 'N/A'
     if (count >= 1000000) {
@@ -64,18 +69,38 @@ export default function ChannelHeader({ channel, onChannelUpdated }: ChannelHead
               {channel.description}
             </p>
           )}
-          <button
-            onClick={handleSubscribe}
-            className={`px-4 py-2 rounded font-medium transition-colors ${
-              channel.is_subscribed
-                ? 'bg-muted text-foreground hover:bg-accent'
-                : 'bg-primary text-primary-foreground hover:bg-primary/90'
-            }`}
-          >
-            {channel.is_subscribed ? 'Unsubscribe' : 'Subscribe'}
-          </button>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <button
+              onClick={handleSubscribe}
+              className={`px-4 py-2 rounded font-medium transition-colors ${
+                channel.is_subscribed
+                  ? 'bg-muted text-foreground hover:bg-accent'
+                  : 'bg-primary text-primary-foreground hover:bg-primary/90'
+              }`}
+            >
+              {channel.is_subscribed ? 'Unsubscribe' : 'Subscribe'}
+            </button>
+            {channel.is_subscribed && (
+              <Button
+                onClick={() => setIsAddToGroupModalOpen(true)}
+                variant="outline"
+                size="default"
+              >
+                Add to Group
+              </Button>
+            )}
+          </div>
         </div>
       </div>
+
+      <AddToChannelGroupModal
+        isOpen={isAddToGroupModalOpen}
+        onClose={() => setIsAddToGroupModalOpen(false)}
+        channelIds={[channel.youtube_channel_id]}
+        onSuccess={() => {
+          // The modal already shows a success toast
+        }}
+      />
     </div>
   )
 }
