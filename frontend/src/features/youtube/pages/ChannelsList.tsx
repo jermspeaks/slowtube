@@ -260,9 +260,11 @@ function ChannelsList() {
                 <option value="channel_title_asc">Alphabetical (A-Z)</option>
                 <option value="channel_title_desc">Alphabetical (Z-A)</option>
                 <option value="updated_at_desc">Last Updated (Newest)</option>
+                <option value="updated_at_asc">Last Updated (Oldest)</option>
                 {filterType === 'watch_later' && (
                   <>
                     <option value="last_video_date_desc">Last Video Uploaded (Newest)</option>
+                    <option value="last_video_date_asc">Last Video Uploaded (Oldest)</option>
                   </>
                 )}
               </select>
@@ -286,27 +288,6 @@ function ChannelsList() {
               </div>
             </summary>
             <div className="mt-4 pt-4 border-t border-border space-y-4">
-              {/* Additional sort options */}
-              <div className="flex gap-2 items-center">
-                <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
-                <select
-                  value={sortBy ? `${sortBy}_${sortOrder}` : 'none'}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  className="px-3 py-2 border border-border rounded text-sm bg-background"
-                >
-                  <option value="channel_title_asc">Alphabetical (A-Z)</option>
-                  <option value="channel_title_desc">Alphabetical (Z-A)</option>
-                  <option value="updated_at_desc">Last Updated (Newest)</option>
-                  <option value="updated_at_asc">Last Updated (Oldest)</option>
-                  {filterType === 'watch_later' && (
-                    <>
-                      <option value="last_video_date_desc">Last Video Uploaded (Newest)</option>
-                      <option value="last_video_date_asc">Last Video Uploaded (Oldest)</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
               {/* Filters */}
               <div className="flex gap-2 items-center">
                 <input
