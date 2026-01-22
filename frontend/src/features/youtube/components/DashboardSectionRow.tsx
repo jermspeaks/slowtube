@@ -159,6 +159,7 @@ function DashboardSectionRow({ section, onVideoClick, onVideoStateChange }: Dash
                 video={video}
                 onClick={() => onVideoClick(video)}
                 onStateChange={onVideoStateChange}
+                showAddedDate={false}
               />
             </div>
           ))}

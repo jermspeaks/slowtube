@@ -21,7 +21,7 @@ router.get('/sections', (req, res) => {
     const inboxVideos = videoQueries.getAll(
       'inbox',
       undefined,
-      'added_to_playlist_at',
+      'published_at',
       'desc',
       undefined,
       20,
@@ -50,7 +50,7 @@ router.get('/sections', (req, res) => {
     const feedVideos = videoQueries.getAll(
       'feed',
       undefined,
-      'added_to_playlist_at',
+      'published_at',
       'desc',
       undefined,
       20,
@@ -82,7 +82,7 @@ router.get('/sections', (req, res) => {
       const groupVideos = channelListQueries.getVideosForList(
         group.id,
         'watch_later',
-        'added_to_playlist_at',
+        'published_at',
         'desc',
         'exclude_archived',
         undefined
