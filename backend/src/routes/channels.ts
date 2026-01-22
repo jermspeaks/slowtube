@@ -650,17 +650,12 @@ router.post('/fetch-latest-all', async (req, res) => {
 })
 
 // Get liked videos for a specific channel
-router.get('/:id/liked', (req, res) => {
+router.get('/:channelId/liked', (req, res) => {
   try {
-    const { id } = req.params
-    const channelId = parseInt(id, 10)
-    
-    if (isNaN(channelId)) {
-      return res.status(400).json({ error: 'Invalid channel ID' })
-    }
+    const { channelId } = req.params
 
     // Verify channel exists
-    const channel = channelQueries.getById(channelId)
+    const channel = channelQueries.getByChannelId(channelId)
     if (!channel) {
       return res.status(404).json({ error: 'Channel not found' })
     }
