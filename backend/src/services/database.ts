@@ -62,6 +62,13 @@ export interface Channel {
   updated_at: string
 }
 
+export interface ChannelState {
+  youtube_channel_id: string
+  is_archived: number // 0 or 1 (boolean as integer in SQLite)
+  archived_at: string | null
+  updated_at: string
+}
+
 // Video operations
 export const videoQueries = {
   getAll: (
@@ -976,7 +983,7 @@ export const statsQueries = {
 
 // Channel operations
 export const channelQueries = {
-  getAll: (filterType?: 'subscribed' | 'watch_later', limit?: number, offset?: number, sortBy?: 'channel_title' | 'updated_at', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean) => {
+  getAll: (filterType?: 'subscribed' | 'watch_later', limit?: number, offset?: number, sortBy?: 'channel_title' | 'updated_at', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean, archiveFilter?: 'all' | 'archived' | 'unarchived') => {
     let query = ''
     const params: any[] = []
 
@@ -984,6 +991,17 @@ export const channelQueries = {
     const validSortBy = (sortBy === 'channel_title' || sortBy === 'updated_at') ? sortBy : 'channel_title'
     const validSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'asc'
     const orderBy = `${validSortBy} ${validSortOrder}`
+
+    // Build archive filter condition for watch_later
+    let archiveCondition = ''
+    if (filterType === 'watch_later' && archiveFilter) {
+      if (archiveFilter === 'archived') {
+        archiveCondition = 'AND cs.is_archived = 1'
+      } else if (archiveFilter === 'unarchived') {
+        archiveCondition = 'AND (cs.is_archived = 0 OR cs.is_archived IS NULL)'
+      }
+      // 'all' means no filter condition
+    }
 
     if (filterType === 'subscribed') {
       if (notInAnyList) {
@@ -1010,7 +1028,9 @@ export const channelQueries = {
           FROM channels c
           INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
           LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          LEFT JOIN channel_states cs ON c.youtube_channel_id = cs.youtube_channel_id
           WHERE v.youtube_channel_id IS NOT NULL AND cli.id IS NULL
+          ${archiveCondition}
           ORDER BY c.${orderBy}
         `
       } else {
@@ -1018,7 +1038,9 @@ export const channelQueries = {
           SELECT DISTINCT c.*
           FROM channels c
           INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+          LEFT JOIN channel_states cs ON c.youtube_channel_id = cs.youtube_channel_id
           WHERE v.youtube_channel_id IS NOT NULL
+          ${archiveCondition}
           ORDER BY c.${orderBy}
         `
       }
@@ -1149,7 +1171,7 @@ export const channelQueries = {
     return stmt.run(...values).changes
   },
 
-  getChannelsWithWatchLaterCount: (sortBy?: 'channel_title' | 'updated_at' | 'last_video_date', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean) => {
+  getChannelsWithWatchLaterCount: (sortBy?: 'channel_title' | 'updated_at' | 'last_video_date', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean, archiveFilter?: 'all' | 'archived' | 'unarchived') => {
     // Validate and set default sort values
     const validSortBy = (sortBy === 'channel_title' || sortBy === 'updated_at' || sortBy === 'last_video_date') ? sortBy : 'channel_title'
     const validSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'asc'
@@ -1166,31 +1188,46 @@ export const channelQueries = {
     
     const orderBy = `${orderByColumn} ${validSortOrder}`
     
+    // Build archive filter condition
+    let archiveCondition = ''
+    if (archiveFilter === 'archived') {
+      archiveCondition = 'AND cs.is_archived = 1'
+    } else if (archiveFilter === 'unarchived') {
+      archiveCondition = 'AND (cs.is_archived = 0 OR cs.is_archived IS NULL)'
+    }
+    // 'all' means no filter condition
+    
     if (notInAnyList) {
       return db.prepare(`
         SELECT 
           c.*,
           COUNT(v.id) as watch_later_count,
-          MAX(v.added_to_playlist_at) as last_video_date
+          MAX(v.added_to_playlist_at) as last_video_date,
+          COALESCE(cs.is_archived, 0) as is_archived
         FROM channels c
         INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
         LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+        LEFT JOIN channel_states cs ON c.youtube_channel_id = cs.youtube_channel_id
         WHERE v.youtube_channel_id IS NOT NULL AND cli.id IS NULL
+        ${archiveCondition}
         GROUP BY c.youtube_channel_id
         ORDER BY ${orderBy}
-      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null })[]
+      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null; is_archived: number })[]
     } else {
       return db.prepare(`
         SELECT 
           c.*,
           COUNT(v.id) as watch_later_count,
-          MAX(v.added_to_playlist_at) as last_video_date
+          MAX(v.added_to_playlist_at) as last_video_date,
+          COALESCE(cs.is_archived, 0) as is_archived
         FROM channels c
         INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+        LEFT JOIN channel_states cs ON c.youtube_channel_id = cs.youtube_channel_id
         WHERE v.youtube_channel_id IS NOT NULL
+        ${archiveCondition}
         GROUP BY c.youtube_channel_id
         ORDER BY ${orderBy}
-      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null })[]
+      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null; is_archived: number })[]
     }
   },
 
@@ -1261,6 +1298,30 @@ export const channelQueries = {
   unsubscribe: (youtubeChannelId: string) => {
     const stmt = db.prepare('UPDATE channels SET is_subscribed = 0, updated_at = CURRENT_TIMESTAMP WHERE youtube_channel_id = ?')
     return stmt.run(youtubeChannelId).changes
+  },
+}
+
+// Channel State operations
+export const channelStateQueries = {
+  getByChannelId: (youtubeChannelId: string) => {
+    return db.prepare('SELECT * FROM channel_states WHERE youtube_channel_id = ?').get(youtubeChannelId) as ChannelState | undefined
+  },
+
+  setArchived: (youtubeChannelId: string, isArchived: boolean) => {
+    const stmt = db.prepare(`
+      INSERT INTO channel_states (youtube_channel_id, is_archived, archived_at, updated_at)
+      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(youtube_channel_id) DO UPDATE SET
+        is_archived = excluded.is_archived,
+        archived_at = excluded.archived_at,
+        updated_at = CURRENT_TIMESTAMP
+    `)
+    return stmt.run(youtubeChannelId, isArchived ? 1 : 0, isArchived ? new Date().toISOString() : null).changes
+  },
+
+  isArchived: (youtubeChannelId: string): boolean => {
+    const state = db.prepare('SELECT is_archived FROM channel_states WHERE youtube_channel_id = ?').get(youtubeChannelId) as { is_archived: number } | undefined
+    return state?.is_archived === 1
   },
 }
 

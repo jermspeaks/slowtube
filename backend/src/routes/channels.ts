@@ -1,5 +1,5 @@
 import express from 'express'
-import { channelQueries, videoQueries, tagQueries, commentQueries, videoStateQueries } from '../services/database.js'
+import { channelQueries, channelStateQueries, videoQueries, tagQueries, commentQueries, videoStateQueries } from '../services/database.js'
 import { fetchLatestVideosFromChannel, fetchSubscribedChannels, fetchChannelDetailsFromYouTube } from '../services/youtube.js'
 import { getAuthenticatedClient } from './auth.js'
 import { parseDuration } from '../utils/duration.js'
@@ -9,7 +9,7 @@ const router = express.Router()
 // Get all channels with optional filter
 router.get('/', (req, res) => {
   try {
-    const { filter, page, limit, sortBy, sortOrder, notInAnyList } = req.query
+    const { filter, page, limit, sortBy, sortOrder, notInAnyList, archiveFilter } = req.query
     
     let filterType: 'subscribed' | 'watch_later' | undefined = undefined
     if (filter === 'subscribed' || filter === 'watch_later') {
@@ -30,6 +30,17 @@ router.get('/', (req, res) => {
     // Parse notInAnyList filter
     const notInAnyListFilter = notInAnyList === 'true' || notInAnyList === true
     
+    // Validate archiveFilter (only for watch_later)
+    let validArchiveFilter: 'all' | 'archived' | 'unarchived' | undefined = undefined
+    if (filterType === 'watch_later') {
+      if (archiveFilter === 'all' || archiveFilter === 'archived' || archiveFilter === 'unarchived') {
+        validArchiveFilter = archiveFilter
+      } else {
+        // Default to 'unarchived' for watch_later
+        validArchiveFilter = 'unarchived'
+      }
+    }
+    
     // For subscribed filter, apply pagination
     if (filterType === 'subscribed') {
       const pageNum = page ? parseInt(page as string, 10) : 1
@@ -39,7 +50,7 @@ router.get('/', (req, res) => {
       // For subscribed channels, only allow channel_title and updated_at
       const subscribedSortBy = (validSortBy === 'channel_title' || validSortBy === 'updated_at') ? validSortBy : undefined
       
-      const channels = channelQueries.getAll(filterType, limitNum, offset, subscribedSortBy, validSortOrder, notInAnyListFilter)
+      const channels = channelQueries.getAll(filterType, limitNum, offset, subscribedSortBy, validSortOrder, notInAnyListFilter, validArchiveFilter)
       const total = channelQueries.getAllCount(filterType, notInAnyListFilter)
       const totalPages = Math.ceil(total / limitNum)
       
@@ -52,12 +63,17 @@ router.get('/', (req, res) => {
       })
     } else if (filterType === 'watch_later') {
       // For watch_later filter, get channels with counts (no pagination)
-      const channelsWithCounts = channelQueries.getChannelsWithWatchLaterCount(validSortBy, validSortOrder, notInAnyListFilter)
-      res.json(channelsWithCounts)
+      const channelsWithCounts = channelQueries.getChannelsWithWatchLaterCount(validSortBy, validSortOrder, notInAnyListFilter, validArchiveFilter)
+      // Convert is_archived from number to boolean
+      const channelsWithBooleans = channelsWithCounts.map(channel => ({
+        ...channel,
+        is_archived: channel.is_archived === 1
+      }))
+      res.json(channelsWithBooleans)
     } else {
       // For other filters, return all channels (backward compatibility)
       const otherSortBy = (validSortBy === 'channel_title' || validSortBy === 'updated_at') ? validSortBy : undefined
-      const channels = channelQueries.getAll(filterType, undefined, undefined, otherSortBy, validSortOrder, notInAnyListFilter)
+      const channels = channelQueries.getAll(filterType, undefined, undefined, otherSortBy, validSortOrder, notInAnyListFilter, validArchiveFilter)
       res.json(channels)
     }
   } catch (error) {
@@ -363,6 +379,35 @@ router.delete('/:channelId/subscribe', (req, res) => {
   } catch (error) {
     console.error('Error unsubscribing from channel:', error)
     res.status(500).json({ error: 'Failed to unsubscribe from channel' })
+  }
+})
+
+// Archive/unarchive a channel
+router.patch('/:channelId/archive', (req, res) => {
+  try {
+    const { channelId } = req.params
+    const { isArchived } = req.body
+    
+    if (typeof isArchived !== 'boolean') {
+      return res.status(400).json({ error: 'isArchived is required and must be a boolean' })
+    }
+    
+    // Verify channel exists
+    const channel = channelQueries.getByChannelId(channelId)
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' })
+    }
+    
+    // Set archived state
+    channelStateQueries.setArchived(channelId, isArchived)
+    
+    res.json({
+      message: `Channel ${isArchived ? 'archived' : 'unarchived'} successfully`,
+      isArchived
+    })
+  } catch (error) {
+    console.error('Error archiving channel:', error)
+    res.status(500).json({ error: 'Failed to archive channel' })
   }
 })
 

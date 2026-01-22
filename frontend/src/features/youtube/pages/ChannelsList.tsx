@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router'
 import { Channel, ChannelWithCount } from '../types/channel'
 import { channelsAPI } from '../services/api'
 import { toast } from 'sonner'
-import { RefreshCw, Plus } from 'lucide-react'
+import { RefreshCw, Plus, Archive, ArchiveRestore } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import AddToChannelGroupModal from '../components/AddToChannelListModal'
 import { Pagination } from '@/shared/components/Pagination'
@@ -30,6 +30,7 @@ function ChannelsList() {
 
   // Filter state
   const [notInAnyList, setNotInAnyList] = useState(false)
+  const [archiveFilter, setArchiveFilter] = useState<'all' | 'archived' | 'unarchived'>('unarchived')
 
   // Determine filter type from route
   const filterType = location.pathname.includes('/subscribed') ? 'subscribed' : 'watch_later'
@@ -40,13 +41,14 @@ function ChannelsList() {
     // Reset sort to default when filter type changes
     setSortBy('channel_title')
     setSortOrder('asc')
-    // Reset filter when filter type changes
+    // Reset filters when filter type changes
     setNotInAnyList(false)
+    setArchiveFilter('unarchived')
   }, [location.pathname])
 
   useEffect(() => {
     loadChannels()
-  }, [location.pathname, currentPage, sortBy, sortOrder, notInAnyList])
+  }, [location.pathname, currentPage, sortBy, sortOrder, notInAnyList, archiveFilter])
 
   const loadChannels = async () => {
     try {
@@ -66,7 +68,7 @@ function ChannelsList() {
         setCurrentPage(data.page || 1)
       } else {
         // For watch_later channels, get all (no pagination)
-        const data = await channelsAPI.getAll(filterType, undefined, undefined, validSortBy, sortOrder, notInAnyList)
+        const data = await channelsAPI.getAll(filterType, undefined, undefined, validSortBy, sortOrder, notInAnyList, archiveFilter)
         setChannels(data || [])
         setTotal(data?.length || 0)
         setTotalPages(1)
@@ -109,6 +111,17 @@ function ChannelsList() {
 
   const handleAddToListsSuccess = () => {
     setSelectedChannelIds(new Set())
+  }
+
+  const handleArchive = async (channel: Channel, isArchived: boolean) => {
+    try {
+      await channelsAPI.archive(channel.youtube_channel_id, isArchived)
+      await loadChannels()
+      toast.success(`Channel ${isArchived ? 'archived' : 'unarchived'} successfully`)
+    } catch (error) {
+      console.error('Error archiving channel:', error)
+      toast.error('Failed to archive channel')
+    }
   }
 
   const formatDate = (dateString: string | null) => {
@@ -289,22 +302,38 @@ function ChannelsList() {
             </summary>
             <div className="mt-4 pt-4 border-t border-border space-y-4">
               {/* Filters */}
-              <div className="flex gap-2 items-center">
-                <input
-                  type="checkbox"
-                  id="notInAnyList"
-                  checked={notInAnyList}
-                  onChange={(e) => {
-                    setNotInAnyList(e.target.checked)
-                    if (filterType === 'subscribed') {
-                      setCurrentPage(1)
-                    }
-                  }}
-                  className="w-4 h-4 rounded border-border"
-                />
-                <label htmlFor="notInAnyList" className="text-sm text-foreground cursor-pointer">
-                  Channels not in any list
-                </label>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="checkbox"
+                    id="notInAnyList"
+                    checked={notInAnyList}
+                    onChange={(e) => {
+                      setNotInAnyList(e.target.checked)
+                      if (filterType === 'subscribed') {
+                        setCurrentPage(1)
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-border"
+                  />
+                  <label htmlFor="notInAnyList" className="text-sm text-foreground cursor-pointer">
+                    Channels not in any list
+                  </label>
+                </div>
+                {filterType === 'watch_later' && (
+                  <div className="flex gap-2 items-center">
+                    <label className="font-semibold text-sm text-foreground whitespace-nowrap">Archive:</label>
+                    <select
+                      value={archiveFilter}
+                      onChange={(e) => setArchiveFilter(e.target.value as 'all' | 'archived' | 'unarchived')}
+                      className="px-3 py-2 border border-border rounded text-sm bg-background"
+                    >
+                      <option value="all">All</option>
+                      <option value="archived">Archived</option>
+                      <option value="unarchived">Unarchived</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </details>
@@ -406,15 +435,32 @@ function ChannelsList() {
                           )}
                         </td>
                         <td className="p-2 md:p-3" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="add-to-list-button"
-                            onClick={(e) => handleAddToListsClick(channel, e)}
-                            title="Add to list"
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            {filterType === 'watch_later' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={(e) => handleArchive(channel, !channel.is_archived)}
+                                title={channel.is_archived ? 'Unarchive' : 'Archive'}
+                              >
+                                {channel.is_archived ? (
+                                  <ArchiveRestore className="h-4 w-4" />
+                                ) : (
+                                  <Archive className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="add-to-list-button"
+                              onClick={(e) => handleAddToListsClick(channel, e)}
+                              title="Add to list"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}

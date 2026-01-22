@@ -18,4 +18,3 @@ export interface ChannelWithCount extends Channel {
 }
 
 export type ChannelVideoType = 'watch_later' | 'latest' | 'liked'
-

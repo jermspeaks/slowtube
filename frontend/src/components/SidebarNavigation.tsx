@@ -62,7 +62,7 @@ export function SidebarNavigation({ onNavigate }: SidebarNavigationProps) {
       )}
     >
       {/* Navigation Items */}
-      <nav className="flex-1 py-4 px-2 space-y-1">
+      <nav className="flex-1 py-4 px-2 space-y-1 flex flex-col gap-2">
         {navItems.map((item) => {
           const Icon = item.icon
           const active = isActive(item.activePath)

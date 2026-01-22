@@ -142,7 +142,8 @@ export const channelsAPI = {
     limit?: number,
     sortBy?: 'channel_title' | 'updated_at' | 'last_video_date',
     sortOrder?: 'asc' | 'desc',
-    notInAnyList?: boolean
+    notInAnyList?: boolean,
+    archiveFilter?: 'all' | 'archived' | 'unarchived'
   ) => {
     const params = buildQueryParams({
       filter,
@@ -151,8 +152,13 @@ export const channelsAPI = {
       sortBy,
       sortOrder,
       notInAnyList,
+      archiveFilter,
     })
     const response = await api.get('/api/channels', { params })
+    return response.data
+  },
+  archive: async (channelId: string, isArchived: boolean) => {
+    const response = await api.patch(`/api/channels/${channelId}/archive`, { isArchived })
     return response.data
   },
   getById: async (channelId: string) => {
