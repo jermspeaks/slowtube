@@ -124,19 +124,6 @@ function LikedVideos() {
       <div className="mb-6 space-y-4">
         <div className="flex justify-between items-start flex-wrap gap-4">
           <div className="flex-1 min-w-0">
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Filter by State</label>
-              <select
-                value={stateFilter || ''}
-                onChange={(e) => setStateFilter(e.target.value ? e.target.value as 'feed' | 'inbox' | 'archive' : null)}
-                className="px-3 py-2 border rounded-md bg-background"
-              >
-                <option value="">All States</option>
-                <option value="feed">Feed</option>
-                <option value="inbox">Inbox</option>
-                <option value="archive">Archive</option>
-              </select>
-            </div>
             <FiltersAndSort
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
@@ -155,6 +142,8 @@ function LikedVideos() {
               onEndDateChange={setEndDate}
               shortsFilter={shortsFilter}
               onShortsFilterChange={setShortsFilter}
+              stateFilter={stateFilter}
+              onStateFilterChange={setStateFilter}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
