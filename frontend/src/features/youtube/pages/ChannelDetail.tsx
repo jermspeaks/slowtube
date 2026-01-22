@@ -257,6 +257,7 @@ function ChannelDetail() {
                   <Button
                     onClick={() => setIsAddToGroupModalOpen(true)}
                     variant="outline"
+                    size="default"
                     className="text-sm md:text-base"
                   >
                     Add to Group
