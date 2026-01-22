@@ -6,6 +6,7 @@ import { channelsAPI, videosAPI } from '../services/api'
 import VideoCard from '../components/VideoCard'
 import VideoDetailModal from '../components/VideoDetailModal'
 import LatestVideosFetcher from '../components/LatestVideosFetcher'
+import AddToChannelGroupModal from '../components/AddToChannelListModal'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
 import { Loader2, Archive, Inbox, Rss } from 'lucide-react'
@@ -22,6 +23,7 @@ function ChannelDetail() {
   const [fetching, setFetching] = useState(false)
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set())
   const [bulkActionLoading, setBulkActionLoading] = useState(false)
+  const [isAddToGroupModalOpen, setIsAddToGroupModalOpen] = useState(false)
 
   useEffect(() => {
     if (!channelId) {
@@ -240,16 +242,27 @@ function ChannelDetail() {
                   {channel.description}
                 </p>
               )}
-              <button
-                onClick={handleSubscribe}
-                className={`px-4 py-2 rounded font-medium transition-colors text-sm md:text-base ${
-                  channel.is_subscribed
-                    ? 'bg-muted text-foreground hover:bg-accent'
-                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                }`}
-              >
-                {channel.is_subscribed ? 'Unsubscribe' : 'Subscribe'}
-              </button>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <button
+                  onClick={handleSubscribe}
+                  className={`px-4 py-2 rounded font-medium transition-colors text-sm md:text-base ${
+                    channel.is_subscribed
+                      ? 'bg-muted text-foreground hover:bg-accent'
+                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                  }`}
+                >
+                  {channel.is_subscribed ? 'Unsubscribe' : 'Subscribe'}
+                </button>
+                {channel.is_subscribed && (
+                  <Button
+                    onClick={() => setIsAddToGroupModalOpen(true)}
+                    variant="outline"
+                    className="text-sm md:text-base"
+                  >
+                    Add to Group
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -411,6 +424,18 @@ function ChannelDetail() {
           }}
           onVideoChange={(newVideo) => {
             setSelectedVideo(newVideo)
+          }}
+        />
+      )}
+
+      {channel && (
+        <AddToChannelGroupModal
+          isOpen={isAddToGroupModalOpen}
+          onClose={() => setIsAddToGroupModalOpen(false)}
+          channelIds={[channel.youtube_channel_id]}
+          onSuccess={() => {
+            // Optionally refresh channel data or show success message
+            // The modal already shows a success toast, so we don't need to do anything here
           }}
         />
       )}
