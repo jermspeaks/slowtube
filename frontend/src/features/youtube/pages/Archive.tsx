@@ -14,6 +14,7 @@ import { useEntityListState } from '@/shared/hooks/useEntityListState'
 
 function Archive() {
   const [loading, setLoading] = useState(true)
+  const isInitialLoad = useRef(true)
   const {
     items: videos,
     setItems: setVideos,
@@ -23,7 +24,7 @@ function Archive() {
     handleStateChange,
   } = useEntityListState<Video>({
     onStateChange: () => {
-      loadVideos()
+      loadVideos(false)
     },
   })
   const [viewMode, setViewMode] = useState<ViewMode>('card')
@@ -45,7 +46,7 @@ function Archive() {
 
   useEffect(() => {
     loadChannels()
-    loadVideos()
+    loadVideos(true)
   }, [])
 
   const loadChannels = async () => {
@@ -57,9 +58,11 @@ function Archive() {
     }
   }
 
-  const loadVideos = async () => {
+  const loadVideos = async (showLoading: boolean = true) => {
     try {
-      setLoading(true)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(true)
+      }
       // Load videos with state='archive'
       const response = await videosAPI.getAll(
         'archive', // Only archived videos
@@ -82,7 +85,10 @@ function Archive() {
       console.error('Error loading videos:', error)
       toast.error('Failed to load videos')
     } finally {
-      setLoading(false)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(false)
+        isInitialLoad.current = false
+      }
     }
   }
 
@@ -105,7 +111,8 @@ function Archive() {
   }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
 
   useEffect(() => {
-    loadVideos()
+    // Only show loading on initial load, not for filter changes
+    loadVideos(isInitialLoad.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate, shortsFilter])
 

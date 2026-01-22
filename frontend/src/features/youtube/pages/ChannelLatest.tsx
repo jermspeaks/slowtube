@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { Channel } from '../types/channel'
 import { Video } from '../types/video'
@@ -19,6 +19,7 @@ function ChannelLatest() {
   const [loading, setLoading] = useState(true)
   const [videos, setVideos] = useState<Video[]>([])
   const [videosLoading, setVideosLoading] = useState(false)
+  const isInitialLoad = useRef(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [fetching, setFetching] = useState(false)
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set())
@@ -39,7 +40,8 @@ function ChannelLatest() {
 
   useEffect(() => {
     if (channel && channelId) {
-      loadVideos()
+      // Only show loading on initial load, not for sort changes
+      loadVideos(isInitialLoad.current)
     }
   }, [channel, channelId, sortBy, sortOrder])
 
@@ -59,18 +61,23 @@ function ChannelLatest() {
     }
   }
 
-  const loadVideos = async () => {
+  const loadVideos = async (showLoading: boolean = true) => {
     if (!channelId) return
 
     try {
-      setVideosLoading(true)
+      if (showLoading && isInitialLoad.current) {
+        setVideosLoading(true)
+      }
       const data = await channelsAPI.getVideos(channelId, 'latest', sortBy, sortOrder)
       setVideos(data.videos || [])
     } catch (error) {
       console.error('Error loading videos:', error)
       setVideos([])
     } finally {
-      setVideosLoading(false)
+      if (showLoading && isInitialLoad.current) {
+        setVideosLoading(false)
+        isInitialLoad.current = false
+      }
     }
   }
 
@@ -138,7 +145,7 @@ function ChannelLatest() {
       
       // Clear selection and refresh videos
       setSelectedVideoIds(new Set())
-      await loadVideos()
+      await loadVideos(false)
     } catch (error: any) {
       console.error('Error performing bulk action:', error)
       toast.error(error.response?.data?.error || 'Failed to update videos')
@@ -155,7 +162,7 @@ function ChannelLatest() {
       const response = await channelsAPI.fetchLatest(channelId, 50)
       toast.success(`Fetched ${response.videos?.length || 0} videos`)
       // Refresh the video list to show newly fetched videos
-      await loadVideos()
+      await loadVideos(false)
     } catch (error: any) {
       console.error('Error fetching latest videos:', error)
       toast.error(error.response?.data?.error || 'Failed to fetch latest videos')
@@ -207,7 +214,7 @@ function ChannelLatest() {
         ) : videos.length === 0 ? (
           <LatestVideosFetcher
             channelId={channelId || ''}
-            onVideosFetched={loadVideos}
+            onVideosFetched={() => loadVideos(false)}
           />
         ) : (
           <>

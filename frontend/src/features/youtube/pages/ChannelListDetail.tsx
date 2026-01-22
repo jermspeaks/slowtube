@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router'
 import { channelGroupsAPI, videosAPI } from '../services/api'
 import { ChannelGroupWithChannels } from '../types/channel-list'
@@ -36,6 +36,7 @@ function ChannelGroupDetail() {
   
   const [videos, setVideos] = useState<Video[]>([])
   const [videosLoading, setVideosLoading] = useState(false)
+  const isInitialLoad = useRef(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
   const [fetching, setFetching] = useState(false)
   const [selectedVideoIds, setSelectedVideoIds] = useState<Set<number>>(new Set())
@@ -85,7 +86,8 @@ function ChannelGroupDetail() {
   // Load videos when sort, filter, or tab changes
   useEffect(() => {
     if (group && activeTab) {
-      loadVideos()
+      // Only show loading on initial load, not for sort/filter/tab changes
+      loadVideos(isInitialLoad.current)
     }
   }, [group, activeTab, sortBy, sortOrder, shortsFilter])
 
@@ -107,11 +109,13 @@ function ChannelGroupDetail() {
     }
   }
 
-  const loadVideos = async () => {
+  const loadVideos = async (showLoading: boolean = true) => {
     if (!id || !activeTab) return
 
     try {
-      setVideosLoading(true)
+      if (showLoading && isInitialLoad.current) {
+        setVideosLoading(true)
+      }
       
       let data
       if (activeTab === 'inbox' || activeTab === 'feed' || activeTab === 'archive') {
@@ -150,7 +154,10 @@ function ChannelGroupDetail() {
       console.error('Error loading videos:', error)
       setVideos([])
     } finally {
-      setVideosLoading(false)
+      if (showLoading && isInitialLoad.current) {
+        setVideosLoading(false)
+        isInitialLoad.current = false
+      }
     }
   }
 
@@ -185,7 +192,7 @@ function ChannelGroupDetail() {
 
   const handleVideoUpdated = async (video: Video) => {
     // Refresh the video list to reflect any state changes
-    await loadVideos()
+    await loadVideos(false)
     
     // Update the selected video if it's the one that was updated
     if (selectedVideo && selectedVideo.id === video.id) {
@@ -266,7 +273,7 @@ function ChannelGroupDetail() {
       
       // Clear selection and refresh videos
       setSelectedVideoIds(new Set())
-      await loadVideos()
+      await loadVideos(false)
     } catch (error: any) {
       console.error('Error performing bulk action:', error)
       toast.error(error.response?.data?.error || 'Failed to update videos')
@@ -288,7 +295,7 @@ function ChannelGroupDetail() {
       const response = await channelGroupsAPI.refresh(parseInt(id, 10), 50)
       toast.success(response.message || `Refreshed ${response.totalVideos || 0} videos`)
       // Refresh the video list to show newly fetched videos
-      await loadVideos()
+      await loadVideos(false)
     } catch (error: any) {
       console.error('Error refreshing group:', error)
       

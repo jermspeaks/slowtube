@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { Channel } from '../types/channel'
 import { Video } from '../types/video'
@@ -16,6 +16,7 @@ function ChannelWatchLater() {
   const [loading, setLoading] = useState(true)
   const [videos, setVideos] = useState<Video[]>([])
   const [videosLoading, setVideosLoading] = useState(false)
+  const isInitialLoad = useRef(true)
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
 
   useEffect(() => {
@@ -29,7 +30,8 @@ function ChannelWatchLater() {
 
   useEffect(() => {
     if (channel && channelId) {
-      loadVideos()
+      // Only show loading on initial load
+      loadVideos(isInitialLoad.current)
     }
   }, [channel, channelId])
 
@@ -49,18 +51,23 @@ function ChannelWatchLater() {
     }
   }
 
-  const loadVideos = async () => {
+  const loadVideos = async (showLoading: boolean = true) => {
     if (!channelId) return
 
     try {
-      setVideosLoading(true)
+      if (showLoading && isInitialLoad.current) {
+        setVideosLoading(true)
+      }
       const data = await channelsAPI.getVideos(channelId, 'watch_later', undefined, undefined, 'exclude_archived')
       setVideos(data.videos || [])
     } catch (error) {
       console.error('Error loading videos:', error)
       setVideos([])
     } finally {
-      setVideosLoading(false)
+      if (showLoading && isInitialLoad.current) {
+        setVideosLoading(false)
+        isInitialLoad.current = false
+      }
     }
   }
 

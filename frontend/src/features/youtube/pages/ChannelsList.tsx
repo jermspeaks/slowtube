@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router'
 import { Channel, ChannelWithCount } from '../types/channel'
 import { channelsAPI } from '../services/api'
@@ -13,6 +13,7 @@ function ChannelsList() {
   const navigate = useNavigate()
   const [channels, setChannels] = useState<ChannelWithCount[]>([])
   const [loading, setLoading] = useState(true)
+  const isInitialLoad = useRef(true)
   const [syncing, setSyncing] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false)
@@ -47,12 +48,15 @@ function ChannelsList() {
   }, [location.pathname])
 
   useEffect(() => {
-    loadChannels()
+    // Only show loading on initial load, not for filter/sort changes
+    loadChannels(isInitialLoad.current)
   }, [location.pathname, currentPage, sortBy, sortOrder, notInAnyList, archiveFilter])
 
-  const loadChannels = async () => {
+  const loadChannels = async (showLoading: boolean = true) => {
     try {
-      setLoading(true)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(true)
+      }
       
       // For subscribed channels, only allow channel_title and updated_at sorting
       const validSortBy = filterType === 'subscribed' 
@@ -78,7 +82,10 @@ function ChannelsList() {
       console.error('Error loading channels:', error)
       toast.error('Failed to load channels')
     } finally {
-      setLoading(false)
+      if (showLoading && isInitialLoad.current) {
+        setLoading(false)
+        isInitialLoad.current = false
+      }
     }
   }
 
@@ -116,7 +123,7 @@ function ChannelsList() {
   const handleArchive = async (channel: Channel, isArchived: boolean) => {
     try {
       await channelsAPI.archive(channel.youtube_channel_id, isArchived)
-      await loadChannels()
+      await loadChannels(false)
       toast.success(`Channel ${isArchived ? 'archived' : 'unarchived'} successfully`)
     } catch (error) {
       console.error('Error archiving channel:', error)
@@ -148,7 +155,7 @@ function ChannelsList() {
       toast.success(result.message || `Successfully synced ${result.synced || 0} subscribed channels`)
       
       // Refresh the channel list
-      await loadChannels()
+      await loadChannels(false)
     } catch (error: any) {
       console.error('Error syncing subscriptions:', error)
       
@@ -200,7 +207,7 @@ function ChannelsList() {
       }
       
       // Refresh the channel group to show updated counts
-      await loadChannels()
+      await loadChannels(false)
     } catch (error: any) {
       console.error('Error refreshing latest videos:', error)
       
