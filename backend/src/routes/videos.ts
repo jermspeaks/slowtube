@@ -235,6 +235,111 @@ router.get('/', (req, res) => {
   }
 })
 
+// Get liked videos
+router.get('/liked', (req, res) => {
+  try {
+    // Log request for debugging
+    console.log('GET /liked - Query params:', req.query)
+    
+    const state = req.query.state as string | undefined
+    const search = req.query.search as string | undefined
+    const sortBy = req.query.sortBy as 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | undefined
+    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc'
+    const channels = req.query.channels ? (req.query.channels as string).split(',') : undefined
+    
+    // Parse and validate limit
+    let limit: number | undefined = undefined
+    if (req.query.limit !== undefined && req.query.limit !== null) {
+      const parsedLimit = parseInt(String(req.query.limit), 10)
+      if (isNaN(parsedLimit) || parsedLimit < 0) {
+        return res.status(400).json({ error: 'Invalid limit parameter' })
+      }
+      limit = parsedLimit
+    }
+    
+    // Parse and validate offset
+    let offset: number | undefined = undefined
+    if (req.query.offset !== undefined && req.query.offset !== null) {
+      const parsedOffset = parseInt(String(req.query.offset), 10)
+      if (isNaN(parsedOffset) || parsedOffset < 0) {
+        return res.status(400).json({ error: 'Invalid offset parameter' })
+      }
+      offset = parsedOffset
+    }
+    
+    // Validate sortBy
+    if (sortBy && !['published_at', 'added_to_playlist_at', 'archived_at', 'liked_at'].includes(sortBy)) {
+      return res.status(400).json({ error: 'Invalid sortBy parameter' })
+    }
+    
+    // Validate sortOrder
+    if (sortOrder && !['asc', 'desc'].includes(sortOrder)) {
+      return res.status(400).json({ error: 'Invalid sortOrder parameter' })
+    }
+    
+    const dateField = req.query.dateField as 'published_at' | 'added_to_playlist_at' | undefined
+    const startDate = req.query.startDate as string | undefined
+    const endDate = req.query.endDate as string | undefined
+    const shortsFilter = (req.query.shortsFilter as 'all' | 'exclude' | 'only') || 'all'
+    
+    // Validate shortsFilter
+    if (shortsFilter && !['all', 'exclude', 'only'].includes(shortsFilter)) {
+      return res.status(400).json({ error: 'Invalid shortsFilter parameter' })
+    }
+
+    let videos
+    let total
+    try {
+      videos = videoQueries.getLikedVideos(
+        state,
+        search,
+        sortBy,
+        sortOrder,
+        channels,
+        limit,
+        offset,
+        dateField,
+        startDate,
+        endDate,
+        shortsFilter
+      )
+
+      total = videoQueries.getCount(
+        state,
+        search,
+        channels,
+        dateField,
+        startDate,
+        endDate,
+        shortsFilter,
+        true // isLiked = true
+      )
+    } catch (dbError: any) {
+      console.error('Database error in getLikedVideos:', dbError)
+      return res.status(400).json({ 
+        error: 'Database query failed',
+        message: dbError.message,
+        details: process.env.NODE_ENV === 'development' ? dbError.stack : undefined
+      })
+    }
+
+    res.json({
+      videos,
+      total,
+      limit: limit !== undefined ? limit : videos.length,
+      offset: offset !== undefined ? offset : 0,
+    })
+  } catch (error: any) {
+    console.error('Error fetching liked videos:', error)
+    const statusCode = error.statusCode || 500
+    const errorMessage = error.message || 'Failed to fetch liked videos'
+    res.status(statusCode).json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    })
+  }
+})
+
 // Get single video by ID
 router.get('/:id', (req, res) => {
   try {
@@ -359,58 +464,6 @@ router.post('/import-liked', upload.single('file'), async (req, res) => {
   } catch (error: any) {
     console.error('Error importing liked videos:', error)
     res.status(500).json({ error: error.message || 'Failed to import liked videos' })
-  }
-})
-
-// Get liked videos
-router.get('/liked', (req, res) => {
-  try {
-    const state = req.query.state as string | undefined
-    const search = req.query.search as string | undefined
-    const sortBy = req.query.sortBy as 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | undefined
-    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc'
-    const channels = req.query.channels ? (req.query.channels as string).split(',') : undefined
-    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
-    const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined
-    const dateField = req.query.dateField as 'published_at' | 'added_to_playlist_at' | undefined
-    const startDate = req.query.startDate as string | undefined
-    const endDate = req.query.endDate as string | undefined
-    const shortsFilter = (req.query.shortsFilter as 'all' | 'exclude' | 'only') || 'all'
-
-    const videos = videoQueries.getLikedVideos(
-      state,
-      search,
-      sortBy,
-      sortOrder,
-      channels,
-      limit,
-      offset,
-      dateField,
-      startDate,
-      endDate,
-      shortsFilter
-    )
-
-    const total = videoQueries.getCount(
-      state,
-      search,
-      channels,
-      dateField,
-      startDate,
-      endDate,
-      shortsFilter,
-      true // isLiked = true
-    )
-
-    res.json({
-      videos,
-      total,
-      limit: limit || videos.length,
-      offset: offset || 0,
-    })
-  } catch (error: any) {
-    console.error('Error fetching liked videos:', error)
-    res.status(500).json({ error: 'Failed to fetch liked videos' })
   }
 })
 

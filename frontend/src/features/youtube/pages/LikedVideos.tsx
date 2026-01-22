@@ -81,9 +81,16 @@ function LikedVideos() {
       setVideos(response.videos || [])
       const total = response.total || 0
       setTotalPages(Math.ceil(total / limit))
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading liked videos:', error)
-      toast.error('Failed to load liked videos')
+      // Log the actual backend error message if available
+      if (error.response?.data) {
+        console.error('Backend error response:', error.response.data)
+        const errorMessage = error.response.data?.error || error.response.data?.message || 'Failed to load liked videos'
+        toast.error(errorMessage)
+      } else {
+        toast.error('Failed to load liked videos')
+      }
     } finally {
       setLoading(false)
     }
