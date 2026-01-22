@@ -332,73 +332,164 @@ function ChannelsList() {
                 Showing {channels.length} of {total} channels
               </div>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {channels.map((channel) => (
-                <div
-                  key={channel.youtube_channel_id}
-                  className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
-                >
-                  <Link
-                    to={`/youtube/channels/${channel.youtube_channel_id}/watch-later`}
-                    className="block p-6 hover:no-underline"
+            {filterType === 'watch_later' && channels.length > 0 && (
+              <div className="mb-4 text-sm text-muted-foreground">
+                {channels.length} {channels.length === 1 ? 'channel' : 'channels'}
+              </div>
+            )}
+            {filterType === 'watch_later' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse bg-card rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-muted">
+                      <th className="p-2 md:p-3 text-left border-b-2 border-border">Thumbnail</th>
+                      <th className="p-2 md:p-3 text-left border-b-2 border-border">Channel</th>
+                      <th className="p-2 md:p-3 text-left border-b-2 border-border hidden md:table-cell">Subscribers</th>
+                      <th className="p-2 md:p-3 text-left border-b-2 border-border">Videos</th>
+                      <th className="p-2 md:p-3 text-left border-b-2 border-border hidden lg:table-cell">Last Video</th>
+                      <th className="p-2 md:p-3 text-left border-b-2 border-border">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {channels.map((channel) => (
+                      <tr
+                        key={channel.youtube_channel_id}
+                        className="border-b border-border hover:bg-accent transition-colors cursor-pointer"
+                        onClick={() => navigate(`/youtube/channels/${channel.youtube_channel_id}/watch-later`)}
+                      >
+                        <td className="p-2 md:p-3">
+                          {channel.thumbnail_url ? (
+                            <img
+                              src={channel.thumbnail_url}
+                              alt={channel.channel_title || 'Channel'}
+                              className="w-12 h-12 md:w-16 md:h-16 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-muted flex items-center justify-center">
+                              <span className="text-muted-foreground text-lg md:text-xl">
+                                {channel.channel_title?.[0]?.toUpperCase() || '?'}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2 md:p-3 max-w-[300px] md:max-w-[400px]">
+                          <div className="font-semibold text-sm md:text-base text-foreground truncate">
+                            {channel.channel_title || 'Untitled Channel'}
+                          </div>
+                          {channel.description && (
+                            <div className="text-xs md:text-sm text-muted-foreground line-clamp-2 mt-1 hidden md:block overflow-hidden">
+                              {channel.description}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-2 md:p-3 text-muted-foreground text-xs md:text-sm hidden md:table-cell">
+                          {channel.subscriber_count !== null ? (
+                            formatSubscriberCount(channel.subscriber_count)
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="p-2 md:p-3 text-muted-foreground text-xs md:text-sm">
+                          {'watch_later_count' in channel ? (
+                            <span>
+                              {channel.watch_later_count} {channel.watch_later_count === 1 ? 'video' : 'videos'}
+                            </span>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="p-2 md:p-3 text-muted-foreground text-xs md:text-sm hidden lg:table-cell">
+                          {'last_video_date' in channel && channel.last_video_date ? (
+                            formatDate(channel.last_video_date)
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                        <td className="p-2 md:p-3" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="add-to-list-button"
+                            onClick={(e) => handleAddToListsClick(channel, e)}
+                            title="Add to list"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {channels.map((channel) => (
+                  <div
+                    key={channel.youtube_channel_id}
+                    className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden relative"
                   >
-                    <div className="flex items-start gap-4 mb-4">
-                      {channel.thumbnail_url ? (
-                        <img
-                          src={channel.thumbnail_url}
-                          alt={channel.channel_title || 'Channel'}
-                          className="w-16 h-16 rounded-full object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <span className="text-muted-foreground text-xl">
-                            {channel.channel_title?.[0]?.toUpperCase() || '?'}
-                          </span>
+                    <Link
+                      to={`/youtube/channels/${channel.youtube_channel_id}/watch-later`}
+                      className="block p-6 hover:no-underline"
+                    >
+                      <div className="flex items-start gap-4 mb-4">
+                        {channel.thumbnail_url ? (
+                          <img
+                            src={channel.thumbnail_url}
+                            alt={channel.channel_title || 'Channel'}
+                            className="w-16 h-16 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <span className="text-muted-foreground text-xl">
+                              {channel.channel_title?.[0]?.toUpperCase() || '?'}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg text-foreground truncate">
+                            {channel.channel_title || 'Untitled Channel'}
+                          </h3>
+                          {channel.subscriber_count !== null && (
+                            <p className="text-sm text-muted-foreground">
+                              {formatSubscriberCount(channel.subscriber_count)} subscribers
+                            </p>
+                          )}
                         </div>
+                      </div>
+                      
+                      {channel.description && (
+                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                          {channel.description}
+                        </p>
                       )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg text-foreground truncate">
-                          {channel.channel_title || 'Untitled Channel'}
-                        </h3>
-                        {channel.subscriber_count !== null && (
-                          <p className="text-sm text-muted-foreground">
-                            {formatSubscriberCount(channel.subscriber_count)} subscribers
-                          </p>
+
+                      <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
+                        {'watch_later_count' in channel && (
+                          <span>
+                            {channel.watch_later_count} video{channel.watch_later_count !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {'last_video_date' in channel && channel.last_video_date && (
+                          <span>
+                            Last: {formatDate(channel.last_video_date)}
+                          </span>
                         )}
                       </div>
-                    </div>
-                    
-                    {channel.description && (
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {channel.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
-                      {'watch_later_count' in channel && (
-                        <span>
-                          {channel.watch_later_count} video{channel.watch_later_count !== 1 ? 's' : ''}
-                        </span>
-                      )}
-                      {'last_video_date' in channel && channel.last_video_date && (
-                        <span>
-                          Last: {formatDate(channel.last_video_date)}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-2 right-2 add-to-list-button"
-                    onClick={(e) => handleAddToListsClick(channel, e)}
-                    title="Add to list"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
+                    </Link>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 add-to-list-button"
+                      onClick={(e) => handleAddToListsClick(channel, e)}
+                      title="Add to list"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
             {filterType === 'subscribed' && (
               <Pagination
                 currentPage={currentPage}
