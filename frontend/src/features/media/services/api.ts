@@ -30,7 +30,8 @@ export const tvShowsAPI = {
   },
   getStatuses: async () => {
     const response = await api.get('/api/tv-shows/statuses')
-    return response.data
+    // Backend wraps response in { data: ... } format
+    return response.data.data || response.data || []
   },
   search: async (query: string) => {
     const response = await api.post('/api/tv-shows/search', { query })

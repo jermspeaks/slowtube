@@ -122,9 +122,11 @@ function TVShowsList() {
   const loadStatuses = async () => {
     try {
       const statusList = await tvShowsAPI.getStatuses()
-      setStatuses(statusList || [])
+      // Ensure statusList is an array before setting it
+      setStatuses(Array.isArray(statusList) ? statusList : [])
     } catch (error) {
       console.error('Error loading statuses:', error)
+      setStatuses([])
     }
   }
 
@@ -383,7 +385,7 @@ function TVShowsList() {
                       className="px-3 py-2 border border-border rounded text-sm bg-background"
                     >
                       <option value="">All</option>
-                      {statuses.map(status => (
+                      {Array.isArray(statuses) && statuses.map(status => (
                         <option key={status} value={status}>{status}</option>
                       ))}
                     </select>
