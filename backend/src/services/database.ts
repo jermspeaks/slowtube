@@ -347,8 +347,8 @@ export const videoQueries = {
     }
 
     const stmt = db.prepare(`
-      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, added_to_latest_at, fetch_status, youtube_channel_id, channel_id, youtube_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO videos (youtube_id, title, description, thumbnail_url, duration, published_at, added_to_playlist_at, added_to_latest_at, fetch_status, youtube_channel_id, channel_id, youtube_url, is_liked, liked_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const result = stmt.run(
       video.youtube_id,
@@ -362,7 +362,9 @@ export const videoQueries = {
       video.fetch_status || 'pending',
       video.youtube_channel_id || null,
       channelId,
-      video.youtube_url
+      video.youtube_url,
+      video.is_liked ?? 0,
+      video.liked_at || null
     )
     return result.lastInsertRowid as number
   },

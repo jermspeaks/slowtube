@@ -342,10 +342,10 @@ export function importLikedVideosFromActivity(data: any): { imported: number; up
         
         videoQueries.update(existingVideo.id, updateData)
         
-        // Set state to inbox if not already set
+        // Set state to archive if not already set (for liked videos)
         const currentState = videoStateQueries.getByVideoId(existingVideo.id)
         if (!currentState) {
-          videoStateQueries.setState(existingVideo.id, 'inbox')
+          videoStateQueries.setState(existingVideo.id, 'archive')
         }
         
         updated++
@@ -377,8 +377,8 @@ export function importLikedVideosFromActivity(data: any): { imported: number; up
         
         const videoId = videoQueries.create(videoData)
         
-        // Set initial state to 'inbox'
-        videoStateQueries.setState(videoId, 'inbox')
+        // Set initial state to 'archive' for liked videos
+        videoStateQueries.setState(videoId, 'archive')
         imported++
         
         if (!firstImported) {
@@ -386,7 +386,7 @@ export function importLikedVideosFromActivity(data: any): { imported: number; up
             id: videoId,
             youtube_id: video.id,
             liked_at: video.likedAt,
-            state: 'inbox',
+            state: 'archive',
           })
           firstImported = true
         }
