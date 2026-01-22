@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { channelGroupsAPI } from '../services/api'
 import { ChannelGroupWithCount } from '../types/channel-list'
-import ChannelGroupCard from '../components/ChannelListCard'
 import ChannelGroupTable from '../components/ChannelListTable'
 import ChannelGroupForm from '../components/ChannelListForm'
-import ViewToggle from '../components/ViewToggle'
 import {
   Dialog,
   DialogContent,
@@ -20,7 +18,8 @@ import { Plus } from 'lucide-react'
 function ChannelGroups() {
   const [groups, setGroups] = useState<ChannelGroupWithCount[]>([])
   const [loading, setLoading] = useState(true)
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card')
+  const [sortBy, setSortBy] = useState<'name' | 'channel_count' | 'created_at'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -96,13 +95,45 @@ function ChannelGroups() {
     }
   }
 
+  const handleSortChange = (value: string) => {
+    const lastUnderscoreIndex = value.lastIndexOf('_')
+    if (lastUnderscoreIndex !== -1) {
+      const by = value.substring(0, lastUnderscoreIndex) as 'name' | 'channel_count' | 'created_at'
+      const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
+      if ((by === 'name' || by === 'channel_count' || by === 'created_at') && (order === 'asc' || order === 'desc')) {
+        setSortBy(by)
+        setSortOrder(order)
+      }
+    }
+  }
+
+  const sortedGroups = useMemo(() => {
+    const sorted = [...groups]
+    sorted.sort((a, b) => {
+      let comparison = 0
+      
+      if (sortBy === 'name') {
+        comparison = (a.name || '').localeCompare(b.name || '')
+      } else if (sortBy === 'channel_count') {
+        comparison = (a.channel_count || 0) - (b.channel_count || 0)
+      } else if (sortBy === 'created_at') {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0
+        comparison = dateA - dateB
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison
+    })
+    
+    return sorted
+  }, [groups, sortBy, sortOrder])
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         <div className="flex justify-between items-start mb-4 md:mb-6 flex-wrap gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">Channel Groups</h1>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
             <Button
               onClick={() => setIsCreateModalOpen(true)}
               className="gap-2"
@@ -113,6 +144,29 @@ function ChannelGroups() {
             </Button>
           </div>
         </div>
+
+        {/* Sort Panel */}
+        {!loading && groups.length > 0 && (
+          <div className="bg-card rounded-lg p-4 border border-border shadow-sm mb-4 md:mb-6">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <div className="flex gap-2 items-center w-full sm:w-auto">
+                <label className="font-semibold text-sm text-foreground whitespace-nowrap">Sort:</label>
+                <select
+                  value={sortBy ? `${sortBy}_${sortOrder}` : 'name_asc'}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  className="px-3 py-2 border border-border rounded text-sm bg-background flex-1 sm:flex-initial"
+                >
+                  <option value="name_asc">Alphabetical (A-Z)</option>
+                  <option value="name_desc">Alphabetical (Z-A)</option>
+                  <option value="channel_count_desc">Number of Channels (Most)</option>
+                  <option value="channel_count_asc">Number of Channels (Least)</option>
+                  <option value="created_at_desc">Created Date (Newest)</option>
+                  <option value="created_at_asc">Created Date (Oldest)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center py-12 md:py-[60px] px-5 bg-card rounded-lg">
@@ -132,26 +186,11 @@ function ChannelGroups() {
             </Button>
           </div>
         ) : (
-          <>
-            {viewMode === 'card' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-                {groups.map(group => (
-                  <ChannelGroupCard
-                    key={group.id}
-                    group={group}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteClick}
-                  />
-                ))}
-              </div>
-            ) : (
-              <ChannelGroupTable
-                groups={groups}
-                onEdit={handleEdit}
-                onDelete={handleDeleteClick}
-              />
-            )}
-          </>
+          <ChannelGroupTable
+            groups={sortedGroups}
+            onEdit={handleEdit}
+            onDelete={handleDeleteClick}
+          />
         )}
       </main>
 
