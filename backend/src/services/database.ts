@@ -557,7 +557,7 @@ export const videoQueries = {
         c.*,
         COUNT(v.id) as liked_count
       FROM channels c
-      INNER JOIN videos v ON v.channel_id = c.id
+      INNER JOIN videos v ON (v.channel_id = c.id OR v.youtube_channel_id = c.youtube_channel_id)
       WHERE v.is_liked = 1
       GROUP BY c.id
       ORDER BY liked_count DESC
@@ -1156,9 +1156,20 @@ export const channelQueries = {
     return db.prepare(query).all(...params) as Channel[]
   },
 
-  getAllCount: (filterType?: 'subscribed' | 'watch_later', notInAnyList?: boolean) => {
+  getAllCount: (filterType?: 'subscribed' | 'watch_later', notInAnyList?: boolean, archiveFilter?: 'all' | 'archived' | 'unarchived') => {
     let query = ''
     const params: any[] = []
+
+    // Build archive filter condition for watch_later
+    let archiveCondition = ''
+    if (filterType === 'watch_later' && archiveFilter) {
+      if (archiveFilter === 'archived') {
+        archiveCondition = 'AND cs.is_archived = 1'
+      } else if (archiveFilter === 'unarchived') {
+        archiveCondition = 'AND (cs.is_archived = 0 OR cs.is_archived IS NULL)'
+      }
+      // 'all' means no filter condition
+    }
 
     if (filterType === 'subscribed') {
       if (notInAnyList) {
@@ -1178,14 +1189,18 @@ export const channelQueries = {
           FROM channels c
           INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
           LEFT JOIN channel_list_items cli ON c.youtube_channel_id = cli.youtube_channel_id
+          LEFT JOIN channel_states cs ON c.youtube_channel_id = cs.youtube_channel_id
           WHERE v.youtube_channel_id IS NOT NULL AND cli.id IS NULL
+          ${archiveCondition}
         `
       } else {
         query = `
           SELECT COUNT(DISTINCT c.youtube_channel_id) as count
           FROM channels c
           INNER JOIN videos v ON c.youtube_channel_id = v.youtube_channel_id
+          LEFT JOIN channel_states cs ON c.youtube_channel_id = cs.youtube_channel_id
           WHERE v.youtube_channel_id IS NOT NULL
+          ${archiveCondition}
         `
       }
     } else {
@@ -1266,7 +1281,7 @@ export const channelQueries = {
     return stmt.run(...values).changes
   },
 
-  getChannelsWithWatchLaterCount: (sortBy?: 'channel_title' | 'updated_at' | 'last_video_date', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean, archiveFilter?: 'all' | 'archived' | 'unarchived') => {
+  getChannelsWithWatchLaterCount: (sortBy?: 'channel_title' | 'updated_at' | 'last_video_date', sortOrder?: 'asc' | 'desc', notInAnyList?: boolean, archiveFilter?: 'all' | 'archived' | 'unarchived', limit?: number, offset?: number) => {
     // Validate and set default sort values
     const validSortBy = (sortBy === 'channel_title' || sortBy === 'updated_at' || sortBy === 'last_video_date') ? sortBy : 'channel_title'
     const validSortOrder = (sortOrder === 'asc' || sortOrder === 'desc') ? sortOrder : 'asc'
@@ -1292,8 +1307,16 @@ export const channelQueries = {
     }
     // 'all' means no filter condition
     
+    // Build pagination clause
+    let paginationClause = ''
+    const params: any[] = []
+    if (limit !== undefined && offset !== undefined) {
+      paginationClause = 'LIMIT ? OFFSET ?'
+      params.push(limit, offset)
+    }
+    
     if (notInAnyList) {
-      return db.prepare(`
+      const query = `
         SELECT 
           c.*,
           COUNT(v.id) as watch_later_count,
@@ -1307,9 +1330,11 @@ export const channelQueries = {
         ${archiveCondition}
         GROUP BY c.youtube_channel_id
         ORDER BY ${orderBy}
-      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null; is_archived: number })[]
+        ${paginationClause}
+      `
+      return db.prepare(query).all(...params) as (Channel & { watch_later_count: number; last_video_date: string | null; is_archived: number })[]
     } else {
-      return db.prepare(`
+      const query = `
         SELECT 
           c.*,
           COUNT(v.id) as watch_later_count,
@@ -1322,7 +1347,9 @@ export const channelQueries = {
         ${archiveCondition}
         GROUP BY c.youtube_channel_id
         ORDER BY ${orderBy}
-      `).all() as (Channel & { watch_later_count: number; last_video_date: string | null; is_archived: number })[]
+        ${paginationClause}
+      `
+      return db.prepare(query).all(...params) as (Channel & { watch_later_count: number; last_video_date: string | null; is_archived: number })[]
     }
   },
 

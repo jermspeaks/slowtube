@@ -62,14 +62,28 @@ router.get('/', (req, res) => {
         totalPages,
       })
     } else if (filterType === 'watch_later') {
-      // For watch_later filter, get channels with counts (no pagination)
-      const channelsWithCounts = channelQueries.getChannelsWithWatchLaterCount(validSortBy, validSortOrder, notInAnyListFilter, validArchiveFilter)
+      // For watch_later filter, apply pagination
+      const pageNum = page ? parseInt(page as string, 10) : 1
+      const limitNum = limit ? parseInt(limit as string, 10) : 50
+      const offset = (pageNum - 1) * limitNum
+      
+      const channelsWithCounts = channelQueries.getChannelsWithWatchLaterCount(validSortBy, validSortOrder, notInAnyListFilter, validArchiveFilter, limitNum, offset)
+      const total = channelQueries.getAllCount(filterType, notInAnyListFilter, validArchiveFilter)
+      const totalPages = Math.ceil(total / limitNum)
+      
       // Convert is_archived from number to boolean
       const channelsWithBooleans = channelsWithCounts.map(channel => ({
         ...channel,
         is_archived: channel.is_archived === 1
       }))
-      res.json(channelsWithBooleans)
+      
+      res.json({
+        channels: channelsWithBooleans,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages,
+      })
     } else {
       // For other filters, return all channels (backward compatibility)
       const otherSortBy = (validSortBy === 'channel_title' || validSortBy === 'updated_at') ? validSortBy : undefined

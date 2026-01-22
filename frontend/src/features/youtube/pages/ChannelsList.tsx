@@ -19,7 +19,7 @@ function ChannelsList() {
   const [isAddToListModalOpen, setIsAddToListModalOpen] = useState(false)
   const [selectedChannelIds, setSelectedChannelIds] = useState<Set<string>>(new Set())
   
-  // Pagination state (only for subscribed channels)
+  // Pagination state (for both subscribed and watch_later channels)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
@@ -63,21 +63,12 @@ function ChannelsList() {
         ? (sortBy === 'channel_title' || sortBy === 'updated_at' ? sortBy : 'channel_title')
         : sortBy
       
-      if (filterType === 'subscribed') {
-        // For subscribed channels, use pagination
-        const data = await channelsAPI.getAll(filterType, currentPage, limit, validSortBy, sortOrder, notInAnyList)
-        setChannels(data.channels || [])
-        setTotal(data.total || 0)
-        setTotalPages(data.totalPages || 1)
-        setCurrentPage(data.page || 1)
-      } else {
-        // For watch_later channels, get all (no pagination)
-        const data = await channelsAPI.getAll(filterType, undefined, undefined, validSortBy, sortOrder, notInAnyList, archiveFilter)
-        setChannels(data || [])
-        setTotal(data?.length || 0)
-        setTotalPages(1)
-        setCurrentPage(1)
-      }
+      // Both subscribed and watch_later now use pagination
+      const data = await channelsAPI.getAll(filterType, currentPage, limit, validSortBy, sortOrder, notInAnyList, archiveFilter)
+      setChannels(data.channels || [])
+      setTotal(data.total || 0)
+      setTotalPages(data.totalPages || 1)
+      setCurrentPage(data.page || 1)
     } catch (error) {
       console.error('Error loading channels:', error)
       toast.error('Failed to load channels')
@@ -363,14 +354,9 @@ function ChannelsList() {
           </div>
         ) : (
           <>
-            {filterType === 'subscribed' && total > 0 && (
+            {total > 0 && (
               <div className="mb-4 text-sm text-muted-foreground">
                 Showing {channels.length} of {total} channels
-              </div>
-            )}
-            {filterType === 'watch_later' && channels.length > 0 && (
-              <div className="mb-4 text-sm text-muted-foreground">
-                {channels.length} {channels.length === 1 ? 'channel' : 'channels'}
               </div>
             )}
             {filterType === 'watch_later' ? (
@@ -543,13 +529,11 @@ function ChannelsList() {
                 ))}
               </div>
             )}
-            {filterType === 'subscribed' && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-              />
-            )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </>
         )}
       </main>
