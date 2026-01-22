@@ -15,6 +15,8 @@ export interface Video {
   youtube_channel_id: string | null
   channel_id: number | null
   youtube_url: string | null
+  is_liked: number
+  liked_at: string | null
   created_at: string
   updated_at: string
 }
@@ -82,7 +84,8 @@ export const videoQueries = {
     dateField?: 'published_at' | 'added_to_playlist_at',
     startDate?: string,
     endDate?: string,
-    shortsFilter?: 'all' | 'exclude' | 'only'
+    shortsFilter?: 'all' | 'exclude' | 'only',
+    isLiked?: boolean
   ) => {
     // Build WHERE clause conditions
     const conditions: string[] = []
@@ -100,6 +103,12 @@ export const videoQueries = {
         conditions.push('ms.state = ?')
         params.push(state)
       }
+    }
+
+    // Liked filter
+    if (isLiked !== undefined) {
+      conditions.push('v.is_liked = ?')
+      params.push(isLiked ? 1 : 0)
     }
 
     // Search filter (case-insensitive search on title and description)
@@ -217,7 +226,8 @@ export const videoQueries = {
     dateField?: 'published_at' | 'added_to_playlist_at',
     startDate?: string,
     endDate?: string,
-    shortsFilter?: 'all' | 'exclude' | 'only'
+    shortsFilter?: 'all' | 'exclude' | 'only',
+    isLiked?: boolean
   ) => {
     // Build WHERE clause conditions (same as getAll)
     const conditions: string[] = []
@@ -235,6 +245,12 @@ export const videoQueries = {
         conditions.push('ms.state = ?')
         params.push(state)
       }
+    }
+
+    // Liked filter
+    if (isLiked !== undefined) {
+      conditions.push('v.is_liked = ?')
+      params.push(isLiked ? 1 : 0)
     }
 
     // Search filter (case-insensitive search on title and description)
@@ -467,6 +483,83 @@ export const videoQueries = {
         AND youtube_id IS NOT NULL
     `).get() as { count: number }
     return result.count
+  },
+
+  getLikedVideos: (
+    state?: string,
+    search?: string,
+    sortBy?: 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at',
+    sortOrder?: 'asc' | 'desc',
+    channels?: string[],
+    limit?: number,
+    offset?: number,
+    dateField?: 'published_at' | 'added_to_playlist_at',
+    startDate?: string,
+    endDate?: string,
+    shortsFilter?: 'all' | 'exclude' | 'only'
+  ) => {
+    // Handle liked_at sorting specially
+    let actualSortBy = sortBy
+    if (sortBy === 'liked_at') {
+      actualSortBy = 'added_to_playlist_at' // We'll override the ORDER BY clause
+    }
+    
+    const videos = videoQueries.getAll(
+      state,
+      search,
+      actualSortBy as any,
+      sortOrder,
+      channels,
+      limit,
+      offset,
+      dateField,
+      startDate,
+      endDate,
+      shortsFilter,
+      true // isLiked = true
+    )
+    
+    // If sorting by liked_at, sort the results
+    if (sortBy === 'liked_at') {
+      videos.sort((a, b) => {
+        const aDate = a.liked_at ? new Date(a.liked_at).getTime() : 0
+        const bDate = b.liked_at ? new Date(b.liked_at).getTime() : 0
+        if (sortOrder === 'asc') {
+          return aDate - bDate
+        } else {
+          return bDate - aDate
+        }
+      })
+    }
+    
+    return videos
+  },
+
+  toggleLike: (videoId: number, isLiked: boolean, likedAt?: string) => {
+    const updateData: any = {
+      is_liked: isLiked ? 1 : 0,
+    }
+    
+    if (isLiked && likedAt) {
+      updateData.liked_at = likedAt
+    } else if (!isLiked) {
+      updateData.liked_at = null
+    }
+    
+    return videoQueries.update(videoId, updateData)
+  },
+
+  getChannelsFromLikedVideos: () => {
+    return db.prepare(`
+      SELECT DISTINCT 
+        c.*,
+        COUNT(v.id) as liked_count
+      FROM channels c
+      INNER JOIN videos v ON v.channel_id = c.id
+      WHERE v.is_liked = 1
+      GROUP BY c.id
+      ORDER BY liked_count DESC
+    `).all() as (Channel & { liked_count: number })[]
   },
 }
 

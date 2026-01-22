@@ -412,6 +412,7 @@ function Player() {
       {/* Metadata */}
       <PlayerMetadata
         video={video}
+        onVideoUpdated={setVideo}
         onTagAdded={(tag) => setVideo({ ...video, tags: [...(video.tags || []), tag] })}
         onTagRemoved={(tagId) =>
           setVideo({ ...video, tags: video.tags?.filter((t) => t.id !== tagId) || [] })

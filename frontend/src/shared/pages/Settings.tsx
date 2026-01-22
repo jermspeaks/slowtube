@@ -13,6 +13,9 @@ function Settings() {
   const [uploading, setUploading] = useState(false)
   const [fetchingDetails, setFetchingDetails] = useState(false)
   const [fetchProgress, setFetchProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
+  const [uploadingLiked, setUploadingLiked] = useState(false)
+  const [fetchingLikedDetails, setFetchingLikedDetails] = useState(false)
+  const [fetchLikedProgress, setFetchLikedProgress] = useState<{ remaining: number; processed: number; unavailable: number } | null>(null)
   const [importingTMDB, setImportingTMDB] = useState(false)
   const [tmdbImportProgress, setTmdbImportProgress] = useState<string | null>(null)
   const [importingIMDB, setImportingIMDB] = useState(false)
@@ -20,6 +23,7 @@ function Settings() {
   const [importingLetterboxd, setImportingLetterboxd] = useState(false)
   const [letterboxdImportProgress, setLetterboxdImportProgress] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const likedFileInputRef = useRef<HTMLInputElement>(null)
   const letterboxdFileInputRef = useRef<HTMLInputElement>(null)
   const { timezone, loading: timezoneLoading, updateTimezone } = useTimezone()
   const [selectedTimezone, setSelectedTimezone] = useState<string>('')
@@ -145,6 +149,96 @@ function Settings() {
 
   const handleImportClick = () => {
     fileInputRef.current?.click()
+  }
+
+  const handleLikedFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const isJson = file.name.endsWith('.json') || file.type === 'application/json'
+    
+    if (!isJson) {
+      toast.error('Please upload a JSON file (MyActivity.json from Google Takeout)')
+      return
+    }
+
+    try {
+      setUploadingLiked(true)
+      const result = await videosAPI.importLiked(file)
+      console.log('Liked videos import result:', result)
+      
+      const message = result.imported > 0 || result.updated > 0
+        ? `Liked videos imported successfully! ${result.imported} new, ${result.updated} updated.`
+        : 'No new liked videos to import.'
+      
+      // Start fetching video details if there are videos queued
+      if (result.fetchQueued > 0) {
+        setFetchingLikedDetails(true)
+        setFetchLikedProgress({ remaining: result.fetchQueued, processed: 0, unavailable: 0 })
+        // Start fetching details in background
+        fetchLikedVideoDetailsInBackground()
+      } else {
+        toast.success(message)
+      }
+      
+      // Reset file input
+      if (likedFileInputRef.current) {
+        likedFileInputRef.current.value = ''
+      }
+    } catch (error: any) {
+      console.error('Error importing liked videos:', error)
+      const errorMessage = error.response?.data?.error || 'Failed to import liked videos'
+      toast.error(errorMessage)
+      
+      // Reset file input
+      if (likedFileInputRef.current) {
+        likedFileInputRef.current.value = ''
+      }
+    } finally {
+      setUploadingLiked(false)
+    }
+  }
+
+  const handleLikedImportClick = () => {
+    likedFileInputRef.current?.click()
+  }
+
+  const fetchLikedVideoDetailsInBackground = async () => {
+    try {
+      let totalProcessed = 0
+      let totalUnavailable = 0
+      
+      while (true) {
+        const result = await videosAPI.fetchDetails()
+        
+        totalProcessed += result.processed || 0
+        totalUnavailable += result.unavailable || 0
+        
+        setFetchLikedProgress({
+          remaining: result.remaining || 0,
+          processed: totalProcessed,
+          unavailable: totalUnavailable,
+        })
+        
+        if (result.status === 'completed' || result.remaining === 0) {
+          // All videos processed
+          setFetchingLikedDetails(false)
+          toast.success(`Video details fetched successfully! ${totalProcessed} processed, ${totalUnavailable} unavailable.`)
+          setFetchLikedProgress(null)
+          break
+        }
+        
+        // Wait a bit before next batch
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    } catch (error: any) {
+      console.error('Error fetching video details:', error)
+      setFetchingLikedDetails(false)
+      const errorMessage = error.response?.data?.error || 'Failed to fetch video details'
+      toast.error(errorMessage)
+      setFetchLikedProgress(null)
+    }
   }
 
   const fetchVideoDetailsInBackground = async () => {
@@ -446,6 +540,38 @@ function Settings() {
                 <Upload className="h-4 w-4" />
                 <span className="hidden sm:inline">{uploading ? 'Uploading...' : 'Import Google Takeout File'}</span>
                 <span className="sm:hidden">{uploading ? 'Uploading...' : 'Import'}</span>
+              </Button>
+            </div>
+
+            {/* Import Liked Videos Section */}
+            <div className="space-y-4 border-t pt-4 md:pt-6">
+              <h2 className="text-lg md:text-xl font-semibold">Import Liked Videos</h2>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Upload your MyActivity.json file from Google Takeout to import your YouTube liked videos. This file contains all your YouTube activity, and only entries with "Liked" in the title will be imported.
+              </p>
+              
+              {fetchingLikedDetails && fetchLikedProgress && (
+                <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
+                  Fetching details... {fetchLikedProgress.remaining} remaining ({fetchLikedProgress.processed} processed, {fetchLikedProgress.unavailable} unavailable)
+                </div>
+              )}
+              
+              <input
+                ref={likedFileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleLikedFileSelect}
+                className="hidden"
+              />
+              
+              <Button
+                onClick={handleLikedImportClick}
+                disabled={uploadingLiked || fetchingLikedDetails}
+                className="gap-2 w-full sm:w-auto"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline">{uploadingLiked ? 'Uploading...' : 'Import MyActivity.json'}</span>
+                <span className="sm:hidden">{uploadingLiked ? 'Uploading...' : 'Import'}</span>
               </Button>
             </div>
 

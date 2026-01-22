@@ -12,6 +12,8 @@ export interface Video {
   channel_title: string | null
   youtube_channel_id: string | null
   youtube_url: string | null
+  is_liked?: boolean
+  liked_at?: string | null
   created_at: string
   updated_at: string
   state?: 'feed' | 'inbox' | 'archive' | null

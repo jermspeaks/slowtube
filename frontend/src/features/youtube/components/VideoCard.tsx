@@ -5,6 +5,7 @@ import { Button } from '@/shared/components/ui/button'
 import { videosAPI } from '../services/api'
 import { toast } from 'sonner'
 import { useNavigate, Link } from 'react-router'
+import LikeButton from './LikeButton'
 
 interface VideoCardProps {
   video: Video
@@ -167,6 +168,15 @@ function VideoCard({ video, onClick, onStateChange, showFeedDate = false, showAd
         </div>
       </div>
       <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+        <LikeButton
+          video={video}
+          onToggle={(isLiked) => {
+            const updatedVideo = { ...video, is_liked: isLiked }
+            handleStateChange(updatedVideo)
+          }}
+          size="sm"
+          variant="ghost"
+        />
         <Button
           onClick={handleOpenInPlayer}
           variant="default"

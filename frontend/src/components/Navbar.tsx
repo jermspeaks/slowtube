@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   List,
+  Heart,
 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -27,6 +28,7 @@ import {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
+  DropdownMenuSeparator,
 } from '@/shared/components/ui/dropdown-menu'
 
 export function Navbar() {
@@ -113,6 +115,19 @@ export function Navbar() {
                       <Link to="/youtube/channel-lists" className="w-full flex items-center gap-2">
                         <List className="h-4 w-4" />
                         Channel Groups
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/youtube/review/liked" className="w-full flex items-center gap-2">
+                        <Heart className="h-4 w-4" />
+                        Liked Videos
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/youtube/review/channels" className="w-full flex items-center gap-2">
+                        <Youtube className="h-4 w-4" />
+                        Liked Channels
                       </Link>
                     </DropdownMenuItem>
                   </DropdownMenuSubContent>

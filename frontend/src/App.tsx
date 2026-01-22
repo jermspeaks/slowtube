@@ -15,6 +15,8 @@ import YouTubeWatchNext from './features/youtube/pages/WatchNext'
 import Archive from './features/youtube/pages/Archive'
 import Tags from './features/youtube/pages/Tags'
 import Player from './features/youtube/pages/Player'
+import LikedVideos from './features/youtube/pages/LikedVideos'
+import LikedChannels from './features/youtube/pages/LikedChannels'
 // Media pages
 import MoviesDashboard from './features/media/pages/MoviesDashboard'
 import TVShowsDashboard from './features/media/pages/TVShowsDashboard'
@@ -72,6 +74,8 @@ function AppRoutes() {
         <Route path="/youtube/archive" element={<Archive />} />
         <Route path="/youtube/tags" element={<Tags />} />
         <Route path="/youtube/player" element={<Player />} />
+        <Route path="/youtube/review/liked" element={<LikedVideos />} />
+        <Route path="/youtube/review/channels" element={<LikedChannels />} />
         <Route path="/youtube/channels/subscribed" element={<ChannelsList />} />
         <Route path="/youtube/channels/watch-later" element={<ChannelsList />} />
         <Route path="/youtube/channels/:channelId/watch-later" element={<ChannelWatchLater />} />

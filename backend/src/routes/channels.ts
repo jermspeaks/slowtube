@@ -635,5 +635,72 @@ router.post('/fetch-latest-all', async (req, res) => {
   }
 })
 
+// Get liked videos for a specific channel
+router.get('/:id/liked', (req, res) => {
+  try {
+    const { id } = req.params
+    const channelId = parseInt(id, 10)
+    
+    if (isNaN(channelId)) {
+      return res.status(400).json({ error: 'Invalid channel ID' })
+    }
+
+    // Verify channel exists
+    const channel = channelQueries.getById(channelId)
+    if (!channel) {
+      return res.status(404).json({ error: 'Channel not found' })
+    }
+
+    const state = req.query.state as string | undefined
+    const search = req.query.search as string | undefined
+    const sortBy = req.query.sortBy as 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | undefined
+    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc'
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
+    const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined
+    const dateField = req.query.dateField as 'published_at' | 'added_to_playlist_at' | undefined
+    const startDate = req.query.startDate as string | undefined
+    const endDate = req.query.endDate as string | undefined
+    const shortsFilter = (req.query.shortsFilter as 'all' | 'exclude' | 'only') || 'all'
+
+    // Get channel title for filtering
+    const channelTitle = channel.channel_title
+
+    const videos = videoQueries.getLikedVideos(
+      state,
+      search,
+      sortBy,
+      sortOrder,
+      channelTitle ? [channelTitle] : undefined,
+      limit,
+      offset,
+      dateField,
+      startDate,
+      endDate,
+      shortsFilter
+    )
+
+    const total = videoQueries.getCount(
+      state,
+      search,
+      channelTitle ? [channelTitle] : undefined,
+      dateField,
+      startDate,
+      endDate,
+      shortsFilter,
+      true // isLiked = true
+    )
+
+    res.json({
+      videos,
+      total,
+      limit: limit || videos.length,
+      offset: offset || 0,
+    })
+  } catch (error: any) {
+    console.error('Error fetching liked videos for channel:', error)
+    res.status(500).json({ error: 'Failed to fetch liked videos for channel' })
+  }
+})
+
 export default router
 

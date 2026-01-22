@@ -4,6 +4,7 @@ import { videosAPI } from '../services/api'
 import TagInput from './TagInput'
 import CommentSection from './CommentSection'
 import VideoPlayer from './VideoPlayer'
+import LikeButton from './LikeButton'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { Button } from '@/shared/components/ui/button'
@@ -210,6 +211,14 @@ function VideoDetailModal({ video, videos = [], onClose, onVideoUpdated, onVideo
           <div className="flex justify-between items-start mb-3">
             <h2 className="m-0 flex-1 text-lg">{video.title}</h2>
             <div className="flex items-center gap-2">
+              <LikeButton
+                video={video}
+                onToggle={(isLiked) => {
+                  onVideoUpdated({ ...video, is_liked: isLiked })
+                }}
+                size="md"
+                variant="ghost"
+              />
               <Button
                 onClick={handleOpenInPlayer}
                 variant="default"

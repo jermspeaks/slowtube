@@ -1,7 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries, videoProgressQueries, videoPlayerSettingsQueries } from '../services/database.js'
-import { importVideosFromTakeout, processBatchVideoFetch, fetchAllVideoDetails, backfillChannelIds } from '../services/youtube.js'
+import { importVideosFromTakeout, importLikedVideosFromActivity, processBatchVideoFetch, fetchAllVideoDetails, backfillChannelIds } from '../services/youtube.js'
 import { formatDurationExtended } from '../utils/duration.js'
 
 const router = express.Router()
@@ -316,6 +316,142 @@ router.post('/import', upload.single('file'), async (req, res) => {
   } catch (error: any) {
     console.error('Error importing videos:', error)
     res.status(500).json({ error: error.message || 'Failed to import videos' })
+  }
+})
+
+// Import liked videos from MyActivity.json
+router.post('/import-liked', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded. Please upload a MyActivity.json file.' })
+    }
+
+    // Validate JSON file
+    const fileName = req.file.originalname.toLowerCase()
+    const isJson = fileName.endsWith('.json') || req.file.mimetype === 'application/json'
+
+    if (!isJson) {
+      return res.status(400).json({ error: 'Invalid file type. Please upload a JSON file (MyActivity.json).' })
+    }
+
+    const fileContent = req.file.buffer.toString('utf-8')
+    let jsonData: any
+    
+    try {
+      jsonData = JSON.parse(fileContent)
+    } catch (parseError: any) {
+      console.error('Error parsing JSON file:', parseError)
+      return res.status(400).json({ error: 'Invalid JSON file. Please upload a valid MyActivity.json file.' })
+    }
+
+    const result = importLikedVideosFromActivity(jsonData)
+    
+    // Count videos queued for fetching
+    const fetchQueued = videoQueries.countPendingFetch()
+    
+    res.json({
+      message: 'Liked videos imported successfully',
+      imported: result.imported,
+      updated: result.updated,
+      skipped: result.skipped,
+      fetchQueued,
+    })
+  } catch (error: any) {
+    console.error('Error importing liked videos:', error)
+    res.status(500).json({ error: error.message || 'Failed to import liked videos' })
+  }
+})
+
+// Get liked videos
+router.get('/liked', (req, res) => {
+  try {
+    const state = req.query.state as string | undefined
+    const search = req.query.search as string | undefined
+    const sortBy = req.query.sortBy as 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | undefined
+    const sortOrder = (req.query.sortOrder as 'asc' | 'desc') || 'desc'
+    const channels = req.query.channels ? (req.query.channels as string).split(',') : undefined
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined
+    const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined
+    const dateField = req.query.dateField as 'published_at' | 'added_to_playlist_at' | undefined
+    const startDate = req.query.startDate as string | undefined
+    const endDate = req.query.endDate as string | undefined
+    const shortsFilter = (req.query.shortsFilter as 'all' | 'exclude' | 'only') || 'all'
+
+    const videos = videoQueries.getLikedVideos(
+      state,
+      search,
+      sortBy,
+      sortOrder,
+      channels,
+      limit,
+      offset,
+      dateField,
+      startDate,
+      endDate,
+      shortsFilter
+    )
+
+    const total = videoQueries.getCount(
+      state,
+      search,
+      channels,
+      dateField,
+      startDate,
+      endDate,
+      shortsFilter,
+      true // isLiked = true
+    )
+
+    res.json({
+      videos,
+      total,
+      limit: limit || videos.length,
+      offset: offset || 0,
+    })
+  } catch (error: any) {
+    console.error('Error fetching liked videos:', error)
+    res.status(500).json({ error: 'Failed to fetch liked videos' })
+  }
+})
+
+// Toggle like status for a video
+router.patch('/:id/like', (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10)
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid video ID' })
+    }
+
+    const { is_liked, liked_at } = req.body
+    if (typeof is_liked !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid is_liked value. Must be a boolean.' })
+    }
+
+    // Verify video exists
+    const video = videoQueries.getById(id)
+    if (!video) {
+      return res.status(404).json({ error: 'Video not found' })
+    }
+
+    videoQueries.toggleLike(id, is_liked, liked_at)
+    
+    // Fetch updated video
+    const updatedVideo = videoQueries.getById(id)
+    res.json({ message: 'Like status updated successfully', video: updatedVideo })
+  } catch (error: any) {
+    console.error('Error updating like status:', error)
+    res.status(500).json({ error: 'Failed to update like status' })
+  }
+})
+
+// Get channels from liked videos
+router.get('/channels/liked', (req, res) => {
+  try {
+    const channels = videoQueries.getChannelsFromLikedVideos()
+    res.json({ channels })
+  } catch (error: any) {
+    console.error('Error fetching channels from liked videos:', error)
+    res.status(500).json({ error: 'Failed to fetch channels from liked videos' })
   }
 })
 

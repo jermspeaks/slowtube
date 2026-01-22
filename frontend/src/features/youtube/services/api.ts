@@ -132,6 +132,84 @@ export const videosAPI = {
     const response = await api.patch(`/api/videos/${id}/player-settings`, settings)
     return response.data
   },
+  importLiked: async (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await api.post('/api/videos/import-liked', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+  getLikedVideos: async (
+    state?: string,
+    search?: string,
+    sortBy?: 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at',
+    sortOrder?: 'asc' | 'desc',
+    channels?: string[],
+    limit?: number,
+    offset?: number,
+    dateField?: 'added_to_playlist_at' | 'published_at',
+    startDate?: string,
+    endDate?: string,
+    shortsFilter?: 'all' | 'exclude' | 'only'
+  ) => {
+    const params = buildQueryParams({
+      state,
+      search,
+      sortBy,
+      sortOrder,
+      channels: channels && channels.length > 0 ? channels.join(',') : undefined,
+      limit,
+      offset,
+      dateField,
+      startDate,
+      endDate,
+      shortsFilter,
+    })
+    const response = await api.get('/api/videos/liked', { params })
+    return response.data
+  },
+  toggleLike: async (videoId: number, isLiked: boolean, likedAt?: string) => {
+    const response = await api.patch(`/api/videos/${videoId}/like`, { 
+      is_liked: isLiked,
+      liked_at: likedAt 
+    })
+    return response.data
+  },
+  getChannelsFromLikedVideos: async () => {
+    const response = await api.get('/api/videos/channels/liked')
+    return response.data
+  },
+  getChannelLikedVideos: async (
+    channelId: string,
+    state?: string,
+    search?: string,
+    sortBy?: 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at',
+    sortOrder?: 'asc' | 'desc',
+    limit?: number,
+    offset?: number,
+    dateField?: 'added_to_playlist_at' | 'published_at',
+    startDate?: string,
+    endDate?: string,
+    shortsFilter?: 'all' | 'exclude' | 'only'
+  ) => {
+    const params = buildQueryParams({
+      state,
+      search,
+      sortBy,
+      sortOrder,
+      limit,
+      offset,
+      dateField,
+      startDate,
+      endDate,
+      shortsFilter,
+    })
+    const response = await api.get(`/api/channels/${channelId}/liked`, { params })
+    return response.data
+  },
 }
 
 // Channels API

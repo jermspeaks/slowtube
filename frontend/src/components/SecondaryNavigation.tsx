@@ -11,6 +11,7 @@ import {
   Calendar,
   TrendingUp,
   Archive,
+  Heart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -104,6 +105,21 @@ export function SecondaryNavigation() {
           label: 'Watch Later',
           icon: Clock,
           path: '/youtube/channels/watch-later',
+        },
+      ],
+    },
+    {
+      label: 'Review',
+      items: [
+        {
+          label: 'Liked Videos',
+          icon: Heart,
+          path: '/youtube/review/liked',
+        },
+        {
+          label: 'Channels',
+          icon: Youtube,
+          path: '/youtube/review/channels',
         },
       ],
     },

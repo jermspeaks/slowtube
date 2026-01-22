@@ -3,6 +3,7 @@ import { Video } from '../types/video'
 import { format } from 'date-fns'
 import TagInput from './TagInput'
 import CommentSection from './CommentSection'
+import LikeButton from './LikeButton'
 
 interface PlayerMetadataProps {
   video: Video
@@ -11,6 +12,7 @@ interface PlayerMetadataProps {
   onCommentAdded: (comment: any) => void
   onCommentUpdated: (comment: any) => void
   onCommentRemoved: (commentId: number) => void
+  onVideoUpdated?: (video: Video) => void
   collapsed?: boolean
   onToggleCollapse?: () => void
 }
@@ -22,6 +24,7 @@ function PlayerMetadata({
   onCommentAdded,
   onCommentUpdated,
   onCommentRemoved,
+  onVideoUpdated,
   collapsed = false,
   onToggleCollapse,
 }: PlayerMetadataProps) {
@@ -92,7 +95,21 @@ function PlayerMetadata({
           {video.title} ▲
         </button>
       )}
-      {!onToggleCollapse && <h2 className="text-lg font-bold">{video.title}</h2>}
+      {!onToggleCollapse && (
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold flex-1">{video.title}</h2>
+          {onVideoUpdated && (
+            <LikeButton
+              video={video}
+              onToggle={(isLiked) => {
+                onVideoUpdated({ ...video, is_liked: isLiked })
+              }}
+              size="md"
+              variant="ghost"
+            />
+          )}
+        </div>
+      )}
 
       <div className="flex gap-4 text-xs text-muted-foreground flex-wrap">
         {video.channel_title && <span>Channel: {video.channel_title}</span>}

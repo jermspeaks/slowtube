@@ -267,6 +267,140 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
   }
 }
 
+// Parse MyActivity.json and extract liked videos
+export function parseLikedVideosFromActivityJSON(jsonData: any): Array<{
+  id: string
+  title: string
+  likedAt: string | null
+}> {
+  if (!Array.isArray(jsonData)) {
+    throw new Error('Invalid JSON format: expected an array of activity entries')
+  }
+
+  const videos: Array<{
+    id: string
+    title: string
+    likedAt: string | null
+  }> = []
+
+  for (const entry of jsonData) {
+    const entryObj = entry as GoogleTakeoutWatchHistoryEntry
+    
+    // Only process entries with "Liked " prefix in title
+    if (!entryObj.title || !entryObj.title.startsWith('Liked ')) continue
+    
+    // Skip entries without titleUrl (not YouTube videos)
+    if (!entryObj.titleUrl) continue
+    
+    // Extract video ID from URL
+    const videoId = extractVideoId(entryObj.titleUrl)
+    if (!videoId) continue
+    
+    // Skip if we already have this video (takeout may have duplicates)
+    if (videos.find(v => v.id === videoId)) continue
+    
+    // Strip "Liked " prefix from title
+    const title = entryObj.title.replace(/^Liked /, '')
+    
+    videos.push({
+      id: videoId,
+      title: title || 'Untitled Video',
+      likedAt: entryObj.time || null,
+    })
+  }
+
+  console.log(`Parsed ${videos.length} unique liked videos from MyActivity.json`)
+  return videos
+}
+
+// Import liked videos from MyActivity.json into database
+export function importLikedVideosFromActivity(data: any): { imported: number; updated: number; skipped: number } {
+  try {
+    const parsedVideos = parseLikedVideosFromActivityJSON(data)
+    
+    let imported = 0
+    let updated = 0
+    let skipped = 0
+    let firstImported = false
+
+    for (const video of parsedVideos) {
+      const existingVideo = videoQueries.getByYoutubeId(video.id)
+
+      if (existingVideo) {
+        // Update existing video
+        const updateData: any = {
+          is_liked: 1,
+          youtube_url: `https://www.youtube.com/watch?v=${video.id}`,
+        }
+        
+        // Update liked_at if it's newer or doesn't exist
+        if (video.likedAt) {
+          if (!existingVideo.liked_at || new Date(video.likedAt) > new Date(existingVideo.liked_at)) {
+            updateData.liked_at = video.likedAt
+          }
+        }
+        
+        videoQueries.update(existingVideo.id, updateData)
+        
+        // Set state to inbox if not already set
+        const currentState = videoStateQueries.getByVideoId(existingVideo.id)
+        if (!currentState) {
+          videoStateQueries.setState(existingVideo.id, 'inbox')
+        }
+        
+        updated++
+        
+        if (!firstImported) {
+          console.log('First liked video updated:', {
+            id: existingVideo.id,
+            youtube_id: video.id,
+            liked_at: video.likedAt,
+          })
+          firstImported = true
+        }
+      } else {
+        // Create new video
+        const videoData = {
+          youtube_id: video.id,
+          title: 'Untitled Video', // Will be updated by YouTube API fetch
+          description: null, // Will be updated by YouTube API fetch
+          thumbnail_url: getThumbnailUrl(video.id), // Temporary thumbnail, may be updated by API
+          duration: null, // Will be updated by YouTube API fetch
+          published_at: null, // Will be fetched from YouTube API
+          added_to_playlist_at: null,
+          fetch_status: 'pending' as const, // Mark as pending for YouTube API fetch
+          youtube_channel_id: null, // Will be updated by YouTube API fetch
+          youtube_url: `https://www.youtube.com/watch?v=${video.id}`, // Construct URL from video ID
+          is_liked: 1,
+          liked_at: video.likedAt,
+        }
+        
+        const videoId = videoQueries.create(videoData)
+        
+        // Set initial state to 'inbox'
+        videoStateQueries.setState(videoId, 'inbox')
+        imported++
+        
+        if (!firstImported) {
+          console.log('First liked video imported:', {
+            id: videoId,
+            youtube_id: video.id,
+            liked_at: video.likedAt,
+            state: 'inbox',
+          })
+          firstImported = true
+        }
+      }
+    }
+
+    console.log(`Liked videos import complete: ${imported} imported, ${updated} updated, ${skipped} skipped`)
+    return { imported, updated, skipped }
+  } catch (error) {
+    console.error('Error importing liked videos:', error)
+    throw error
+  }
+}
+
 // YouTube API video details interface
 export interface YouTubeVideoDetails {
   id: string
