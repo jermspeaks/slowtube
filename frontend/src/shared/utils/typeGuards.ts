@@ -64,3 +64,27 @@ export function isValidPage(value: string | null): value is string {
   const pageNum = parseInt(value, 10)
   return !isNaN(pageNum) && pageNum > 0
 }
+
+export function isVideoSortBy(
+  value: string | null
+): value is 'published_at' | 'added_to_playlist_at' | 'archived_at' {
+  return value === 'published_at' || value === 'added_to_playlist_at' || value === 'archived_at'
+}
+
+export function isDateField(
+  value: string | null
+): value is 'added_to_playlist_at' | 'published_at' {
+  return value === 'added_to_playlist_at' || value === 'published_at'
+}
+
+export function isShortsFilter(
+  value: string | null
+): value is 'all' | 'exclude' | 'only' {
+  return value === 'all' || value === 'exclude' || value === 'only'
+}
+
+export function isViewMode(
+  value: string | null
+): value is 'card' | 'table' {
+  return value === 'card' || value === 'table'
+}
