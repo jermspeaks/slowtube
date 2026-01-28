@@ -45,6 +45,11 @@ export function useURLParams<T extends Record<string, any>>(
     // Also check against last serialized state to handle race conditions
     // If there's a pending state update, don't sync from URL (user just changed state, URL hasn't caught up yet)
     if (currentParamsStr === expectedParamsStr || currentParamsStr === lastSerializedStateRef.current || pendingStateUpdateRef.current) {
+      // If URL now matches expected state and we had a pending update, clear the flag
+      // This means the URL has caught up with our state change
+      if (pendingStateUpdateRef.current && currentParamsStr === expectedParamsStr) {
+        pendingStateUpdateRef.current = false
+      }
       return
     }
 
@@ -90,12 +95,17 @@ export function useURLParams<T extends Record<string, any>>(
 
     if (currentParams !== newParams) {
       lastSerializedStateRef.current = newParams
-      pendingStateUpdateRef.current = false
+      // Don't clear pendingStateUpdateRef here - let it be cleared in the URL sync effect
+      // when it confirms the URL has been updated. This ensures the flag persists through
+      // the entire URL update cycle, preventing race conditions.
       setSearchParams(params, { replace: true })
     } else {
       // Update ref even if params didn't change (to track current state)
+      // If params didn't change, we can clear the flag immediately since there's no URL update pending
       lastSerializedStateRef.current = newParams
-      pendingStateUpdateRef.current = false
+      if (pendingStateUpdateRef.current) {
+        pendingStateUpdateRef.current = false
+      }
     }
   }, [state, serialize, searchParams, setSearchParams])
 
