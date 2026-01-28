@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ViewMode } from '../types/video'
 
 interface FiltersAndSortProps {
   searchQuery: string
@@ -6,8 +7,8 @@ interface FiltersAndSortProps {
   selectedChannels: string[]
   onSelectedChannelsChange: (channels: string[]) => void
   availableChannels: string[]
-  sortBy: 'published_at' | 'added_to_playlist_at' | 'archived_at' | null
-  onSortByChange: (value: 'published_at' | 'added_to_playlist_at' | 'archived_at' | null) => void
+  sortBy: 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | null
+  onSortByChange: (value: 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | null) => void
   sortOrder: 'asc' | 'desc'
   onSortOrderChange: (value: 'asc' | 'desc') => void
   dateField: 'added_to_playlist_at' | 'published_at' | null
@@ -20,6 +21,8 @@ interface FiltersAndSortProps {
   onShortsFilterChange: (value: 'all' | 'exclude' | 'only') => void
   stateFilter?: 'feed' | 'inbox' | 'archive' | null
   onStateFilterChange?: (value: 'feed' | 'inbox' | 'archive' | null) => void
+  viewMode?: ViewMode
+  onViewModeChange?: (mode: ViewMode) => void
 }
 
 function FiltersAndSort({
@@ -42,6 +45,8 @@ function FiltersAndSort({
   onShortsFilterChange,
   stateFilter,
   onStateFilterChange,
+  viewMode,
+  onViewModeChange,
 }: FiltersAndSortProps) {
   const [showMore, setShowMore] = useState(false)
 
@@ -52,9 +57,9 @@ function FiltersAndSort({
     } else {
       const lastUnderscoreIndex = value.lastIndexOf('_')
       if (lastUnderscoreIndex !== -1) {
-        const by = value.substring(0, lastUnderscoreIndex) as 'published_at' | 'added_to_playlist_at' | 'archived_at'
+        const by = value.substring(0, lastUnderscoreIndex) as 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at'
         const order = value.substring(lastUnderscoreIndex + 1) as 'asc' | 'desc'
-        if ((by === 'published_at' || by === 'added_to_playlist_at' || by === 'archived_at') && (order === 'asc' || order === 'desc')) {
+        if ((by === 'published_at' || by === 'added_to_playlist_at' || by === 'archived_at' || by === 'liked_at') && (order === 'asc' || order === 'desc')) {
           onSortByChange(by)
           onSortOrderChange(order)
         }
@@ -199,8 +204,39 @@ function FiltersAndSort({
                   <option value="added_to_playlist_at_asc">Date Added (Oldest)</option>
                   <option value="archived_at_desc">Date Archived (Newest)</option>
                   <option value="archived_at_asc">Date Archived (Oldest)</option>
+                  <option value="liked_at_desc">Date Liked (Newest)</option>
+                  <option value="liked_at_asc">Date Liked (Oldest)</option>
                 </select>
               </div>
+
+              {/* View Mode - only show if onViewModeChange is provided */}
+              {onViewModeChange && (
+                <div className="flex gap-2 items-center">
+                  <label className="font-semibold text-sm text-foreground whitespace-nowrap">View:</label>
+                  <div className="flex gap-2 flex-1">
+                    <button
+                      onClick={() => onViewModeChange('card')}
+                      className={`px-3 py-2 border rounded text-sm transition-colors flex-1 ${
+                        viewMode === 'card'
+                          ? 'bg-primary text-primary-foreground border-primary font-medium'
+                          : 'bg-background text-foreground border-border hover:bg-accent'
+                      }`}
+                    >
+                      Cards
+                    </button>
+                    <button
+                      onClick={() => onViewModeChange('table')}
+                      className={`px-3 py-2 border rounded text-sm transition-colors flex-1 ${
+                        viewMode === 'table'
+                          ? 'bg-primary text-primary-foreground border-primary font-medium'
+                          : 'bg-background text-foreground border-border hover:bg-accent'
+                      }`}
+                    >
+                      Table
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Date Range inputs and presets - shown when dateField is selected */}

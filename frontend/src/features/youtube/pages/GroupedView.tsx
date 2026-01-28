@@ -9,6 +9,26 @@ import FiltersAndSort from '../components/FiltersAndSort'
 import { toast } from 'sonner'
 import { Pagination } from '@/shared/components/Pagination'
 import { useEntityListState } from '@/shared/hooks/useEntityListState'
+import { useURLParams } from '@/shared/hooks/useURLParams'
+import {
+  isVideoSortBy,
+  isSortOrder,
+  isDateField,
+  isShortsFilter,
+  isValidPage,
+} from '@/shared/utils/typeGuards'
+
+type GroupedViewFilters = {
+  search: string
+  sortBy: 'published_at' | 'added_to_playlist_at' | null
+  sortOrder: 'asc' | 'desc'
+  channels: string[]
+  dateField: 'added_to_playlist_at' | 'published_at' | null
+  startDate: string | null
+  endDate: string | null
+  shortsFilter: 'all' | 'exclude' | 'only'
+  currentPage: number
+}
 
 function GroupedView() {
   const [loading, setLoading] = useState(true)
@@ -26,18 +46,98 @@ function GroupedView() {
     },
   })
   const [viewMode, setViewMode] = useState<ViewMode>('card')
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
-  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | null>('added_to_playlist_at')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
-  const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [availableChannels, setAvailableChannels] = useState<string[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
-  const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
-  const [startDate, setStartDate] = useState<string | null>(null)
-  const [endDate, setEndDate] = useState<string | null>(null)
-  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('all')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState<string>('')
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const defaults: GroupedViewFilters = {
+    search: '',
+    sortBy: 'added_to_playlist_at',
+    sortOrder: 'asc',
+    channels: [],
+    dateField: null,
+    startDate: null,
+    endDate: null,
+    shortsFilter: 'all',
+    currentPage: 1,
+  }
+
+  const [filters, updateFilters] = useURLParams<GroupedViewFilters>({
+    defaults,
+    serialize: (state) => {
+      const params = new URLSearchParams()
+      if (state.search) {
+        params.set('search', state.search)
+      }
+      if (state.sortBy && state.sortBy !== 'added_to_playlist_at') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      } else if (state.sortBy === 'added_to_playlist_at' && state.sortOrder !== 'asc') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      }
+      if (state.channels.length > 0) {
+        params.set('channels', state.channels.join(','))
+      }
+      if (state.dateField) {
+        params.set('dateField', state.dateField)
+      }
+      if (state.startDate) {
+        params.set('startDate', state.startDate)
+      }
+      if (state.endDate) {
+        params.set('endDate', state.endDate)
+      }
+      if (state.shortsFilter !== 'all') {
+        params.set('shortsFilter', state.shortsFilter)
+      }
+      if (state.currentPage > 1) {
+        params.set('page', state.currentPage.toString())
+      }
+      return params
+    },
+    deserialize: (params) => {
+      const result: Partial<GroupedViewFilters> = {}
+      const search = params.get('search')
+      if (search) result.search = search
+      const sortBy = params.get('sortBy')
+      if (isVideoSortBy(sortBy) && sortBy !== 'archived_at') {
+        result.sortBy = sortBy
+      }
+      const sortOrder = params.get('sortOrder')
+      if (isSortOrder(sortOrder)) {
+        result.sortOrder = sortOrder
+      }
+      const channels = params.get('channels')
+      if (channels) {
+        result.channels = channels.split(',').filter(Boolean)
+      }
+      const dateField = params.get('dateField')
+      if (isDateField(dateField)) {
+        result.dateField = dateField
+      }
+      const startDate = params.get('startDate')
+      if (startDate) result.startDate = startDate
+      const endDate = params.get('endDate')
+      if (endDate) result.endDate = endDate
+      const shortsFilter = params.get('shortsFilter')
+      if (isShortsFilter(shortsFilter)) {
+        result.shortsFilter = shortsFilter
+      }
+      const page = params.get('page')
+      if (isValidPage(page)) {
+        result.currentPage = parseInt(page, 10)
+      }
+      return result
+    },
+  })
+
+  const [searchQuery, setSearchQuery] = useState<string>(filters.search)
+
+  // Sync searchQuery with filters.search when URL changes
+  useEffect(() => {
+    setSearchQuery(filters.search)
+  }, [filters.search])
 
   useEffect(() => {
     loadChannels()
@@ -61,15 +161,15 @@ function GroupedView() {
       const response = await videosAPI.getAll(
         undefined, // Fetch all videos regardless of state
         debouncedSearchQuery || undefined,
-        sortBy || undefined,
-        sortBy ? sortOrder : undefined,
-        selectedChannels.length > 0 ? selectedChannels : undefined,
+        filters.sortBy || undefined,
+        filters.sortBy ? filters.sortOrder : undefined,
+        filters.channels.length > 0 ? filters.channels : undefined,
         1, // page - start at page 1
         100000, // limit - use a very large number to fetch all videos for grouping
-        dateField || undefined,
-        startDate || undefined,
-        endDate || undefined,
-        shortsFilter
+        filters.dateField || undefined,
+        filters.startDate || undefined,
+        filters.endDate || undefined,
+        filters.shortsFilter
       )
       // Extract videos array from response (response has { videos: [...], pagination: {... } })
       setVideos(response.videos || response || [])
@@ -116,6 +216,7 @@ function GroupedView() {
 
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery)
+      updateFilters({ search: searchQuery })
     }, 500) // 500ms debounce
 
     return () => {
@@ -123,23 +224,47 @@ function GroupedView() {
         clearTimeout(searchTimeoutRef.current)
       }
     }
-  }, [searchQuery])
+  }, [searchQuery, updateFilters])
 
+  // Reset to page 1 when filters change (except page itself)
+  const prevFiltersRef = useRef<Partial<GroupedViewFilters>>({})
   useEffect(() => {
-    // Reset to page 1 when filters change
-    setCurrentPage(1)
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
+    const prev = prevFiltersRef.current
+    const filtersChanged =
+      prev.search !== filters.search ||
+      prev.sortBy !== filters.sortBy ||
+      prev.sortOrder !== filters.sortOrder ||
+      prev.channels?.length !== filters.channels.length ||
+      prev.dateField !== filters.dateField ||
+      prev.startDate !== filters.startDate ||
+      prev.endDate !== filters.endDate ||
+      prev.shortsFilter !== filters.shortsFilter
+
+    if (filtersChanged) {
+      updateFilters({ currentPage: 1 })
+      prevFiltersRef.current = {
+        search: filters.search,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        channels: filters.channels,
+        dateField: filters.dateField,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        shortsFilter: filters.shortsFilter,
+      }
+    }
+  }, [filters.search, filters.sortBy, filters.sortOrder, filters.channels, filters.dateField, filters.startDate, filters.endDate, filters.shortsFilter, updateFilters])
 
   useEffect(() => {
     // Only show loading on initial load, not for filter changes
     loadVideos(isInitialLoad.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter])
+  }, [debouncedSearchQuery, filters.sortBy, filters.sortOrder, filters.channels, filters.dateField, filters.startDate, filters.endDate, filters.shortsFilter])
 
   const groupedVideos = groupVideosByChannel(videos)
   const allChannelNames = Object.keys(groupedVideos).sort()
   const totalPages = Math.ceil(allChannelNames.length / 10)
-  const paginatedChannelNames = allChannelNames.slice((currentPage - 1) * 10, currentPage * 10)
+  const paginatedChannelNames = allChannelNames.slice((filters.currentPage - 1) * 10, filters.currentPage * 10)
 
   return (
     <div className="min-h-screen bg-background">
@@ -149,21 +274,21 @@ function GroupedView() {
             <FiltersAndSort
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
-              selectedChannels={selectedChannels}
-              onSelectedChannelsChange={setSelectedChannels}
+              selectedChannels={filters.channels}
+              onSelectedChannelsChange={(channels) => updateFilters({ channels })}
               availableChannels={availableChannels}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-              sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
-              dateField={dateField}
-              onDateFieldChange={setDateField}
-              startDate={startDate}
-              onStartDateChange={setStartDate}
-              endDate={endDate}
-              onEndDateChange={setEndDate}
-              shortsFilter={shortsFilter}
-              onShortsFilterChange={setShortsFilter}
+              sortBy={filters.sortBy}
+              onSortByChange={(value) => updateFilters({ sortBy: value })}
+              sortOrder={filters.sortOrder}
+              onSortOrderChange={(value) => updateFilters({ sortOrder: value })}
+              dateField={filters.dateField}
+              onDateFieldChange={(value) => updateFilters({ dateField: value })}
+              startDate={filters.startDate}
+              onStartDateChange={(value) => updateFilters({ startDate: value })}
+              endDate={filters.endDate}
+              onEndDateChange={(value) => updateFilters({ endDate: value })}
+              shortsFilter={filters.shortsFilter}
+              onShortsFilterChange={(value) => updateFilters({ shortsFilter: value })}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
@@ -233,9 +358,9 @@ function GroupedView() {
               </div>
             )}
             <Pagination
-              currentPage={currentPage}
+              currentPage={filters.currentPage}
               totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              onPageChange={(page) => updateFilters({ currentPage: page })}
             />
           </>
         )}

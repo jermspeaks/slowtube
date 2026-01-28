@@ -11,6 +11,34 @@ import { usePreserveScrollPosition } from '@/shared/hooks/usePreserveScrollPosit
 import { Pagination } from '@/shared/components/Pagination'
 import { useDebounce } from '@/shared/hooks/useDebounce'
 import { useEntityListState } from '@/shared/hooks/useEntityListState'
+import { useURLParams } from '@/shared/hooks/useURLParams'
+import {
+  isSortOrder,
+  isDateField,
+  isShortsFilter,
+  isValidPage,
+} from '@/shared/utils/typeGuards'
+
+type LikedVideosFilters = {
+  search: string
+  sortBy: 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | null
+  sortOrder: 'asc' | 'desc'
+  channels: string[]
+  dateField: 'added_to_playlist_at' | 'published_at' | null
+  startDate: string | null
+  endDate: string | null
+  shortsFilter: 'all' | 'exclude' | 'only'
+  stateFilter: 'feed' | 'inbox' | 'archive' | null
+  currentPage: number
+}
+
+function isLikedVideosSortBy(value: string | null): value is 'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' {
+  return value === 'published_at' || value === 'added_to_playlist_at' || value === 'archived_at' || value === 'liked_at'
+}
+
+function isStateFilter(value: string | null): value is 'feed' | 'inbox' | 'archive' {
+  return value === 'feed' || value === 'inbox' || value === 'archive'
+}
 
 function LikedVideos() {
   const [loading, setLoading] = useState(true)
@@ -28,19 +56,106 @@ function LikedVideos() {
     },
   })
   const [viewMode, setViewMode] = useState<ViewMode>('card')
-  const [searchQuery, setSearchQuery] = useState<string>('')
-  const debouncedSearchQuery = useDebounce(searchQuery, 500)
-  const [sortBy, setSortBy] = useState<'published_at' | 'added_to_playlist_at' | 'archived_at' | 'liked_at' | null>('liked_at')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [availableChannels, setAvailableChannels] = useState<string[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [dateField, setDateField] = useState<'added_to_playlist_at' | 'published_at' | null>(null)
-  const [startDate, setStartDate] = useState<string | null>(null)
-  const [endDate, setEndDate] = useState<string | null>(null)
-  const [shortsFilter, setShortsFilter] = useState<'all' | 'exclude' | 'only'>('all')
-  const [stateFilter, setStateFilter] = useState<'feed' | 'inbox' | 'archive' | null>(null)
+
+  const defaults: LikedVideosFilters = {
+    search: '',
+    sortBy: 'liked_at',
+    sortOrder: 'desc',
+    channels: [],
+    dateField: null,
+    startDate: null,
+    endDate: null,
+    shortsFilter: 'all',
+    stateFilter: null,
+    currentPage: 1,
+  }
+
+  const [filters, updateFilters] = useURLParams<LikedVideosFilters>({
+    defaults,
+    serialize: (state) => {
+      const params = new URLSearchParams()
+      if (state.search) {
+        params.set('search', state.search)
+      }
+      if (state.sortBy && state.sortBy !== 'liked_at') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      } else if (state.sortBy === 'liked_at' && state.sortOrder !== 'desc') {
+        params.set('sortBy', state.sortBy)
+        params.set('sortOrder', state.sortOrder)
+      }
+      if (state.channels.length > 0) {
+        params.set('channels', state.channels.join(','))
+      }
+      if (state.dateField) {
+        params.set('dateField', state.dateField)
+      }
+      if (state.startDate) {
+        params.set('startDate', state.startDate)
+      }
+      if (state.endDate) {
+        params.set('endDate', state.endDate)
+      }
+      if (state.shortsFilter !== 'all') {
+        params.set('shortsFilter', state.shortsFilter)
+      }
+      if (state.stateFilter) {
+        params.set('stateFilter', state.stateFilter)
+      }
+      if (state.currentPage > 1) {
+        params.set('page', state.currentPage.toString())
+      }
+      return params
+    },
+    deserialize: (params) => {
+      const result: Partial<LikedVideosFilters> = {}
+      const search = params.get('search')
+      if (search) result.search = search
+      const sortBy = params.get('sortBy')
+      if (isLikedVideosSortBy(sortBy)) {
+        result.sortBy = sortBy
+      }
+      const sortOrder = params.get('sortOrder')
+      if (isSortOrder(sortOrder)) {
+        result.sortOrder = sortOrder
+      }
+      const channels = params.get('channels')
+      if (channels) {
+        result.channels = channels.split(',').filter(Boolean)
+      }
+      const dateField = params.get('dateField')
+      if (isDateField(dateField)) {
+        result.dateField = dateField
+      }
+      const startDate = params.get('startDate')
+      if (startDate) result.startDate = startDate
+      const endDate = params.get('endDate')
+      if (endDate) result.endDate = endDate
+      const shortsFilter = params.get('shortsFilter')
+      if (isShortsFilter(shortsFilter)) {
+        result.shortsFilter = shortsFilter
+      }
+      const stateFilter = params.get('stateFilter')
+      if (isStateFilter(stateFilter)) {
+        result.stateFilter = stateFilter
+      }
+      const page = params.get('page')
+      if (isValidPage(page)) {
+        result.currentPage = parseInt(page, 10)
+      }
+      return result
+    },
+  })
+
+  const [searchQuery, setSearchQuery] = useState<string>(filters.search)
+  const debouncedSearchQuery = useDebounce(searchQuery, 500)
+
+  // Sync searchQuery with filters.search when URL changes
+  useEffect(() => {
+    setSearchQuery(filters.search)
+  }, [filters.search])
 
   // Preserve scroll position when navigating
   usePreserveScrollPosition(loading)
@@ -65,20 +180,20 @@ function LikedVideos() {
         setLoading(true)
       }
       const limit = 100
-      const offset = (currentPage - 1) * limit
+      const offset = (filters.currentPage - 1) * limit
       
       const response = await videosAPI.getLikedVideos(
-        stateFilter || undefined,
+        filters.stateFilter || undefined,
         debouncedSearchQuery || undefined,
-        sortBy || undefined,
-        sortBy ? sortOrder : undefined,
-        selectedChannels.length > 0 ? selectedChannels : undefined,
+        filters.sortBy || undefined,
+        filters.sortBy ? filters.sortOrder : undefined,
+        filters.channels.length > 0 ? filters.channels : undefined,
         limit,
         offset,
-        dateField || undefined,
-        startDate || undefined,
-        endDate || undefined,
-        shortsFilter
+        filters.dateField || undefined,
+        filters.startDate || undefined,
+        filters.endDate || undefined,
+        filters.shortsFilter
       )
       
       setVideos(response.videos || [])
@@ -114,16 +229,42 @@ function LikedVideos() {
     }
   }
 
+  // Reset to page 1 when filters change (except page itself)
+  const prevFiltersRef = useRef<Partial<LikedVideosFilters>>({})
   useEffect(() => {
-    // Reset to page 1 when filters change
-    setCurrentPage(1)
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, dateField, startDate, endDate, shortsFilter, stateFilter])
+    const prev = prevFiltersRef.current
+    const filtersChanged =
+      prev.search !== filters.search ||
+      prev.sortBy !== filters.sortBy ||
+      prev.sortOrder !== filters.sortOrder ||
+      prev.channels?.length !== filters.channels.length ||
+      prev.dateField !== filters.dateField ||
+      prev.startDate !== filters.startDate ||
+      prev.endDate !== filters.endDate ||
+      prev.shortsFilter !== filters.shortsFilter ||
+      prev.stateFilter !== filters.stateFilter
+
+    if (filtersChanged) {
+      updateFilters({ currentPage: 1 })
+      prevFiltersRef.current = {
+        search: filters.search,
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        channels: filters.channels,
+        dateField: filters.dateField,
+        startDate: filters.startDate,
+        endDate: filters.endDate,
+        shortsFilter: filters.shortsFilter,
+        stateFilter: filters.stateFilter,
+      }
+    }
+  }, [filters.search, filters.sortBy, filters.sortOrder, filters.channels, filters.dateField, filters.startDate, filters.endDate, filters.shortsFilter, filters.stateFilter, updateFilters])
 
   useEffect(() => {
     // Only show loading on initial load, not for filter changes
     loadVideos(isInitialLoad.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchQuery, sortBy, sortOrder, selectedChannels, currentPage, dateField, startDate, endDate, shortsFilter, stateFilter])
+  }, [debouncedSearchQuery, filters.sortBy, filters.sortOrder, filters.channels, filters.currentPage, filters.dateField, filters.startDate, filters.endDate, filters.shortsFilter, filters.stateFilter])
 
   return (
     <>
@@ -133,24 +274,27 @@ function LikedVideos() {
           <div className="flex-1 min-w-0">
             <FiltersAndSort
               searchQuery={searchQuery}
-              onSearchQueryChange={setSearchQuery}
-              selectedChannels={selectedChannels}
-              onSelectedChannelsChange={setSelectedChannels}
+              onSearchQueryChange={(value) => {
+                setSearchQuery(value)
+                updateFilters({ search: value })
+              }}
+              selectedChannels={filters.channels}
+              onSelectedChannelsChange={(channels) => updateFilters({ channels })}
               availableChannels={availableChannels}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-              sortOrder={sortOrder}
-              onSortOrderChange={setSortOrder}
-              dateField={dateField}
-              onDateFieldChange={setDateField}
-              startDate={startDate}
-              onStartDateChange={setStartDate}
-              endDate={endDate}
-              onEndDateChange={setEndDate}
-              shortsFilter={shortsFilter}
-              onShortsFilterChange={setShortsFilter}
-              stateFilter={stateFilter}
-              onStateFilterChange={setStateFilter}
+              sortBy={filters.sortBy}
+              onSortByChange={(value) => updateFilters({ sortBy: value })}
+              sortOrder={filters.sortOrder}
+              onSortOrderChange={(value) => updateFilters({ sortOrder: value })}
+              dateField={filters.dateField}
+              onDateFieldChange={(value) => updateFilters({ dateField: value })}
+              startDate={filters.startDate}
+              onStartDateChange={(value) => updateFilters({ startDate: value })}
+              endDate={filters.endDate}
+              onEndDateChange={(value) => updateFilters({ endDate: value })}
+              shortsFilter={filters.shortsFilter}
+              onShortsFilterChange={(value) => updateFilters({ shortsFilter: value })}
+              stateFilter={filters.stateFilter}
+              onStateFilterChange={(value) => updateFilters({ stateFilter: value })}
             />
           </div>
           <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
@@ -191,9 +335,9 @@ function LikedVideos() {
             />
           )}
           <Pagination
-            currentPage={currentPage}
+            currentPage={filters.currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => updateFilters({ currentPage: page })}
           />
         </>
       )}
