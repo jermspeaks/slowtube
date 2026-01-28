@@ -232,7 +232,7 @@ export function SecondaryNavigation() {
   }
 
   return (
-    <aside className="w-48 bg-muted/30 border-r border-border flex flex-col h-full">
+    <aside className="w-48 bg-sidebar border-r border-border flex flex-col h-full">
       <div className="p-4 border-b border-border">
         <h3 className="text-sm font-semibold text-foreground">
           {getActiveSection() === 'youtube' && 'YouTube'}
