@@ -35,7 +35,8 @@ export const tvShowsAPI = {
   },
   search: async (query: string) => {
     const response = await api.post('/api/tv-shows/search', { query })
-    return response.data
+    // Backend sends { data: results }; return the array so modal can use results.length / results.map
+    return response.data?.data ?? response.data ?? []
   },
   create: async (tmdbId: number) => {
     const response = await api.post('/api/tv-shows', { tmdbId })
@@ -126,7 +127,8 @@ export const moviesAPI = {
   },
   search: async (query: string) => {
     const response = await api.post('/api/movies/search', { query })
-    return response.data
+    // Backend sends { data: results }; return the array so modal can use results.length / results.map
+    return response.data?.data ?? response.data ?? []
   },
   create: async (tmdbId: number) => {
     const response = await api.post('/api/movies', { tmdbId })
