@@ -29,20 +29,31 @@ router.post('/', asyncHandler(async (req, res) => {
     return sendErrorResponse(res, 'tmdbId is required', 'tmdbId must be a number', 'VALIDATION_ERROR', 400)
   }
 
-  // Check if TV show already exists
+  // Check if TV show already exists (uniqueness by tmdb_id only)
   const existing = tvShowQueries.getByTmdbId(tmdbId)
   if (existing) {
-    throw new ConflictError('TV show already exists', { tvShow: existing })
+    throw new ConflictError('A TV show with this TMDB ID already exists', { tvShow: existing })
   }
 
   // Fetch TV show details from TMDB
   const tvShowData = await fetchTVShowDetails(tmdbId)
 
-  // Create TV show in database
-  const tvShowId = tvShowQueries.create({
-    ...tvShowData,
-    saved_at: new Date().toISOString(),
-  })
+  // Create TV show in database (catch UNIQUE constraint in case of race)
+  let tvShowId: number
+  try {
+    tvShowId = tvShowQueries.create({
+      ...tvShowData,
+      saved_at: new Date().toISOString(),
+    })
+  } catch (createError: any) {
+    if (createError?.code === 'SQLITE_CONSTRAINT_UNIQUE' || createError?.message?.includes('UNIQUE constraint')) {
+      const existingShow = tvShowQueries.getByTmdbId(tmdbId)
+      if (existingShow) {
+        throw new ConflictError('A TV show with this TMDB ID already exists', { tvShow: existingShow })
+      }
+    }
+    throw createError
+  }
 
   // Fetch and create episodes
   try {

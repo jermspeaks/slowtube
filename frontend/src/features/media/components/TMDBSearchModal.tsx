@@ -100,7 +100,16 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
     } catch (err: any) {
       console.error('Error adding item:', err)
       if (err.response?.status === 409) {
-        setError('This item already exists in your collection')
+        const details = err.response?.data?.details
+        if (type === 'tv' && details?.tvShow?.title) {
+          setError(`${details.tvShow.title} is already in your collection.`)
+        } else if (type === 'movie' && details?.movie?.title) {
+          setError(`${details.movie.title} is already in your collection.`)
+        } else if (type === 'tv') {
+          setError('This TV show is already in your collection (same TMDB ID).')
+        } else {
+          setError('This movie is already in your collection (same TMDB ID).')
+        }
       } else {
         setError(err.response?.data?.error || 'Failed to add item')
       }
@@ -247,14 +256,14 @@ function TMDBSearchModal({ type, isOpen, onClose, onAdd }: TMDBSearchModalProps)
 
           {mode === 'search' && !loading && results.length > 0 && (
             <div className="space-y-3">
-              {results.map((result) => {
+              {results.map((result, index) => {
                 const imageUrl = getImageUrl(result.poster_path)
                 const date = getDate(result)
                 const isAdding = addingId === result.tmdb_id
 
                 return (
                   <div
-                    key={result.tmdb_id}
+                    key={`${result.tmdb_id}-${index}`}
                     className="flex gap-4 p-4 border border-border rounded hover:bg-accent transition-colors"
                   >
                     {imageUrl && (
