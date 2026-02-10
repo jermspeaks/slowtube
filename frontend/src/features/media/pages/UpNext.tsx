@@ -107,6 +107,17 @@ function UpNext() {
       if (!map[key]) map[key] = [];
       map[key].push(ep);
     }
+    for (const key of Object.keys(map)) {
+      map[key].sort((a, b) => {
+        const titleCmp = (a.tv_show_title || "").localeCompare(
+          b.tv_show_title || ""
+        );
+        if (titleCmp !== 0) return titleCmp;
+        if (a.season_number !== b.season_number)
+          return a.season_number - b.season_number;
+        return a.episode_number - b.episode_number;
+      });
+    }
     return map;
   }, [episodes, getDateKey]);
 
