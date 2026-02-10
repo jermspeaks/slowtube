@@ -10,6 +10,7 @@ import {
   Film,
   Calendar,
   TrendingUp,
+  ListOrdered,
   Archive,
   Heart,
 } from 'lucide-react'
@@ -168,6 +169,11 @@ export function SecondaryNavigation() {
           label: 'Upcoming',
           icon: TrendingUp,
           path: '/media/tv-shows/upcoming',
+        },
+        {
+          label: 'Up Next',
+          icon: ListOrdered,
+          path: '/media/tv-shows/up-next',
         },
         {
           label: 'Recently Aired',

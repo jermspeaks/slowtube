@@ -163,6 +163,12 @@ export function Navbar() {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
+                          <Link to="/media/tv-shows/up-next" className="w-full flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Up Next
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
                           <Link to="/media/tv-shows/list" className="w-full">
                             List
                           </Link>
@@ -349,6 +355,9 @@ export function Navbar() {
                         <div className="pl-4 space-y-1">
                           <MobileNavLink to="/media/tv-shows/upcoming" icon={Clock}>
                             TV Shows - Upcoming
+                          </MobileNavLink>
+                          <MobileNavLink to="/media/tv-shows/up-next" icon={Clock}>
+                            TV Shows - Up Next
                           </MobileNavLink>
                           <MobileNavLink to="/media/tv-shows/list" icon={Tv}>
                             TV Shows - List
