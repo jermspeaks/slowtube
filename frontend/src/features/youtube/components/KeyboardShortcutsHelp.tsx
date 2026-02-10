@@ -17,7 +17,7 @@ const shortcuts = [
   { key: ']', description: 'Increase playback speed' },
   { key: 'N', description: 'Next video' },
   { key: 'P', description: 'Previous video' },
-  { key: 'S', description: 'Toggle state (inbox/feed/archive)' },
+  { key: 'O', description: 'Toggle state (inbox/feed/archive)' },
   { key: 'Esc', description: 'Close player' },
   { key: '?', description: 'Show this help' },
 ]

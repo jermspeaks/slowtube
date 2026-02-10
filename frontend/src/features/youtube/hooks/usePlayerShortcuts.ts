@@ -99,8 +99,8 @@ export function usePlayerShortcuts({
           event.preventDefault()
           onPrevious?.()
           break
-        case 's':
-        case 'S':
+        case 'o':
+        case 'O':
           event.preventDefault()
           onToggleState?.()
           break
