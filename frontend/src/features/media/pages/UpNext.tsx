@@ -195,117 +195,163 @@ function UpNext() {
                   ) : viewMode === "table" ? (
                     <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="bg-muted">
-                              <th className="p-3 text-left border-b border-border text-sm font-semibold">
-                                TV Show
-                              </th>
-                              <th className="p-3 text-left border-b border-border text-sm font-semibold">
-                                Episode
-                              </th>
-                              <th className="p-3 text-left border-b border-border text-sm font-semibold">
-                                Name
-                              </th>
-                              <th className="p-3 text-left border-b border-border text-sm font-semibold">
-                                Air Date
-                              </th>
-                              <th className="p-3 text-left border-b border-border text-sm font-semibold">
-                                Runtime
-                              </th>
-                              <th className="p-3 text-left border-b border-border text-sm font-semibold">
-                                Status
-                              </th>
-                              <th className="p-3 text-left border-b border-border text-sm font-semibold">
-                                Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {dayEpisodes.map((episode) => {
-                              const isWatched = episode.is_watched === 1;
-                              return (
-                                <tr
-                                  key={episode.id}
-                                  className={`border-b border-border hover:bg-accent transition-colors ${
-                                    isWatched ? "opacity-60" : ""
-                                  }`}
+                        <div
+                          role="table"
+                          className="grid w-full border-collapse"
+                          style={{
+                            gridTemplateColumns:
+                              "minmax(140px, 2fr) 0.75fr minmax(140px, 2fr) 1fr 0.6fr 0.85fr 1fr",
+                          }}
+                        >
+                          <div className="contents" role="row">
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              TV Show
+                            </div>
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              Episode
+                            </div>
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              Name
+                            </div>
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              Air Date
+                            </div>
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              Runtime
+                            </div>
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              Status
+                            </div>
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              Actions
+                            </div>
+                          </div>
+                          {dayEpisodes.map((episode) => {
+                            const isWatched = episode.is_watched === 1;
+                            return (
+                              <div
+                                key={episode.id}
+                                className={`contents group ${
+                                  isWatched ? "opacity-60" : ""
+                                }`}
+                                role="row"
+                              >
+                                <div
+                                  role="cell"
+                                  className="p-3 text-sm border-b border-border group-hover:bg-accent transition-colors"
                                 >
-                                  <td className="p-3 text-sm">
-                                    <Link
-                                      to={`/media/tv-shows/${episode.tv_show_id}`}
-                                      className="font-medium text-primary text-left hover:underline"
+                                  <Link
+                                    to={`/media/tv-shows/${episode.tv_show_id}`}
+                                    className="font-medium text-primary text-left hover:underline"
+                                  >
+                                    {episode.tv_show_title || "Unknown Show"}
+                                  </Link>
+                                </div>
+                                <div
+                                  role="cell"
+                                  className="p-3 text-sm text-muted-foreground border-b border-border group-hover:bg-accent transition-colors"
+                                >
+                                  S
+                                  {episode.season_number
+                                    .toString()
+                                    .padStart(2, "0")}
+                                  E
+                                  {episode.episode_number
+                                    .toString()
+                                    .padStart(2, "0")}
+                                </div>
+                                <div
+                                  role="cell"
+                                  className="p-3 text-sm font-medium border-b border-border group-hover:bg-accent transition-colors"
+                                >
+                                  {episode.name || "Untitled Episode"}
+                                </div>
+                                <div
+                                  role="cell"
+                                  className="p-3 text-sm text-muted-foreground border-b border-border group-hover:bg-accent transition-colors"
+                                >
+                                  {episode.air_date
+                                    ? format(
+                                        new Date(episode.air_date),
+                                        "MMM d, yyyy"
+                                      )
+                                    : "-"}
+                                </div>
+                                <div
+                                  role="cell"
+                                  className="p-3 text-sm text-muted-foreground border-b border-border group-hover:bg-accent transition-colors"
+                                >
+                                  {episode.runtime
+                                    ? `${episode.runtime} min`
+                                    : "-"}
+                                </div>
+                                <div
+                                  role="cell"
+                                  className="p-3 border-b border-border hover:bg-accent transition-colors"
+                                >
+                                  {isWatched ? (
+                                    <span className="inline-flex items-center gap-1 text-green-600 text-sm">
+                                      <Check className="h-4 w-4" />
+                                      Watched
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">
+                                      Unwatched
+                                    </span>
+                                  )}
+                                </div>
+                                <div
+                                  role="cell"
+                                  className="p-3 border-b border-border group-hover:bg-accent transition-colors"
+                                >
+                                  {isWatched ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleMarkUnwatched(episode)
+                                      }
                                     >
-                                      {episode.tv_show_title || "Unknown Show"}
-                                    </Link>
-                                  </td>
-                                  <td className="p-3 text-sm text-muted-foreground">
-                                    S
-                                    {episode.season_number
-                                      .toString()
-                                      .padStart(2, "0")}
-                                    E
-                                    {episode.episode_number
-                                      .toString()
-                                      .padStart(2, "0")}
-                                  </td>
-                                  <td className="p-3 text-sm font-medium">
-                                    {episode.name || "Untitled Episode"}
-                                  </td>
-                                  <td className="p-3 text-sm text-muted-foreground">
-                                    {episode.air_date
-                                      ? format(
-                                          new Date(episode.air_date),
-                                          "MMM d, yyyy"
-                                        )
-                                      : "-"}
-                                  </td>
-                                  <td className="p-3 text-sm text-muted-foreground">
-                                    {episode.runtime
-                                      ? `${episode.runtime} min`
-                                      : "-"}
-                                  </td>
-                                  <td className="p-3">
-                                    {isWatched ? (
-                                      <span className="inline-flex items-center gap-1 text-green-600 text-sm">
-                                        <Check className="h-4 w-4" />
-                                        Watched
-                                      </span>
-                                    ) : (
-                                      <span className="text-muted-foreground text-sm">
-                                        Unwatched
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="p-3">
-                                    {isWatched ? (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                          handleMarkUnwatched(episode)
-                                        }
-                                      >
-                                        <X className="h-4 w-4 mr-1" />
-                                        Unwatch
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        size="sm"
-                                        onClick={() =>
-                                          handleMarkWatched(episode)
-                                        }
-                                      >
-                                        <Check className="h-4 w-4 mr-1" />
-                                        Watch
-                                      </Button>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                                      <X className="h-4 w-4 mr-1" />
+                                      Unwatch
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleMarkWatched(episode)
+                                      }
+                                    >
+                                      <Check className="h-4 w-4 mr-1" />
+                                      Watch
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   ) : (
