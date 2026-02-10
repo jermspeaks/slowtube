@@ -10,6 +10,8 @@ import { Check, X, Table2, Grid3x3 } from "lucide-react";
 import EpisodeCard from "../components/EpisodeCard";
 import { useTimezone } from "@/shared/hooks/useTimezone";
 
+const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
+
 type ViewMode = "table" | "cards";
 
 function UpNext() {
@@ -210,10 +212,16 @@ function UpNext() {
                           className="grid w-full border-collapse"
                           style={{
                             gridTemplateColumns:
-                              "minmax(140px, 2fr) 0.75fr minmax(140px, 2fr) 1fr 0.6fr 0.85fr 1fr",
+                              "minmax(64px, 80px) minmax(140px, 2fr) 0.75fr minmax(140px, 2fr) 0.6fr 0.85fr 1fr",
                           }}
                         >
                           <div className="contents" role="row">
+                            <div
+                              role="columnheader"
+                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
+                            >
+                              Image
+                            </div>
                             <div
                               role="columnheader"
                               className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
@@ -236,12 +244,6 @@ function UpNext() {
                               role="columnheader"
                               className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
                             >
-                              Air Date
-                            </div>
-                            <div
-                              role="columnheader"
-                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
-                            >
                               Runtime
                             </div>
                             <div
@@ -259,6 +261,11 @@ function UpNext() {
                           </div>
                           {dayEpisodes.map((episode) => {
                             const isWatched = episode.is_watched === 1;
+                            const imageUrl = episode.still_path
+                              ? `${TMDB_IMAGE_BASE}/w92${episode.still_path}`
+                              : episode.tv_show_poster
+                                ? `${TMDB_IMAGE_BASE}/w92${episode.tv_show_poster}`
+                                : null;
                             return (
                               <div
                                 key={episode.id}
@@ -267,6 +274,22 @@ function UpNext() {
                                 }`}
                                 role="row"
                               >
+                                <div
+                                  role="cell"
+                                  className="p-3 border-b border-border group-hover:bg-accent transition-colors flex items-center"
+                                >
+                                  {imageUrl ? (
+                                    <img
+                                      src={imageUrl}
+                                      alt={episode.name || "Episode"}
+                                      className="w-14 aspect-video object-cover rounded"
+                                    />
+                                  ) : (
+                                    <div className="w-14 aspect-video rounded bg-muted flex items-center justify-center text-muted-foreground text-xs">
+                                      No image
+                                    </div>
+                                  )}
+                                </div>
                                 <div
                                   role="cell"
                                   className="p-3 text-sm border-b border-border group-hover:bg-accent transition-colors"
@@ -296,17 +319,6 @@ function UpNext() {
                                   className="p-3 text-sm font-medium border-b border-border group-hover:bg-accent transition-colors"
                                 >
                                   {episode.name || "Untitled Episode"}
-                                </div>
-                                <div
-                                  role="cell"
-                                  className="p-3 text-sm text-muted-foreground border-b border-border group-hover:bg-accent transition-colors"
-                                >
-                                  {episode.air_date
-                                    ? format(
-                                        new Date(episode.air_date),
-                                        "MMM d, yyyy"
-                                      )
-                                    : "-"}
                                 </div>
                                 <div
                                   role="cell"
