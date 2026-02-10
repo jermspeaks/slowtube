@@ -177,6 +177,7 @@ function UpNext() {
               const dayEpisodes = episodesByDay[dayKey] || [];
               const dayDate = new Date(dayKey + "T12:00:00.000Z");
               const dayLabel = fmtTz(dayDate, "MMMM d, yyyy");
+              const weekdayLabel = fmtTz(dayDate, "EEEE");
               const isToday = dayKey === todayKey;
 
               return (
@@ -186,9 +187,17 @@ function UpNext() {
                       isToday ? "text-primary" : ""
                     }`}
                   >
-                    {dayLabel}
+                    {dayLabel} — {weekdayLabel}
                     {isToday && " (Today)"}
                   </h2>
+
+                  {dayEpisodes.length > 0 && (
+                    <p className="text-muted-foreground text-sm mb-2">
+                      {dayEpisodes.length === 1
+                        ? "1 episode"
+                        : `${dayEpisodes.length} episodes`}
+                    </p>
+                  )}
 
                   {dayEpisodes.length === 0 ? (
                     <p className="text-muted-foreground py-2">No Episodes</p>
@@ -328,7 +337,7 @@ function UpNext() {
                                   {isWatched ? (
                                     <Button
                                       variant="outline"
-                                      size="sm"
+                                      size="xs"
                                       onClick={() =>
                                         handleMarkUnwatched(episode)
                                       }
@@ -338,7 +347,7 @@ function UpNext() {
                                     </Button>
                                   ) : (
                                     <Button
-                                      size="sm"
+                                      size="xs"
                                       onClick={() =>
                                         handleMarkWatched(episode)
                                       }
