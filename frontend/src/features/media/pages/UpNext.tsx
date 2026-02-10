@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router";
-import { calendarAPI, tvShowsAPI } from "../services/api";
+import { calendarAPI } from "../services/api";
 import { Episode } from "../types/episode";
-import { format, addDays } from "date-fns";
+import { format, addDays, differenceInDays } from "date-fns";
 import { startOfToday } from "date-fns";
 import { toast } from "sonner";
 import { Button } from "@/shared/components/ui/button";
-import { Check, X, Table2, Grid3x3 } from "lucide-react";
+import { Table2, Grid3x3, Loader2 } from "lucide-react";
 import EpisodeCard from "../components/EpisodeCard";
 import { useTimezone } from "@/shared/hooks/useTimezone";
 
@@ -18,6 +18,7 @@ function UpNext() {
   const { getDateKey, formatInTimezone: fmtTz, timezone } = useTimezone();
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [hideArchived, setHideArchived] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [daysToShow, setDaysToShow] = useState(30);
@@ -28,7 +29,11 @@ function UpNext() {
 
   const loadEpisodes = async () => {
     try {
-      setLoading(true);
+      if (episodes.length > 0) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
 
       const today = startOfToday();
       const startDate = today;
@@ -63,6 +68,7 @@ function UpNext() {
       toast.error("Failed to load up next episodes");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -70,29 +76,16 @@ function UpNext() {
     loadEpisodes();
   };
 
-  const handleMarkWatched = async (episode: Episode) => {
-    try {
-      await tvShowsAPI.markEpisodeWatched(episode.tv_show_id, episode.id);
-      toast.success("Episode marked as watched");
-      handleUpdate();
-    } catch (error) {
-      console.error("Error marking episode as watched:", error);
-      toast.error("Failed to mark episode as watched");
-    }
-  };
-
-  const handleMarkUnwatched = async (episode: Episode) => {
-    try {
-      await tvShowsAPI.markEpisodeUnwatched(episode.tv_show_id, episode.id);
-      toast.success("Episode marked as unwatched");
-      handleUpdate();
-    } catch (error) {
-      console.error("Error marking episode as unwatched:", error);
-      toast.error("Failed to mark episode as unwatched");
-    }
-  };
-
   const todayKey = fmtTz(new Date(), "yyyy-MM-dd");
+  const todayDate = new Date(todayKey + "T12:00:00.000Z");
+
+  function getDaysUntilLabel(dayKey: string): string {
+    const dayDate = new Date(dayKey + "T12:00:00.000Z");
+    const days = differenceInDays(dayDate, todayDate);
+    if (days === 0) return " (Today)";
+    if (days === 1) return " (tomorrow)";
+    return ` (in ${days} days)`;
+  }
   const dayKeys = useMemo(() => {
     const base = new Date(todayKey + "T12:00:00.000Z");
     const keys: string[] = [];
@@ -123,6 +116,31 @@ function UpNext() {
     }
     return map;
   }, [episodes, getDateKey]);
+
+  type DaySegment = { type: "day"; dayKey: string; episodes: Episode[] };
+  type EmptyRangeSegment = { type: "emptyRange"; startKey: string; endKey: string };
+  type Segment = DaySegment | EmptyRangeSegment;
+
+  const segments = useMemo((): Segment[] => {
+    const result: Segment[] = [];
+    let i = 0;
+    while (i < dayKeys.length) {
+      const dayKey = dayKeys[i];
+      const dayEpisodes = episodesByDay[dayKey] || [];
+      if (dayEpisodes.length > 0) {
+        result.push({ type: "day", dayKey, episodes: dayEpisodes });
+        i += 1;
+      } else {
+        let j = i;
+        while (j < dayKeys.length && (episodesByDay[dayKeys[j]] || []).length === 0) {
+          j += 1;
+        }
+        result.push({ type: "emptyRange", startKey: dayKeys[i], endKey: dayKeys[j - 1] });
+        i = j;
+      }
+    }
+    return result;
+  }, [dayKeys, episodesByDay]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -176,8 +194,26 @@ function UpNext() {
           </div>
         ) : (
           <div className="space-y-8">
-            {dayKeys.map((dayKey) => {
-              const dayEpisodes = episodesByDay[dayKey] || [];
+            {segments.map((segment) => {
+              if (segment.type === "emptyRange") {
+                const firstDate = new Date(segment.startKey + "T12:00:00.000Z");
+                const lastDate = new Date(segment.endKey + "T12:00:00.000Z");
+                const isSingleDay = segment.startKey === segment.endKey;
+                const rangeHeading = isSingleDay
+                  ? `${fmtTz(firstDate, "MMMM do, yyyy")} — ${fmtTz(firstDate, "EEEE")}`
+                  : `${fmtTz(firstDate, "MMMM")} ${fmtTz(firstDate, "d")} - ${fmtTz(lastDate, "do")}, ${fmtTz(firstDate, "yyyy")} — ${fmtTz(firstDate, "EEEE")}`;
+                return (
+                  <section key={`${segment.startKey}-${segment.endKey}`}>
+                    <h2 className="text-lg font-semibold mb-3">
+                      {rangeHeading}
+                      {getDaysUntilLabel(segment.startKey)}
+                    </h2>
+                    <p className="text-muted-foreground py-2">No Episodes</p>
+                  </section>
+                );
+              }
+
+              const { dayKey, episodes: dayEpisodes } = segment;
               const dayDate = new Date(dayKey + "T12:00:00.000Z");
               const dayLabel = fmtTz(dayDate, "MMMM d, yyyy");
               const weekdayLabel = fmtTz(dayDate, "EEEE");
@@ -191,7 +227,7 @@ function UpNext() {
                     }`}
                   >
                     {dayLabel} — {weekdayLabel}
-                    {isToday && " (Today)"}
+                    {getDaysUntilLabel(dayKey)}
                   </h2>
 
                   {dayEpisodes.length > 0 && (
@@ -202,9 +238,7 @@ function UpNext() {
                     </p>
                   )}
 
-                  {dayEpisodes.length === 0 ? (
-                    <p className="text-muted-foreground py-2">No Episodes</p>
-                  ) : viewMode === "table" ? (
+                  {viewMode === "table" ? (
                     <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                         <div
@@ -212,7 +246,7 @@ function UpNext() {
                           className="grid w-full border-collapse"
                           style={{
                             gridTemplateColumns:
-                              "minmax(64px, 80px) minmax(140px, 2fr) 0.75fr minmax(140px, 2fr) 0.6fr 0.85fr 1fr",
+                              "minmax(64px, 80px) minmax(140px, 2fr) 0.75fr minmax(140px, 2fr) 0.6fr",
                           }}
                         >
                           <div className="contents" role="row">
@@ -245,18 +279,6 @@ function UpNext() {
                               className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
                             >
                               Runtime
-                            </div>
-                            <div
-                              role="columnheader"
-                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
-                            >
-                              Status
-                            </div>
-                            <div
-                              role="columnheader"
-                              className="p-3 text-left border-b border-border text-sm font-semibold bg-muted"
-                            >
-                              Actions
                             </div>
                           </div>
                           {dayEpisodes.map((episode) => {
@@ -328,48 +350,6 @@ function UpNext() {
                                     ? `${episode.runtime} min`
                                     : "-"}
                                 </div>
-                                <div
-                                  role="cell"
-                                  className="p-3 border-b border-border group-hover:bg-accent transition-colors"
-                                >
-                                  {isWatched ? (
-                                    <span className="inline-flex items-center gap-1 text-green-600 text-sm">
-                                      <Check className="h-4 w-4" />
-                                      Watched
-                                    </span>
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">
-                                      Unwatched
-                                    </span>
-                                  )}
-                                </div>
-                                <div
-                                  role="cell"
-                                  className="p-3 border-b border-border group-hover:bg-accent transition-colors"
-                                >
-                                  {isWatched ? (
-                                    <Button
-                                      variant="outline"
-                                      size="xs"
-                                      onClick={() =>
-                                        handleMarkUnwatched(episode)
-                                      }
-                                    >
-                                      <X className="h-4 w-4 mr-1" />
-                                      Unwatch
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      size="xs"
-                                      onClick={() =>
-                                        handleMarkWatched(episode)
-                                      }
-                                    >
-                                      <Check className="h-4 w-4 mr-1" />
-                                      Watch
-                                    </Button>
-                                  )}
-                                </div>
                               </div>
                             );
                           })}
@@ -383,6 +363,7 @@ function UpNext() {
                           key={episode.id}
                           episode={episode}
                           onUpdate={handleUpdate}
+                          showWatchedButton={false}
                         />
                       ))}
                     </div>
@@ -394,7 +375,9 @@ function UpNext() {
               <Button
                 variant="outline"
                 onClick={() => setDaysToShow((prev) => prev + 30)}
+                disabled={loading || loadingMore}
               >
+                {loadingMore && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Show more
               </Button>
             </div>
