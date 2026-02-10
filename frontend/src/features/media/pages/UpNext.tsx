@@ -308,7 +308,7 @@ function UpNext() {
                                 </div>
                                 <div
                                   role="cell"
-                                  className="p-3 border-b border-border hover:bg-accent transition-colors"
+                                  className="p-3 border-b border-border group-hover:bg-accent transition-colors"
                                 >
                                   {isWatched ? (
                                     <span className="inline-flex items-center gap-1 text-green-600 text-sm">
