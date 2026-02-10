@@ -18,10 +18,11 @@ function UpNext() {
   const [loading, setLoading] = useState(true);
   const [hideArchived, setHideArchived] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [daysToShow, setDaysToShow] = useState(30);
 
   useEffect(() => {
     loadEpisodes();
-  }, [hideArchived]);
+  }, [hideArchived, daysToShow]);
 
   const loadEpisodes = async () => {
     try {
@@ -29,7 +30,7 @@ function UpNext() {
 
       const today = startOfToday();
       const startDate = today;
-      const endDate = addDays(today, 30);
+      const endDate = addDays(today, daysToShow);
 
       const response = await calendarAPI.getEpisodes(
         format(startDate, "yyyy-MM-dd"),
@@ -93,11 +94,11 @@ function UpNext() {
   const dayKeys = useMemo(() => {
     const base = new Date(todayKey + "T12:00:00.000Z");
     const keys: string[] = [];
-    for (let i = 0; i < 31; i++) {
+    for (let i = 0; i < daysToShow + 1; i++) {
       keys.push(fmtTz(addDays(base, i), "yyyy-MM-dd"));
     }
     return keys;
-  }, [todayKey, timezone, fmtTz]);
+  }, [todayKey, timezone, fmtTz, daysToShow]);
 
   const episodesByDay = useMemo(() => {
     const map: Record<string, Episode[]> = {};
@@ -377,6 +378,14 @@ function UpNext() {
                 </section>
               );
             })}
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setDaysToShow((prev) => prev + 30)}
+              >
+                Show more
+              </Button>
+            </div>
           </div>
         )}
       </main>
