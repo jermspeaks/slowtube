@@ -19,3 +19,13 @@ export interface TVShow {
   last_episode_date?: string | null
 }
 
+/** TMDB discovery list item (no DB id) */
+export interface DiscoveryTVShow {
+  tmdb_id: number
+  title: string
+  overview: string | null
+  poster_path: string | null
+  backdrop_path: string | null
+  first_air_date: string | null
+}
+

@@ -25,6 +25,7 @@ import MoviesList from './features/media/pages/MoviesList'
 import MovieDetail from './features/media/pages/MovieDetail'
 import TVShowsList from './features/media/pages/TVShowsList'
 import TVShowDetail from './features/media/pages/TVShowDetail'
+import TVShowDiscovery from './features/media/pages/TVShowDiscovery'
 import Upcoming from './features/media/pages/Upcoming'
 import UpNext from './features/media/pages/UpNext'
 import RecentlyAired from './features/media/pages/RecentlyAired'
@@ -101,6 +102,7 @@ function AppRoutes() {
         <Route path="/media/movies/:id" element={<MovieDetail />} />
         {/* <Route path="/media/tv-shows/upcoming" element={<Upcoming />} /> */}
         <Route path="/media/tv-shows/up-next" element={<UpNext />} />
+        <Route path="/media/tv-shows/discover" element={<TVShowDiscovery />} />
         <Route path="/media/tv-shows/list" element={<TVShowsList />} />
         <Route path="/media/tv-shows/recently-aired" element={<RecentlyAired />} />
         <Route path="/media/tv-shows/:id" element={<TVShowDetail />} />

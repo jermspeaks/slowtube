@@ -18,6 +18,7 @@ import {
   X,
   List,
   Heart,
+  Compass,
 } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -166,6 +167,12 @@ export function Navbar() {
                           <Link to="/media/tv-shows/up-next" className="w-full flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             Up Next
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/media/tv-shows/discover" className="w-full flex items-center gap-2">
+                            <Compass className="h-4 w-4" />
+                            Discover
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
@@ -358,6 +365,9 @@ export function Navbar() {
                           </MobileNavLink>
                           <MobileNavLink to="/media/tv-shows/up-next" icon={Clock}>
                             TV Shows - Up Next
+                          </MobileNavLink>
+                          <MobileNavLink to="/media/tv-shows/discover" icon={Compass}>
+                            TV Shows - Discover
                           </MobileNavLink>
                           <MobileNavLink to="/media/tv-shows/list" icon={Tv}>
                             TV Shows - List

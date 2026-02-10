@@ -33,6 +33,15 @@ export const tvShowsAPI = {
     // Backend wraps response in { data: ... } format
     return response.data.data || response.data || []
   },
+  getDiscover: async () => {
+    const response = await api.get('/api/tv-shows/discover')
+    const payload = response.data?.data ?? response.data
+    return {
+      trending: payload?.trending ?? [],
+      popular: payload?.popular ?? [],
+      onTheAir: payload?.onTheAir ?? [],
+    }
+  },
   search: async (query: string) => {
     const response = await api.post('/api/tv-shows/search', { query })
     // Backend sends { data: results }; return the array so modal can use results.length / results.map

@@ -1,6 +1,6 @@
 import express from 'express'
 import { tvShowQueries, episodeQueries, tvShowStateQueries, movieQueries } from '../services/database.js'
-import { searchTVShows, fetchTVShowDetails, fetchTVShowEpisodes } from '../services/tmdb.js'
+import { searchTVShows, fetchTVShowDetails, fetchTVShowEpisodes, getTrendingTV, getPopularTV, getOnTheAirTV } from '../services/tmdb.js'
 import { refreshTVShowEpisodes, refreshAllTVShowEpisodes } from '../services/tv-episode-refresh.js'
 import { normalizeAirDate } from '../utils/date.js'
 import { validateIdParam, validateEntityExists, validatePagination, validateSortBy, validateSortOrder, validateBooleanParam } from '../middleware/validation.js'
@@ -175,6 +175,16 @@ router.get('/', asyncHandler(async (req, res) => {
 router.get('/statuses', asyncHandler(async (req, res) => {
   const statuses = tvShowQueries.getUniqueStatuses()
   sendSuccessResponse(res, statuses.map(s => s.status))
+}))
+
+// Discovery: trending, popular, on the air (TMDB)
+router.get('/discover', asyncHandler(async (req, res) => {
+  const [trending, popular, onTheAir] = await Promise.all([
+    getTrendingTV(),
+    getPopularTV(),
+    getOnTheAirTV(),
+  ])
+  sendSuccessResponse(res, { trending, popular, onTheAir })
 }))
 
 // Delete all TV shows, episodes, and movies (for reset)

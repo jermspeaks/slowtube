@@ -13,6 +13,7 @@ import {
   ListOrdered,
   Archive,
   Heart,
+  Compass,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -164,6 +165,11 @@ export function SecondaryNavigation() {
           label: 'List',
           icon: List,
           path: '/media/tv-shows/list',
+        },
+        {
+          label: 'Discover',
+          icon: Compass,
+          path: '/media/tv-shows/discover',
         },
         // {
         //   label: 'Upcoming',

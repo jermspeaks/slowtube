@@ -295,3 +295,77 @@ export async function searchTVShows(query: string) {
   }
 }
 
+// Shared DTO shape for discovery TV show lists
+export type DiscoveryTVShowItem = {
+  tmdb_id: number
+  title: string
+  overview: string | null
+  poster_path: string | null
+  backdrop_path: string | null
+  first_air_date: string | null
+}
+
+function mapTVResultToDiscovery(item: {
+  id: number
+  name?: string
+  title?: string
+  overview?: string | null
+  poster_path?: string | null
+  backdrop_path?: string | null
+  first_air_date?: string | null
+}): DiscoveryTVShowItem {
+  return {
+    tmdb_id: item.id,
+    title: item.name ?? item.title ?? '',
+    overview: item.overview ?? null,
+    poster_path: item.poster_path ?? null,
+    backdrop_path: item.backdrop_path ?? null,
+    first_air_date: item.first_air_date ?? null,
+  }
+}
+
+// Trending TV shows (week)
+export async function getTrendingTV(): Promise<DiscoveryTVShowItem[]> {
+  const data = await tmdbRequest('/trending/tv/week') as {
+    results: Array<{
+      id: number
+      name?: string
+      overview?: string | null
+      poster_path?: string | null
+      backdrop_path?: string | null
+      first_air_date?: string | null
+    }>
+  }
+  return (data.results ?? []).map(mapTVResultToDiscovery)
+}
+
+// Popular TV shows
+export async function getPopularTV(): Promise<DiscoveryTVShowItem[]> {
+  const data = await tmdbRequest('/tv/popular') as {
+    results: Array<{
+      id: number
+      name?: string
+      overview?: string | null
+      poster_path?: string | null
+      backdrop_path?: string | null
+      first_air_date?: string | null
+    }>
+  }
+  return (data.results ?? []).map(mapTVResultToDiscovery)
+}
+
+// TV shows on the air (currently airing)
+export async function getOnTheAirTV(): Promise<DiscoveryTVShowItem[]> {
+  const data = await tmdbRequest('/tv/on_the_air') as {
+    results: Array<{
+      id: number
+      name?: string
+      overview?: string | null
+      poster_path?: string | null
+      backdrop_path?: string | null
+      first_air_date?: string | null
+    }>
+  }
+  return (data.results ?? []).map(mapTVResultToDiscovery)
+}
+
