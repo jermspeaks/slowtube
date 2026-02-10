@@ -7,9 +7,10 @@ import { toast } from 'sonner'
 interface EpisodeCardProps {
   episode: Episode
   onUpdate?: () => void
+  showWatchedButton?: boolean
 }
 
-function EpisodeCard({ episode, onUpdate }: EpisodeCardProps) {
+function EpisodeCard({ episode, onUpdate, showWatchedButton = true }: EpisodeCardProps) {
   const isWatched = episode.is_watched === 1
   const imageUrl = episode.still_path 
     ? `https://image.tmdb.org/t/p/w342${episode.still_path}`
@@ -80,22 +81,24 @@ function EpisodeCard({ episode, onUpdate }: EpisodeCardProps) {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant={isWatched ? "outline" : "default"}
-            size="sm"
-            onClick={handleMarkWatched}
-            className="flex-1 text-xs"
-            disabled={isWatched}
-          >
-            {isWatched ? (
-              <>
-                <Check className="h-3 w-3 mr-1" />
-                Watched
-              </>
-            ) : (
-              'Mark Watched'
-            )}
-          </Button>
+          {showWatchedButton && (
+            <Button
+              variant={isWatched ? "outline" : "default"}
+              size="sm"
+              onClick={handleMarkWatched}
+              className="flex-1 text-xs"
+              disabled={isWatched}
+            >
+              {isWatched ? (
+                <>
+                  <Check className="h-3 w-3 mr-1" />
+                  Watched
+                </>
+              ) : (
+                'Mark Watched'
+              )}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
