@@ -259,6 +259,30 @@ router.patch('/:id/started', validateIdParam(), validateEntityExists(tvShowQueri
   })
 }))
 
+const ALLOWED_STATUSES = ['Returning Series', 'Ended', 'Cancelled'] as const
+
+// Update TV show status (override TMDB)
+router.patch('/:id/status', validateIdParam(), validateEntityExists(tvShowQueries, 'TV show'), asyncHandler(async (req, res) => {
+  const id = (req as any).validatedId as number
+  const { status } = req.body
+
+  if (typeof status !== 'string' || !ALLOWED_STATUSES.includes(status as typeof ALLOWED_STATUSES[number])) {
+    return sendErrorResponse(res, 'status is required', `status must be one of: ${ALLOWED_STATUSES.join(', ')}`, 'VALIDATION_ERROR', 400)
+  }
+
+  tvShowQueries.update(id, { status })
+  const tvShow = tvShowQueries.getById(id)
+  if (!tvShow) {
+    throw new NotFoundError('TV show not found after update')
+  }
+  const state = tvShowStateQueries.getByTVShowId(id)
+  sendSuccessResponse(res, {
+    ...tvShow,
+    is_archived: state?.is_archived === 1 || false,
+    is_started: state?.is_started === 1 || false,
+  })
+}))
+
 // Mark episode as watched
 router.post('/:id/episodes/:episodeId/watched', validateIdParam('id'), validateEntityExists(tvShowQueries, 'TV show'), asyncHandler(async (req, res) => {
   const tvShowId = (req as any).validatedId as number

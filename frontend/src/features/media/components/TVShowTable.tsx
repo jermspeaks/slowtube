@@ -17,7 +17,7 @@ import {
   DialogTitle,
 } from '@/shared/components/ui/dialog'
 import { Button } from '@/shared/components/ui/button'
-import { MoreVertical, Trash2, Archive, ArchiveRestore, Play, PlayCircle } from 'lucide-react'
+import { MoreVertical, Trash2, Archive, ArchiveRestore, Play, PlayCircle, Flag, RotateCcw } from 'lucide-react'
 import { tvShowsAPI } from '../services/api'
 import { toast } from 'sonner'
 
@@ -28,9 +28,10 @@ interface TVShowTableProps {
   onDelete: (tvShow: TVShow) => void
   onArchive: (tvShow: TVShow, isArchived: boolean) => void
   onStartedChange?: () => void
+  onStatusChange?: () => void
 }
 
-function TVShowTable({ tvShows, onDelete, onArchive, onStartedChange }: TVShowTableProps) {
+function TVShowTable({ tvShows, onDelete, onArchive, onStartedChange, onStatusChange }: TVShowTableProps) {
   const navigate = useNavigate()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [tvShowToDelete, setTvShowToDelete] = useState<TVShow | null>(null)
@@ -67,6 +68,17 @@ function TVShowTable({ tvShows, onDelete, onArchive, onStartedChange }: TVShowTa
     } catch (error) {
       console.error('Error setting started status:', error)
       toast.error('Failed to update started status')
+    }
+  }
+
+  const handleStatusClick = async (tvShow: TVShow, newStatus: string) => {
+    try {
+      await tvShowsAPI.updateStatus(tvShow.id, newStatus)
+      toast.success(`TV show marked as ${newStatus}`)
+      onStatusChange?.()
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast.error('Failed to update status')
     }
   }
 
@@ -205,6 +217,33 @@ function TVShowTable({ tvShows, onDelete, onArchive, onStartedChange }: TVShowTa
                             </>
                           )}
                         </DropdownMenuItem>
+                        {(tvShow.status !== 'Ended' && tvShow.status !== 'Cancelled') && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() => handleStatusClick(tvShow, 'Ended')}
+                              className="cursor-pointer"
+                            >
+                              <Flag className="mr-2 h-4 w-4" />
+                              Mark as Ended
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleStatusClick(tvShow, 'Cancelled')}
+                              className="cursor-pointer"
+                            >
+                              <Flag className="mr-2 h-4 w-4" />
+                              Mark as Cancelled
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {(tvShow.status === 'Ended' || tvShow.status === 'Cancelled') && (
+                          <DropdownMenuItem
+                            onClick={() => handleStatusClick(tvShow, 'Returning Series')}
+                            className="cursor-pointer"
+                          >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Mark as Returning Series
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                           onClick={() => handleArchiveClick(tvShow)}
                           className="cursor-pointer"

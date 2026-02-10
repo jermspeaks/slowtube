@@ -64,6 +64,10 @@ export const tvShowsAPI = {
     const response = await api.patch(`/api/tv-shows/${id}/started`, { isStarted })
     return response.data
   },
+  updateStatus: async (id: number, status: string) => {
+    const response = await api.patch(`/api/tv-shows/${id}/status`, { status })
+    return response.data
+  },
   markEpisodeWatched: async (tvShowId: number, episodeId: number) => {
     const response = await api.post(`/api/tv-shows/${tvShowId}/episodes/${episodeId}/watched`)
     return response.data

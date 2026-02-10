@@ -478,6 +478,7 @@ function TVShowsList() {
                 }
               }}
               onStartedChange={loadTVShows}
+              onStatusChange={loadTVShows}
             />
             </div>
             <Pagination
