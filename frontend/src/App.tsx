@@ -99,7 +99,7 @@ function AppRoutes() {
         <Route path="/media/movies/all" element={<MoviesList />} />
         <Route path="/media/movies" element={<Navigate to="/media/movies/dashboard" replace />} />
         <Route path="/media/movies/:id" element={<MovieDetail />} />
-        <Route path="/media/tv-shows/upcoming" element={<Upcoming />} />
+        {/* <Route path="/media/tv-shows/upcoming" element={<Upcoming />} /> */}
         <Route path="/media/tv-shows/up-next" element={<UpNext />} />
         <Route path="/media/tv-shows/list" element={<TVShowsList />} />
         <Route path="/media/tv-shows/recently-aired" element={<RecentlyAired />} />

@@ -156,12 +156,12 @@ export function Navbar() {
                         TV Shows
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent>
-                        <DropdownMenuItem asChild>
+                        {/* <DropdownMenuItem asChild>
                           <Link to="/media/tv-shows/upcoming" className="w-full flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             Upcoming
                           </Link>
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuItem asChild>
                           <Link to="/media/tv-shows/up-next" className="w-full flex items-center gap-2">
                             <Clock className="h-4 w-4" />

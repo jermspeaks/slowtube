@@ -165,11 +165,11 @@ export function SecondaryNavigation() {
           icon: List,
           path: '/media/tv-shows/list',
         },
-        {
-          label: 'Upcoming',
-          icon: TrendingUp,
-          path: '/media/tv-shows/upcoming',
-        },
+        // {
+        //   label: 'Upcoming',
+        //   icon: TrendingUp,
+        //   path: '/media/tv-shows/upcoming',
+        // },
         {
           label: 'Up Next',
           icon: ListOrdered,

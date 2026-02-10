@@ -41,7 +41,7 @@ function TVShowsDashboard() {
 
   const getViewAllLink = (sectionType: string) => {
     if (sectionType === 'upcoming_episodes') {
-      return '/media/tv-shows/upcoming'
+      return '/media/tv-shows/up-next'
     } else if (sectionType === 'recently_aired_episodes') {
       return '/media/tv-shows/recently-aired'
     }
