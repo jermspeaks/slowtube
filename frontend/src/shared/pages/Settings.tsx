@@ -514,9 +514,28 @@ function Settings() {
             {/* Import Section */}
             <div className="space-y-4">
               <h2 className="text-lg md:text-xl font-semibold">Import Videos</h2>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                Upload your watch-history.json or watch-history.csv file from Google Takeout to import your YouTube watch history.
-              </p>
+              <div className="text-xs md:text-sm text-muted-foreground space-y-2">
+                <p>To import your YouTube watch history:</p>
+                <ol className="list-decimal list-inside space-y-1 pl-1">
+                  <li>
+                    Go to{' '}
+                    <a
+                      href="https://takeout.google.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-foreground hover:opacity-80"
+                    >
+                      takeout.google.com
+                    </a>
+                    .
+                  </li>
+                  <li>Deselect all, then select <strong>YouTube and YouTube Music content</strong>.</li>
+                  <li>Open <strong>Options</strong>, deselect all, then select <strong>playlists</strong>.</li>
+                  <li>Set export format to <strong>JSON</strong>.</li>
+                  <li>Create the export and wait for the email.</li>
+                  <li>Unzip the takeout archive and upload the JSON or CSV file here.</li>
+                </ol>
+              </div>
               
               {fetchingDetails && fetchProgress && (
                 <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
@@ -546,9 +565,28 @@ function Settings() {
             {/* Import Liked Videos Section */}
             <div className="space-y-4 border-t pt-4 md:pt-6">
               <h2 className="text-lg md:text-xl font-semibold">Import Liked Videos</h2>
-              <p className="text-xs md:text-sm text-muted-foreground">
-                Upload your MyActivity.json file from Google Takeout to import your YouTube liked videos. This file contains all your YouTube activity, and only entries with "Liked" in the title will be imported.
-              </p>
+              <div className="text-xs md:text-sm text-muted-foreground space-y-2">
+                <p>To import your YouTube liked videos:</p>
+                <ol className="list-decimal list-inside space-y-1 pl-1">
+                  <li>
+                    Go to{' '}
+                    <a
+                      href="https://takeout.google.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-foreground hover:opacity-80"
+                    >
+                      takeout.google.com
+                    </a>
+                    .
+                  </li>
+                  <li>Deselect all and select only <strong>My Activity</strong>.</li>
+                  <li>In <strong>Options</strong>, deselect all and only select <strong>YouTube</strong>.</li>
+                  <li>In <strong>Data formats</strong>, select <strong>JSON</strong>.</li>
+                  <li>Create the export and wait for the email.</li>
+                  <li>Import the JSON file here.</li>
+                </ol>
+              </div>
               
               {fetchingLikedDetails && fetchLikedProgress && (
                 <div className="px-4 py-2 bg-blue-500 text-white rounded text-sm">
