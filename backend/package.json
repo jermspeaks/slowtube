@@ -14,7 +14,7 @@
     "@types/papaparse": "^5.5.2",
     "better-sqlite3": "^12.5.0",
     "cors": "^2.8.6",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
     "express": "^5.1.0",
     "googleapis": "^166.0.0",
     "multer": "^2.0.2",
