@@ -1,5 +1,6 @@
 import express from 'express'
-import { moviePlaylistQueries } from '../services/database.js'
+import { moviePlaylistQueries, movieQueries } from '../services/database.js'
+import { suggestPlaylistsFromMovies } from '../services/gemini.js'
 import { logger } from '../utils/logger.js'
 
 const router = express.Router()
@@ -53,6 +54,58 @@ router.get('/', (req, res) => {
   } catch (error: any) {
     logger.error('Error fetching playlists', { error: error.message, stack: error.stack })
     res.status(500).json({ error: 'Failed to fetch playlists' })
+  }
+})
+
+// AI-suggest playlists from movies (must be before /:id)
+router.post('/ai-suggest', async (req, res) => {
+  try {
+    const { movieIds: bodyMovieIds } = req.body as { movieIds?: number[] }
+
+    let movies: { id: number; title: string; overview: string | null; release_date: string | null }[]
+
+    if (bodyMovieIds !== undefined) {
+      if (!Array.isArray(bodyMovieIds) || bodyMovieIds.length === 0) {
+        return res.status(400).json({ error: 'movieIds must be a non-empty array when provided' })
+      }
+      if (!bodyMovieIds.every((id): id is number => typeof id === 'number' && Number.isInteger(id))) {
+        return res.status(400).json({ error: 'All movieIds must be integers' })
+      }
+      const found: typeof movies = []
+      for (const id of bodyMovieIds) {
+        const movie = movieQueries.getById(id)
+        if (!movie) {
+          return res.status(400).json({ error: `Movie with id ${id} not found` })
+        }
+        found.push({
+          id: movie.id,
+          title: movie.title,
+          overview: movie.overview,
+          release_date: movie.release_date,
+        })
+      }
+      movies = found
+    } else {
+      const all = movieQueries.getAll()
+      if (all.length === 0) {
+        return res.status(400).json({ error: 'No movies in library to organize' })
+      }
+      movies = all.map((m) => ({
+        id: m.id,
+        title: m.title,
+        overview: m.overview,
+        release_date: m.release_date,
+      }))
+    }
+
+    const result = await suggestPlaylistsFromMovies(movies)
+    res.json(result)
+  } catch (error: any) {
+    if (error.message === 'GEMINI_API_KEY is not set') {
+      return res.status(503).json({ error: 'AI suggestions are not configured (missing GEMINI_API_KEY)' })
+    }
+    logger.error('AI suggest playlists failed', { error: error.message, stack: error.stack })
+    res.status(500).json({ error: error.message || 'Failed to get AI playlist suggestions' })
   }
 })
 

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { format } from 'date-fns'
-import { moviePlaylistsAPI } from '../services/api'
-import { MoviePlaylistWithMovies } from '../types/movie-playlist'
+import { moviePlaylistsAPI, moviesAPI } from '../services/api'
+import { MoviePlaylistWithMovies, AISuggestResponse } from '../types/movie-playlist'
 import MoviePlaylistForm from '../components/MoviePlaylistForm'
 import MovieSectionRow from '../components/MovieSectionRow'
+import AISuggestReviewModal from '../components/AISuggestReviewModal'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { Button } from '@/shared/components/ui/button'
 import { toast } from 'sonner'
-import { Plus, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { Plus, MoreVertical, Edit, Trash2, Sparkles } from 'lucide-react'
 
 function MoviePlaylists() {
   const navigate = useNavigate()
@@ -32,6 +33,10 @@ function MoviePlaylists() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingPlaylist, setEditingPlaylist] = useState<MoviePlaylistWithMovies | null>(null)
   const [deletingPlaylist, setDeletingPlaylist] = useState<MoviePlaylistWithMovies | null>(null)
+  const [aiSuggestData, setAiSuggestData] = useState<AISuggestResponse | null>(null)
+  const [aiSuggestMovies, setAiSuggestMovies] = useState<{ id: number; title: string }[]>([])
+  const [isAISuggestModalOpen, setIsAISuggestModalOpen] = useState(false)
+  const [isAISuggestLoading, setIsAISuggestLoading] = useState(false)
 
   useEffect(() => {
     loadPlaylists()
@@ -106,19 +111,54 @@ function MoviePlaylists() {
     }
   }
 
+  const handleOrganizeWithAI = async () => {
+    try {
+      setIsAISuggestLoading(true)
+      const response = await moviesAPI.getAll()
+      const movies = response.movies || response.data || []
+      if (!Array.isArray(movies) || movies.length === 0) {
+        toast.error('No movies in library to organize')
+        return
+      }
+      const data = await moviePlaylistsAPI.suggestWithAI()
+      setAiSuggestData(data)
+      setAiSuggestMovies(movies.map((m: { id: number; title: string }) => ({ id: m.id, title: m.title })))
+      setIsAISuggestModalOpen(true)
+    } catch (error: any) {
+      console.error('Error getting AI suggestions:', error)
+      toast.error(error.response?.data?.error || 'Failed to get AI playlist suggestions')
+    } finally {
+      setIsAISuggestLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
         <div className="flex justify-between items-start mb-4 md:mb-6 flex-wrap gap-4">
           <h1 className="text-2xl md:text-3xl font-bold">Movie Playlists</h1>
-          <Button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Create Playlist</span>
-            <span className="sm:hidden">Create</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleOrganizeWithAI}
+              disabled={isAISuggestLoading}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">
+                {isAISuggestLoading ? 'Suggesting…' : 'Organize with AI'}
+              </span>
+              <span className="sm:hidden">{isAISuggestLoading ? '…' : 'AI'}</span>
+            </Button>
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Create Playlist</span>
+              <span className="sm:hidden">Create</span>
+            </Button>
+          </div>
         </div>
 
         {loading ? (
@@ -258,6 +298,21 @@ function MoviePlaylists() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* AI Suggest Review Modal */}
+      {aiSuggestData && (
+        <AISuggestReviewModal
+          isOpen={isAISuggestModalOpen}
+          onClose={() => {
+            setIsAISuggestModalOpen(false)
+            setAiSuggestData(null)
+            setAiSuggestMovies([])
+          }}
+          data={aiSuggestData}
+          movies={aiSuggestMovies}
+          onSuccess={loadPlaylists}
+        />
+      )}
 
       {/* Delete Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

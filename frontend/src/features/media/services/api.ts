@@ -230,6 +230,10 @@ export const moviePlaylistsAPI = {
     const response = await api.patch(`/api/movie-playlists/${playlistId}/movies/reorder`, { movieIds })
     return response.data
   },
+  suggestWithAI: async (movieIds?: number[]) => {
+    const response = await api.post('/api/movie-playlists/ai-suggest', movieIds != null ? { movieIds } : {})
+    return response.data
+  },
 }
 
 // Calendar API

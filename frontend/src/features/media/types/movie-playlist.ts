@@ -29,3 +29,15 @@ export interface MoviePlaylistWithCount extends MoviePlaylist {
   display_on_home?: number
 }
 
+// AI suggest playlists response
+export interface SuggestedPlaylist {
+  name: string
+  description: string | null
+  movieIds: number[]
+}
+
+export interface AISuggestResponse {
+  suggestedPlaylists: SuggestedPlaylist[]
+  unassignedMovieIds: number[]
+}
+
