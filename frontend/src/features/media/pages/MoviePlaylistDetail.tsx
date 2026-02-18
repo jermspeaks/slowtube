@@ -88,7 +88,7 @@ function MoviePlaylistDetail() {
     }
   }
 
-  if (loading) {
+  if (loading && !playlist) {
     return (
       <div className="min-h-screen bg-background">
         <main className="max-w-[1400px] mx-auto px-4 md:px-6 py-4 md:py-6">
