@@ -180,6 +180,12 @@ export const moviePlaylistsAPI = {
     const response = await api.get('/api/movie-playlists')
     return response.data
   },
+  getAllWithMovies: async (moviesPerPlaylist: number = 20) => {
+    const response = await api.get('/api/movie-playlists', {
+      params: { include_movies: 'true', movies_per_playlist: moviesPerPlaylist },
+    })
+    return response.data
+  },
   getById: async (id: number) => {
     const response = await api.get(`/api/movie-playlists/${id}`)
     return response.data

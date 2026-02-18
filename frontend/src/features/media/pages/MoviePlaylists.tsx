@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router'
+import { format } from 'date-fns'
 import { moviePlaylistsAPI } from '../services/api'
-import { MoviePlaylistWithCount } from '../types/movie-playlist'
-import MoviePlaylistTable from '../components/MoviePlaylistTable'
+import { MoviePlaylistWithMovies } from '../types/movie-playlist'
 import MoviePlaylistForm from '../components/MoviePlaylistForm'
+import MovieSectionRow from '../components/MovieSectionRow'
 import {
   Dialog,
   DialogContent,
@@ -11,18 +13,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/components/ui/dropdown-menu'
 import { Button } from '@/shared/components/ui/button'
 import { toast } from 'sonner'
-import { Plus } from 'lucide-react'
+import { Plus, MoreVertical, Edit, Trash2 } from 'lucide-react'
 
 function MoviePlaylists() {
-  const [playlists, setPlaylists] = useState<MoviePlaylistWithCount[]>([])
+  const navigate = useNavigate()
+  const [playlists, setPlaylists] = useState<MoviePlaylistWithMovies[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingPlaylist, setEditingPlaylist] = useState<MoviePlaylistWithCount | null>(null)
-  const [deletingPlaylist, setDeletingPlaylist] = useState<MoviePlaylistWithCount | null>(null)
+  const [editingPlaylist, setEditingPlaylist] = useState<MoviePlaylistWithMovies | null>(null)
+  const [deletingPlaylist, setDeletingPlaylist] = useState<MoviePlaylistWithMovies | null>(null)
 
   useEffect(() => {
     loadPlaylists()
@@ -31,7 +40,7 @@ function MoviePlaylists() {
   const loadPlaylists = async () => {
     try {
       setLoading(true)
-      const data = await moviePlaylistsAPI.getAll()
+      const data = await moviePlaylistsAPI.getAllWithMovies()
       setPlaylists(data)
     } catch (error) {
       console.error('Error loading playlists:', error)
@@ -53,7 +62,7 @@ function MoviePlaylists() {
     }
   }
 
-  const handleEdit = (playlist: MoviePlaylistWithCount) => {
+  const handleEdit = (playlist: MoviePlaylistWithMovies) => {
     setEditingPlaylist(playlist)
     setIsEditModalOpen(true)
   }
@@ -73,9 +82,13 @@ function MoviePlaylists() {
     }
   }
 
-  const handleDeleteClick = (playlist: MoviePlaylistWithCount) => {
+  const handleDeleteClick = (playlist: MoviePlaylistWithMovies) => {
     setDeletingPlaylist(playlist)
     setIsDeleteDialogOpen(true)
+  }
+
+  const handleMovieClick = (movie: { id: number }) => {
+    navigate(`/media/movies/${movie.id}`)
   }
 
   const handleDeleteConfirm = async () => {
@@ -126,11 +139,87 @@ function MoviePlaylists() {
             </Button>
           </div>
         ) : (
-          <MoviePlaylistTable
-            playlists={playlists}
-            onEdit={handleEdit}
-            onDelete={handleDeleteClick}
-          />
+          <div className="space-y-10">
+            {playlists.map((playlist) => (
+              <section key={playlist.id} className="mb-8">
+                {/* Header: Title, description · metadata · actions */}
+                <div className="flex flex-col gap-2 mb-4">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        to={`/media/playlists/${playlist.id}`}
+                        className="text-xl md:text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                      >
+                        {playlist.name}
+                      </Link>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {[
+                          playlist.description,
+                          `${playlist.movie_count} ${playlist.movie_count === 1 ? 'movie' : 'movies'}`,
+                          playlist.created_at
+                            ? `Created ${format(new Date(playlist.created_at), 'MMM d, yyyy')}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link
+                        to={`/media/playlists/${playlist.id}`}
+                        className="text-sm text-primary hover:underline whitespace-nowrap"
+                      >
+                        View all
+                      </Link>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleEdit(playlist)}
+                            className="cursor-pointer"
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(playlist)}
+                            className="cursor-pointer text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+                {/* Movie feed or empty state */}
+                {playlist.movies && playlist.movies.length > 0 ? (
+                  <MovieSectionRow
+                    title=""
+                    description=""
+                    movies={playlist.movies}
+                    onMovieClick={handleMovieClick}
+                    onlyFeed
+                  />
+                ) : (
+                  <div className="py-8 px-4 bg-card rounded-lg text-center">
+                    <p className="text-sm text-muted-foreground mb-2">No movies in this playlist.</p>
+                    <Link
+                      to={`/media/playlists/${playlist.id}`}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Open playlist to add movies
+                    </Link>
+                  </div>
+                )}
+              </section>
+            ))}
+          </div>
         )}
       </main>
 

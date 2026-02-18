@@ -26,11 +26,30 @@ router.post('/', (req, res) => {
   }
 })
 
-// Get all playlists
+// Get all playlists (optionally with movies for list page feed)
 router.get('/', (req, res) => {
   try {
+    const includeMovies = req.query.include_movies === 'true'
+    const moviesPerPlaylist = Math.min(
+      Math.max(1, parseInt(String(req.query.movies_per_playlist || '20'), 10) || 20),
+      100
+    )
+
+    if (!includeMovies) {
+      const playlists = moviePlaylistQueries.getAll()
+      return res.json(playlists)
+    }
+
     const playlists = moviePlaylistQueries.getAll()
-    res.json(playlists)
+    const playlistsWithMovies = playlists.map((p) => {
+      const full = moviePlaylistQueries.getById(p.id)
+      if (!full) return { ...p, movies: [], movie_count: p.movie_count }
+      return {
+        ...full,
+        movies: full.movies.slice(0, moviesPerPlaylist),
+      }
+    })
+    res.json(playlistsWithMovies)
   } catch (error: any) {
     logger.error('Error fetching playlists', { error: error.message, stack: error.stack })
     res.status(500).json({ error: 'Failed to fetch playlists' })

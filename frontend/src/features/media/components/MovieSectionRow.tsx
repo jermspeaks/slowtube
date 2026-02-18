@@ -11,9 +11,11 @@ interface MovieSectionRowProps {
   movies: Movie[]
   onMovieClick?: (movie: Movie) => void
   viewAllLink?: string
+  /** When true, render only the horizontal feed (no header). Caller provides header. */
+  onlyFeed?: boolean
 }
 
-function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink }: MovieSectionRowProps) {
+function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink, onlyFeed }: MovieSectionRowProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
@@ -58,6 +60,65 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
 
   if (movies.length === 0) {
     return null
+  }
+
+  const feedBlock = (
+    <div className="relative">
+        {/* Left Arrow - Mobile */}
+        {canScrollLeft && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-background/80 backdrop-blur-sm md:hidden"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+        )}
+
+        {/* Scrollable Container */}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4"
+          style={{
+            scrollSnapType: 'x mandatory',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+        >
+          {movies.map((movie) => (
+            <div
+              key={movie.id}
+              className="shrink-0 w-[280px] md:w-[300px]"
+              style={{ scrollSnapAlign: 'start' }}
+            >
+              <MovieCard
+                movie={movie}
+                onClick={() => onMovieClick?.(movie)}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Right Arrow - Mobile */}
+        {canScrollRight && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-background/80 backdrop-blur-sm md:hidden"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        )}
+    </div>
+  )
+
+  if (onlyFeed) {
+    return feedBlock
   }
 
   return (
@@ -110,60 +171,7 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
           )}
         </div>
       </div>
-
-      {/* Horizontal Scrollable Movie Cards */}
-      <div className="relative">
-        {/* Left Arrow - Mobile */}
-        {canScrollLeft && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => scroll('left')}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-background/80 backdrop-blur-sm md:hidden"
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-        )}
-
-        {/* Scrollable Container */}
-        <div
-          ref={scrollContainerRef}
-          className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4"
-          style={{
-            scrollSnapType: 'x mandatory',
-            WebkitOverflowScrolling: 'touch',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-        >
-          {movies.map((movie) => (
-            <div
-              key={movie.id}
-              className="shrink-0 w-[280px] md:w-[300px]"
-              style={{ scrollSnapAlign: 'start' }}
-            >
-              <MovieCard
-                movie={movie}
-                onClick={() => onMovieClick?.(movie)}
-              />
-            </div>
-          ))}
-        </div>
-
-        {/* Right Arrow - Mobile */}
-        {canScrollRight && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => scroll('right')}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-background/80 backdrop-blur-sm md:hidden"
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-        )}
-      </div>
+      {feedBlock}
     </div>
   )
 }
