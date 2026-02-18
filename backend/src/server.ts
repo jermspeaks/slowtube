@@ -19,6 +19,7 @@ import settingsRoutes from './routes/settings.js'
 import authRoutes from './routes/auth.js'
 import { refreshAllTVShowEpisodes } from './services/tv-episode-refresh.js'
 import { errorHandler } from './middleware/errorHandler.js'
+import { requestLogger } from './middleware/requestLogger.js'
 import { logger } from './utils/logger.js'
 
 // Validate TMDB environment variables (warn but don't exit)
@@ -67,6 +68,9 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json())
+
+// Request logging middleware (must be after express.json() to access parsed body if needed)
+app.use(requestLogger)
 
 // Routes
 app.use('/api/videos', videoRoutes)

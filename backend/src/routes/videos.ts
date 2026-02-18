@@ -3,6 +3,7 @@ import multer from 'multer'
 import { videoQueries, tagQueries, commentQueries, videoStateQueries, statsQueries, videoProgressQueries, videoPlayerSettingsQueries } from '../services/database.js'
 import { importVideosFromTakeout, importLikedVideosFromActivity, processBatchVideoFetch, fetchAllVideoDetails, backfillChannelIds } from '../services/youtube.js'
 import { formatDurationExtended } from '../utils/duration.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -103,7 +104,7 @@ router.get('/stats', (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error fetching stats:', error)
+    logger.error('Error fetching stats:', error)
     res.status(500).json({ error: 'Failed to fetch stats' })
   }
 })
@@ -115,7 +116,7 @@ router.get('/channels', (req, res) => {
     const channelTitles = channels.map(c => c.channel_title).filter(Boolean)
     res.json(channelTitles)
   } catch (error) {
-    console.error('Error fetching channels:', error)
+    logger.error('Error fetching channels:', error)
     res.status(500).json({ error: 'Failed to fetch channels' })
   }
 })
@@ -230,7 +231,7 @@ router.get('/', (req, res) => {
       },
     })
   } catch (error) {
-    console.error('Error fetching videos:', error)
+    logger.error('Error fetching videos:', error)
     res.status(500).json({ error: 'Failed to fetch videos' })
   }
 })
@@ -239,7 +240,7 @@ router.get('/', (req, res) => {
 router.get('/liked', (req, res) => {
   try {
     // Log request for debugging
-    console.log('GET /liked - Query params:', req.query)
+    logger.debug('GET /liked - Query params:', { query: req.query })
     
     const state = req.query.state as string | undefined
     const search = req.query.search as string | undefined
@@ -315,7 +316,7 @@ router.get('/liked', (req, res) => {
         true // isLiked = true
       )
     } catch (dbError: any) {
-      console.error('Database error in getLikedVideos:', dbError)
+      logger.error('Database error in getLikedVideos:', dbError)
       return res.status(400).json({ 
         error: 'Database query failed',
         message: dbError.message,
@@ -330,7 +331,7 @@ router.get('/liked', (req, res) => {
       offset: offset !== undefined ? offset : 0,
     })
   } catch (error: any) {
-    console.error('Error fetching liked videos:', error)
+    logger.error('Error fetching liked videos:', error)
     const statusCode = error.statusCode || 500
     const errorMessage = error.message || 'Failed to fetch liked videos'
     res.status(statusCode).json({ 
@@ -362,7 +363,7 @@ router.get('/:id', (req, res) => {
       comments,
     })
   } catch (error) {
-    console.error('Error fetching video:', error)
+    logger.error('Error fetching video:', error)
     res.status(500).json({ error: 'Failed to fetch video' })
   }
 })
@@ -393,7 +394,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
       try {
         result = importVideosFromTakeout(fileContent, 'csv')
       } catch (parseError: any) {
-        console.error('Error parsing CSV file:', parseError)
+        logger.error('Error parsing CSV file:', parseError)
         return res.status(400).json({ error: 'Invalid CSV file. Please upload a valid Google Takeout CSV file.' })
       }
     } else {
@@ -402,7 +403,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
       try {
         jsonData = JSON.parse(fileContent)
       } catch (parseError: any) {
-        console.error('Error parsing JSON file:', parseError)
+        logger.error('Error parsing JSON file:', parseError)
         return res.status(400).json({ error: 'Invalid JSON file. Please upload a valid Google Takeout JSON file.' })
       }
       result = importVideosFromTakeout(jsonData, 'json')
@@ -419,7 +420,7 @@ router.post('/import', upload.single('file'), async (req, res) => {
       fetchQueued,
     })
   } catch (error: any) {
-    console.error('Error importing videos:', error)
+    logger.error('Error importing videos:', error)
     res.status(500).json({ error: error.message || 'Failed to import videos' })
   }
 })
@@ -445,7 +446,7 @@ router.post('/import-liked', upload.single('file'), async (req, res) => {
     try {
       jsonData = JSON.parse(fileContent)
     } catch (parseError: any) {
-      console.error('Error parsing JSON file:', parseError)
+      logger.error('Error parsing JSON file:', parseError)
       return res.status(400).json({ error: 'Invalid JSON file. Please upload a valid MyActivity.json file.' })
     }
 
@@ -462,7 +463,7 @@ router.post('/import-liked', upload.single('file'), async (req, res) => {
       fetchQueued,
     })
   } catch (error: any) {
-    console.error('Error importing liked videos:', error)
+    logger.error('Error importing liked videos:', error)
     res.status(500).json({ error: error.message || 'Failed to import liked videos' })
   }
 })
@@ -492,7 +493,7 @@ router.patch('/:id/like', (req, res) => {
     const updatedVideo = videoQueries.getById(id)
     res.json({ message: 'Like status updated successfully', video: updatedVideo })
   } catch (error: any) {
-    console.error('Error updating like status:', error)
+    logger.error('Error updating like status:', error)
     res.status(500).json({ error: 'Failed to update like status' })
   }
 })
@@ -503,7 +504,7 @@ router.get('/channels/liked', (req, res) => {
     const channels = videoQueries.getChannelsFromLikedVideos()
     res.json({ channels })
   } catch (error: any) {
-    console.error('Error fetching channels from liked videos:', error)
+    logger.error('Error fetching channels from liked videos:', error)
     res.status(500).json({ error: 'Failed to fetch channels from liked videos' })
   }
 })
@@ -517,7 +518,7 @@ router.get('/fetch-details/status', (req, res) => {
       status: remaining > 0 ? 'pending' : 'completed',
     })
   } catch (error) {
-    console.error('Error checking fetch status:', error)
+    logger.error('Error checking fetch status:', error)
     res.status(500).json({ error: 'Failed to check fetch status' })
   }
 })
@@ -557,7 +558,7 @@ router.post('/fetch-details', async (req, res) => {
       status: remaining > 0 ? 'partial' : 'completed',
     })
   } catch (error: any) {
-    console.error('Error fetching video details:', error)
+    logger.error('Error fetching video details:', error)
     res.status(500).json({ error: error.message || 'Failed to fetch video details' })
   }
 })
@@ -596,7 +597,7 @@ router.post('/retry-failed', async (req, res) => {
       resetCount++
     }
 
-    console.log(`Reset ${resetCount} failed videos to pending status for retry`)
+    logger.info(`Reset ${resetCount} failed videos to pending status for retry`)
 
     // Now process them in batches
     const batchResult = await processBatchVideoFetch(5)
@@ -611,7 +612,7 @@ router.post('/retry-failed', async (req, res) => {
       message: `Reset ${resetCount} failed videos and processed batch`
     })
   } catch (error: any) {
-    console.error('Error retrying failed videos:', error)
+    logger.error('Error retrying failed videos:', error)
     res.status(500).json({ error: error.message || 'Failed to retry failed videos' })
   }
 })
@@ -625,7 +626,7 @@ router.get('/backfill-channel-ids/status', (req, res) => {
       status: remaining > 0 ? 'pending' : 'completed',
     })
   } catch (error) {
-    console.error('Error checking backfill status:', error)
+    logger.error('Error checking backfill status:', error)
     res.status(500).json({ error: 'Failed to check backfill status' })
   }
 })
@@ -665,7 +666,7 @@ router.post('/backfill-channel-ids', async (req, res) => {
       status: remaining > 0 ? 'partial' : 'completed',
     })
   } catch (error: any) {
-    console.error('Error backfilling channel IDs:', error)
+    logger.error('Error backfilling channel IDs:', error)
     res.status(500).json({ error: error.message || 'Failed to backfill channel IDs' })
   }
 })
@@ -694,7 +695,7 @@ router.patch('/:id/state', (req, res) => {
     videoQueries.update(id, { added_to_latest_at: null })
     res.json({ message: 'State updated successfully', state })
   } catch (error) {
-    console.error('Error updating video state:', error)
+    logger.error('Error updating video state:', error)
     res.status(500).json({ error: 'Failed to update video state' })
   }
 })
@@ -760,7 +761,7 @@ router.post('/bulk-state', (req, res) => {
       errors: errors.length > 0 ? errors : undefined,
     })
   } catch (error) {
-    console.error('Error bulk updating video states:', error)
+    logger.error('Error bulk updating video states:', error)
     res.status(500).json({ error: 'Failed to bulk update video states' })
   }
 })
@@ -792,7 +793,7 @@ router.post('/:id/tags', (req, res) => {
     const tag = tagQueries.getByVideoId(id).find(t => t.id === tagId)
     res.status(201).json(tag)
   } catch (error) {
-    console.error('Error adding tag:', error)
+    logger.error('Error adding tag:', error)
     res.status(500).json({ error: 'Failed to add tag' })
   }
 })
@@ -814,7 +815,7 @@ router.delete('/:id/tags/:tagId', (req, res) => {
 
     res.json({ message: 'Tag deleted successfully' })
   } catch (error) {
-    console.error('Error deleting tag:', error)
+    logger.error('Error deleting tag:', error)
     res.status(500).json({ error: 'Failed to delete tag' })
   }
 })
@@ -825,7 +826,7 @@ router.get('/tags/all', (req, res) => {
     const tags = tagQueries.getAllUnique()
     res.json(tags.map(t => t.name))
   } catch (error) {
-    console.error('Error fetching tags:', error)
+    logger.error('Error fetching tags:', error)
     res.status(500).json({ error: 'Failed to fetch tags' })
   }
 })
@@ -853,7 +854,7 @@ router.post('/:id/comments', (req, res) => {
     const comment = commentQueries.getByVideoId(id).find(c => c.id === commentId)
     res.status(201).json(comment)
   } catch (error) {
-    console.error('Error adding comment:', error)
+    logger.error('Error adding comment:', error)
     res.status(500).json({ error: 'Failed to add comment' })
   }
 })
@@ -881,7 +882,7 @@ router.patch('/:id/comments/:commentId', (req, res) => {
     const comment = commentQueries.getByVideoId(id).find(c => c.id === commentId)
     res.json(comment)
   } catch (error) {
-    console.error('Error updating comment:', error)
+    logger.error('Error updating comment:', error)
     res.status(500).json({ error: 'Failed to update comment' })
   }
 })
@@ -903,7 +904,7 @@ router.delete('/:id/comments/:commentId', (req, res) => {
 
     res.json({ message: 'Comment deleted successfully' })
   } catch (error) {
-    console.error('Error deleting comment:', error)
+    logger.error('Error deleting comment:', error)
     res.status(500).json({ error: 'Failed to delete comment' })
   }
 })
@@ -917,7 +918,7 @@ router.delete('/all', (req, res) => {
       deletedCount 
     })
   } catch (error) {
-    console.error('Error deleting all videos:', error)
+    logger.error('Error deleting all videos:', error)
     res.status(500).json({ error: 'Failed to delete all videos' })
   }
 })
@@ -940,7 +941,7 @@ router.get('/:id/progress', (req, res) => {
       last_watched_at: progress.last_watched_at,
     })
   } catch (error) {
-    console.error('Error getting video progress:', error)
+    logger.error('Error getting video progress:', error)
     res.status(500).json({ error: 'Failed to get video progress' })
   }
 })
@@ -962,7 +963,7 @@ router.post('/:id/progress', (req, res) => {
       !isFinite(progress_seconds) ||
       progress_seconds < 0
     ) {
-      console.error('Invalid progress_seconds received:', {
+      logger.error('Invalid progress_seconds received:', {
         value: progress_seconds,
         type: typeof progress_seconds,
         isNaN: isNaN(progress_seconds),
@@ -984,7 +985,7 @@ router.post('/:id/progress', (req, res) => {
     videoProgressQueries.updateProgress(id, progress_seconds)
     res.json({ message: 'Progress updated successfully', progress_seconds })
   } catch (error) {
-    console.error('Error updating video progress:', error)
+    logger.error('Error updating video progress:', error)
     res.status(500).json({ error: 'Failed to update video progress' })
   }
 })
@@ -1016,7 +1017,7 @@ router.get('/:id/player-settings', (req, res) => {
       autoplay_next: settings.autoplay_next === 1,
     })
   } catch (error) {
-    console.error('Error getting player settings:', error)
+    logger.error('Error getting player settings:', error)
     res.status(500).json({ error: 'Failed to get player settings' })
   }
 })
@@ -1076,7 +1077,7 @@ router.patch('/:id/player-settings', (req, res) => {
     videoPlayerSettingsQueries.updateSettings(id, settings)
     res.json({ message: 'Player settings updated successfully', settings })
   } catch (error) {
-    console.error('Error updating player settings:', error)
+    logger.error('Error updating player settings:', error)
     res.status(500).json({ error: 'Failed to update player settings' })
   }
 })

@@ -3,6 +3,7 @@ import { channelQueries, channelStateQueries, videoQueries, tagQueries, commentQ
 import { fetchLatestVideosFromChannel, fetchSubscribedChannels, fetchChannelDetailsFromYouTube } from '../services/youtube.js'
 import { getAuthenticatedClient } from './auth.js'
 import { parseDuration } from '../utils/duration.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -91,7 +92,7 @@ router.get('/', (req, res) => {
       res.json(channels)
     }
   } catch (error) {
-    console.error('Error fetching channels:', error)
+    logger.error('Error fetching channels:', error)
     res.status(500).json({ error: 'Failed to fetch channels' })
   }
 })
@@ -109,7 +110,7 @@ router.get('/:channelId', (req, res) => {
     
     res.json(channel)
   } catch (error) {
-    console.error('Error fetching channel:', error)
+    logger.error('Error fetching channel:', error)
     res.status(500).json({ error: 'Failed to fetch channel' })
   }
 })
@@ -184,7 +185,7 @@ router.get('/:channelId/videos', async (req, res) => {
       res.status(400).json({ error: 'Invalid type. Must be watch_later, latest, or liked' })
     }
   } catch (error) {
-    console.error('Error fetching channel videos:', error)
+    logger.error('Error fetching channel videos:', error)
     res.status(500).json({ error: 'Failed to fetch channel videos' })
   }
 })
@@ -307,7 +308,7 @@ export async function processLatestVideosFromChannel(
     return { videos: savedVideos }
   } catch (error: any) {
     // Catch errors and return them in the error field instead of throwing
-    console.error(`Error processing latest videos for channel ${channelId}:`, error)
+    logger.error(`Error processing latest videos for channel ${channelId}:`, error)
     return {
       videos: [],
       error: error.message || 'Failed to fetch and process latest videos',
@@ -343,7 +344,7 @@ router.post('/:channelId/fetch-latest', async (req, res) => {
       videos: result.videos,
     })
   } catch (error: any) {
-    console.error('Error fetching and saving latest videos:', error)
+    logger.error('Error fetching and saving latest videos:', error)
     res.status(500).json({ error: error.message || 'Failed to fetch and save latest videos' })
   }
 })
@@ -367,7 +368,7 @@ router.post('/:channelId/subscribe', (req, res) => {
     
     res.json({ message: 'Channel subscribed successfully' })
   } catch (error) {
-    console.error('Error subscribing to channel:', error)
+    logger.error('Error subscribing to channel:', error)
     res.status(500).json({ error: 'Failed to subscribe to channel' })
   }
 })
@@ -391,7 +392,7 @@ router.delete('/:channelId/subscribe', (req, res) => {
     
     res.json({ message: 'Channel unsubscribed successfully' })
   } catch (error) {
-    console.error('Error unsubscribing from channel:', error)
+    logger.error('Error unsubscribing from channel:', error)
     res.status(500).json({ error: 'Failed to unsubscribe from channel' })
   }
 })
@@ -420,7 +421,7 @@ router.patch('/:channelId/archive', (req, res) => {
       isArchived
     })
   } catch (error) {
-    console.error('Error archiving channel:', error)
+    logger.error('Error archiving channel:', error)
     res.status(500).json({ error: 'Failed to archive channel' })
   }
 })
@@ -514,7 +515,7 @@ router.post('/sync-subscriptions', async (req, res) => {
     })
     
   } catch (error: any) {
-    console.error('Error syncing subscriptions:', error)
+    logger.error('Error syncing subscriptions:', error)
     if (error.code === 'AUTHENTICATION_REQUIRED') {
       return res.status(401).json({ 
         error: 'YouTube authentication required',
@@ -611,7 +612,7 @@ router.post('/fetch-latest-all', async (req, res) => {
         totalNewVideos += newVideos
         totalExistingVideos += existingVideos
       } catch (error: any) {
-        console.error(`Error fetching latest videos for channel ${channel.youtube_channel_id}:`, error)
+        logger.error(`Error fetching latest videos for channel ${channel.youtube_channel_id}:`, error)
         results.push({
           channelId: channel.youtube_channel_id,
           channelTitle: channel.channel_title || 'Unknown Channel',
@@ -636,7 +637,7 @@ router.post('/fetch-latest-all', async (req, res) => {
       results,
     })
   } catch (error: any) {
-    console.error('Error fetching latest videos from all subscribed channels:', error)
+    logger.error('Error fetching latest videos from all subscribed channels:', error)
     if (error.code === 'AUTHENTICATION_REQUIRED') {
       return res.status(401).json({ 
         error: 'YouTube authentication required',
@@ -706,7 +707,7 @@ router.get('/:channelId/liked', (req, res) => {
       offset: offset || 0,
     })
   } catch (error: any) {
-    console.error('Error fetching liked videos for channel:', error)
+    logger.error('Error fetching liked videos for channel:', error)
     res.status(500).json({ error: 'Failed to fetch liked videos for channel' })
   }
 })

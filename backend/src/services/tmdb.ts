@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger.js'
+
 const TMDB_API_BASE = 'https://api.themoviedb.org/3'
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
@@ -82,19 +84,19 @@ export async function findTmdbIdByImdbId(imdbId: string): Promise<{ tmdbId: numb
     // Prefer movie_results over tv_results when both exist
     if (data.movie_results && data.movie_results.length > 0) {
       const tmdbId = data.movie_results[0].id
-      console.log(`Found TMDB movie ID ${tmdbId} for IMDb ID ${imdbId}`)
+      logger.info(`Found TMDB movie ID ${tmdbId} for IMDb ID ${imdbId}`)
       return { tmdbId, mediaType: 'movie' }
     }
     if (data.tv_results && data.tv_results.length > 0) {
       const tmdbId = data.tv_results[0].id
-      console.log(`Found TMDB TV ID ${tmdbId} for IMDb ID ${imdbId}`)
+      logger.info(`Found TMDB TV ID ${tmdbId} for IMDb ID ${imdbId}`)
       return { tmdbId, mediaType: 'tv' }
     }
 
-    console.warn(`No TMDB ID found for IMDb ID ${imdbId}`)
+    logger.warn(`No TMDB ID found for IMDb ID ${imdbId}`)
     return null
   } catch (error: any) {
-    console.error(`Error finding TMDB ID for IMDb ID ${imdbId}:`, error.message)
+    logger.error(`Error finding TMDB ID for IMDb ID ${imdbId}:`, error.message)
     return null
   }
 }
@@ -123,7 +125,7 @@ export async function getMediaType(tmdbId: number): Promise<'movie' | 'tv' | nul
       throw tvError
     }
   } catch (error: any) {
-    console.error(`Error determining media type for TMDB ID ${tmdbId}:`, error.message)
+    logger.error(`Error determining media type for TMDB ID ${tmdbId}:`, error.message)
     return null
   }
 }
@@ -143,7 +145,7 @@ export async function fetchTVShowDetails(tmdbId: number) {
       status: data.status || null,
     }
   } catch (error: any) {
-    console.error(`Error fetching TV show details for TMDB ID ${tmdbId}:`, error.message)
+    logger.error(`Error fetching TV show details for TMDB ID ${tmdbId}:`, error.message)
     throw error
   }
 }
@@ -162,7 +164,7 @@ export async function fetchMovieDetails(tmdbId: number) {
       release_date: data.release_date || null,
     }
   } catch (error: any) {
-    console.error(`Error fetching movie details for TMDB ID ${tmdbId}:`, error.message)
+    logger.error(`Error fetching movie details for TMDB ID ${tmdbId}:`, error.message)
     throw error
   }
 }
@@ -206,14 +208,14 @@ export async function fetchTVShowEpisodes(tmdbId: number) {
         // Add a small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 250))
       } catch (seasonError: any) {
-        console.warn(`Error fetching season ${seasonNum} for TV show ${tmdbId}:`, seasonError.message)
+        logger.warn(`Error fetching season ${seasonNum} for TV show ${tmdbId}:`, { error: seasonError.message })
         // Continue with next season
       }
     }
 
     return allEpisodes
   } catch (error: any) {
-    console.error(`Error fetching episodes for TV show ${tmdbId}:`, error.message)
+    logger.error(`Error fetching episodes for TV show ${tmdbId}:`, error.message)
     throw error
   }
 }
@@ -256,7 +258,7 @@ export async function searchMovies(query: string) {
       popularity: result.popularity,
     }))
   } catch (error: any) {
-    console.error(`Error searching movies for query "${query}":`, error.message)
+    logger.error(`Error searching movies for query "${query}":`, error.message)
     throw error
   }
 }
@@ -290,7 +292,7 @@ export async function searchTVShows(query: string) {
       popularity: result.popularity,
     }))
   } catch (error: any) {
-    console.error(`Error searching TV shows for query "${query}":`, error.message)
+    logger.error(`Error searching TV shows for query "${query}":`, error.message)
     throw error
   }
 }

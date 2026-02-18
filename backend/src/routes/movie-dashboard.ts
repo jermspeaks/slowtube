@@ -1,5 +1,6 @@
 import express from 'express'
 import { movieQueries, moviePlaylistQueries } from '../services/database.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -118,7 +119,7 @@ router.get('/sections', (req, res) => {
 
     res.json({ sections })
   } catch (error) {
-    console.error('Error fetching Movie dashboard sections:', error)
+    logger.error('Error fetching Movie dashboard sections:', error)
     res.status(500).json({ error: 'Failed to fetch Movie dashboard sections' })
   }
 })

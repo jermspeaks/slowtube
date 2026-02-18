@@ -4,6 +4,7 @@ import ytdl from '@distube/ytdl-core'
 import { videoQueries, videoStateQueries, channelQueries } from './database.js'
 import { getAuthenticatedClient } from '../routes/auth.js'
 import { parseDuration } from '../utils/duration.js'
+import { logger } from '../utils/logger.js'
 
 // Google Takeout watch history entry format
 export interface GoogleTakeoutWatchHistoryEntry {
@@ -77,7 +78,7 @@ export function parseGoogleTakeoutJSON(jsonData: any): Array<{
     })
   }
 
-  console.log(`Parsed ${videos.length} unique videos from Google Takeout JSON`)
+  logger.info(`Parsed ${videos.length} unique videos from Google Takeout JSON`)
   return videos
 }
 
@@ -101,7 +102,7 @@ export function parseGoogleTakeoutCSV(csvContent: string): Array<{
   })
 
   if (result.errors.length > 0) {
-    console.warn('CSV parsing warnings:', result.errors)
+    logger.warn('CSV parsing warnings:', result.errors)
   }
 
   const rows = result.data as any[]
@@ -160,7 +161,7 @@ export function parseGoogleTakeoutCSV(csvContent: string): Array<{
     })
   }
 
-  console.log(`Parsed ${videos.length} unique videos from Google Takeout CSV`)
+  logger.info(`Parsed ${videos.length} unique videos from Google Takeout CSV`)
   return videos
 }
 
@@ -217,7 +218,7 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
         updated++
         
         if (!firstImported) {
-          console.log('First video updated:', {
+          logger.info('First video updated:', {
             id: existingVideo.id,
             youtube_id: video.id,
             added_to_playlist_at: video.watchedAt,
@@ -247,7 +248,7 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
         imported++
         
         if (!firstImported) {
-          console.log('First video imported:', {
+          logger.info('First video imported:', {
             id: videoId,
             youtube_id: video.id,
             added_to_playlist_at: video.watchedAt,
@@ -259,10 +260,10 @@ export function importVideosFromTakeout(data: any, format: 'json' | 'csv' = 'jso
       }
     }
 
-    console.log(`Import complete: ${imported} imported, ${updated} updated, ${skipped} skipped (already fetched)`)
+    logger.info(`Import complete: ${imported} imported, ${updated} updated, ${skipped} skipped (already fetched)`)
     return { imported, updated, skipped }
   } catch (error) {
-    console.error('Error importing videos:', error)
+    logger.error('Error importing videos:', error)
     throw error
   }
 }
@@ -309,7 +310,7 @@ export function parseLikedVideosFromActivityJSON(jsonData: any): Array<{
     })
   }
 
-  console.log(`Parsed ${videos.length} unique liked videos from MyActivity.json`)
+  logger.info(`Parsed ${videos.length} unique liked videos from MyActivity.json`)
   return videos
 }
 
@@ -351,7 +352,7 @@ export function importLikedVideosFromActivity(data: any): { imported: number; up
         updated++
         
         if (!firstImported) {
-          console.log('First liked video updated:', {
+          logger.info('First liked video updated:', {
             id: existingVideo.id,
             youtube_id: video.id,
             liked_at: video.likedAt,
@@ -382,7 +383,7 @@ export function importLikedVideosFromActivity(data: any): { imported: number; up
         imported++
         
         if (!firstImported) {
-          console.log('First liked video imported:', {
+          logger.info('First liked video imported:', {
             id: videoId,
             youtube_id: video.id,
             liked_at: video.likedAt,
@@ -393,10 +394,10 @@ export function importLikedVideosFromActivity(data: any): { imported: number; up
       }
     }
 
-    console.log(`Liked videos import complete: ${imported} imported, ${updated} updated, ${skipped} skipped`)
+    logger.info(`Liked videos import complete: ${imported} imported, ${updated} updated, ${skipped} skipped`)
     return { imported, updated, skipped }
   } catch (error) {
-    console.error('Error importing liked videos:', error)
+    logger.error('Error importing liked videos:', error)
     throw error
   }
 }
@@ -433,7 +434,7 @@ function getYouTubeClient(oauthClient?: any) {
     // Verify OAuth client has credentials
     const credentials = oauthClient.credentials
     if (!credentials || !credentials.access_token) {
-      console.warn('OAuth client provided but missing access_token, falling back to API key')
+      logger.warn('OAuth client provided but missing access_token, falling back to API key')
       // Fall through to API key fallback
     } else {
       // Use OAuth as primary auth, but also include API key if available for quota tracking
@@ -487,7 +488,7 @@ async function fetchVideoDetailsFromOEmbed(videoId: string): Promise<YouTubeVide
       },
     }
   } catch (error: any) {
-    console.warn(`oEmbed fetch failed for video ${videoId}:`, error.message)
+    logger.warn(`oEmbed fetch failed for video ${videoId}:`, error.message)
     return null
   }
 }
@@ -524,7 +525,7 @@ async function fetchVideoDetailsFromYtdl(videoId: string): Promise<YouTubeVideoD
       },
     }
   } catch (error: any) {
-    console.warn(`ytdl-core fetch failed for video ${videoId}:`, error.message)
+    logger.warn(`ytdl-core fetch failed for video ${videoId}:`, error.message)
     return null
   }
 }
@@ -542,7 +543,7 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
   const youtube = getYouTubeClient(oauthClient)
   if (!youtube) {
     const authMethod = oauthClient ? 'OAuth' : 'API key'
-    console.warn(`Cannot fetch video details from YouTube API. ${authMethod} authentication not available.`)
+    logger.warn(`Cannot fetch video details from YouTube API. ${authMethod} authentication not available.`)
     // Return empty map with all videos marked as null
     const result = new Map<string, YouTubeVideoDetails | null>()
     for (const videoId of videoIds) {
@@ -558,16 +559,16 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
       const hasToken = !!credentials?.access_token
       const tokenExpiry = credentials?.expiry_date ? new Date(credentials.expiry_date) : null
       const isExpired = tokenExpiry ? new Date() >= tokenExpiry : false
-      console.log(`Fetching ${videoIds.length} videos using OAuth:`, {
+      logger.info(`Fetching ${videoIds.length} videos using OAuth:`, {
         hasAccessToken: hasToken,
         tokenExpiry: tokenExpiry?.toISOString(),
         isExpired,
         hasRefreshToken: !!credentials?.refresh_token,
       })
     } else {
-      console.log(`Fetching ${videoIds.length} videos using API key`)
+      logger.info(`Fetching ${videoIds.length} videos using API key`)
     }
-    console.log(`Video IDs: ${videoIds.join(', ')}`)
+    logger.info(`Video IDs: ${videoIds.join(', ')}`)
 
     // Fetch video details - auth is now in the client, no need to pass key
     // According to YouTube API docs, videos.list works with either API key or OAuth
@@ -598,7 +599,7 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
     
     // Log API response details for debugging
     if (videos.length === 0 && videoIds.length > 0) {
-      console.warn(`YouTube API returned 0 videos for ${videoIds.length} requested IDs. Response:`, {
+      logger.warn(`YouTube API returned 0 videos for ${videoIds.length} requested IDs. Response:`, {
         pageInfo: videosResponse.data.pageInfo,
         items: videosResponse.data.items,
         totalResults: videosResponse.data.pageInfo?.totalResults,
@@ -611,7 +612,7 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
         const apiKey = getYouTubeApiKey()
         if (apiKey) {
           triedApiKeyFallback = true
-          console.warn(`OAuth returned 0 results, trying API key fallback...`)
+          logger.warn(`OAuth returned 0 results, trying API key fallback...`)
           try {
             const apiKeyClient = google.youtube({ version: 'v3', auth: apiKey })
             const fallbackResponse = await apiKeyClient.videos.list({
@@ -622,7 +623,7 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
             
             const fallbackVideos = fallbackResponse.data.items || []
             if (fallbackVideos.length > 0) {
-              console.log(`API key fallback succeeded! Retrieved ${fallbackVideos.length} videos`)
+              logger.info(`API key fallback succeeded! Retrieved ${fallbackVideos.length} videos`)
               // Use fallback results instead
               const fallbackResult = new Map<string, YouTubeVideoDetails | null>()
               
@@ -652,21 +653,21 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
                 fallbackResult.set(video.id, details)
               }
               
-              console.log(`Fetched details for ${fallbackVideos.length} out of ${videoIds.length} videos (using API key fallback)`)
+              logger.info(`Fetched details for ${fallbackVideos.length} out of ${videoIds.length} videos (using API key fallback)`)
               return fallbackResult
             } else {
-              console.warn(`API key fallback also returned 0 results. Trying ytdl-core/oEmbed fallback...`)
+              logger.warn(`API key fallback also returned 0 results. Trying ytdl-core/oEmbed fallback...`)
             }
           } catch (fallbackError: any) {
-            console.error('API key fallback also failed:', fallbackError.message)
-            console.warn('Trying ytdl-core/oEmbed fallback...')
+            logger.error('API key fallback also failed:', fallbackError.message)
+            logger.warn('Trying ytdl-core/oEmbed fallback...')
           }
         }
       }
       
       // If API returned 0 results (and API key fallback didn't help if we tried it),
       // try using ytdl-core/oEmbed fallback methods
-      console.warn(`YouTube API returned 0 results. Attempting fallback methods (ytdl-core/oEmbed)...`)
+      logger.warn(`YouTube API returned 0 results. Attempting fallback methods (ytdl-core/oEmbed)...`)
       return await fetchVideoDetailsWithFallback(videoIds)
     }
     
@@ -691,46 +692,46 @@ export async function fetchVideoDetailsFromYouTube(videoIds: string[], oauthClie
       result.set(video.id, details)
     }
 
-    console.log(`Fetched details for ${videos.length} out of ${videoIds.length} videos`)
+    logger.info(`Fetched details for ${videos.length} out of ${videoIds.length} videos`)
     return result
   } catch (error: any) {
     // Enhanced error logging
-    console.error('Error fetching video details from YouTube:', error)
+    logger.error('Error fetching video details from YouTube:', error)
     
     // Log detailed error information if available
     if (error.response?.data) {
-      console.error('YouTube API Error Response:', JSON.stringify(error.response.data, null, 2))
+      logger.error('YouTube API Error Response:', JSON.stringify(error.response.data, null, 2))
     }
     if (error.code) {
-      console.error('Error Code:', error.code)
+      logger.error('Error Code:', error.code)
     }
     if (error.message) {
-      console.error('Error Message:', error.message)
+      logger.error('Error Message:', error.message)
     }
     
     // Check for specific error types and provide helpful messages
     if (error.code === 403) {
       const errorMessage = error.response?.data?.error?.message || error.message
-      console.warn(`YouTube API access denied (403). Attempting fallback methods...`)
+      logger.warn(`YouTube API access denied (403). Attempting fallback methods...`)
       
       // Try fallback methods when API fails
       return await fetchVideoDetailsWithFallback(videoIds)
     } else if (error.code === 400) {
       const errorMessage = error.response?.data?.error?.message || error.message
-      console.warn(`YouTube API bad request (400). Attempting fallback methods...`)
+      logger.warn(`YouTube API bad request (400). Attempting fallback methods...`)
       
       // Try fallback methods
       return await fetchVideoDetailsWithFallback(videoIds)
     } else if (error.code === 401) {
       const errorMessage = error.response?.data?.error?.message || error.message
-      console.warn(`YouTube API unauthorized (401). Attempting fallback methods...`)
+      logger.warn(`YouTube API unauthorized (401). Attempting fallback methods...`)
       
       // Try fallback methods
       return await fetchVideoDetailsWithFallback(videoIds)
     }
     
     // For other errors, try fallback before throwing
-    console.warn(`YouTube API error. Attempting fallback methods...`)
+    logger.warn(`YouTube API error. Attempting fallback methods...`)
     try {
       return await fetchVideoDetailsWithFallback(videoIds)
     } catch (fallbackError) {
@@ -749,7 +750,7 @@ async function fetchVideoDetailsWithFallback(videoIds: string[]): Promise<Map<st
     result.set(videoId, null)
   }
   
-  console.log(`Attempting to fetch ${videoIds.length} videos using fallback methods...`)
+  logger.info(`Attempting to fetch ${videoIds.length} videos using fallback methods...`)
   
   // Try ytdl-core first (more complete metadata)
   // Process videos one at a time to avoid overwhelming the service
@@ -766,7 +767,7 @@ async function fetchVideoDetailsWithFallback(videoIds: string[]): Promise<Map<st
         ytdlFailedIds.push(videoId)
       }
     } catch (error: any) {
-      console.warn(`ytdl-core failed for ${videoId}:`, error.message)
+      logger.warn(`ytdl-core failed for ${videoId}:`, error.message)
       ytdlFailedIds.push(videoId)
     }
     
@@ -774,11 +775,11 @@ async function fetchVideoDetailsWithFallback(videoIds: string[]): Promise<Map<st
     await new Promise(resolve => setTimeout(resolve, 100))
   }
   
-  console.log(`ytdl-core succeeded for ${ytdlSuccessCount} videos`)
+  logger.info(`ytdl-core succeeded for ${ytdlSuccessCount} videos`)
   
   // For videos that ytdl-core failed on, try oEmbed as last resort
   if (ytdlFailedIds.length > 0) {
-    console.log(`Trying oEmbed for ${ytdlFailedIds.length} remaining videos...`)
+    logger.info(`Trying oEmbed for ${ytdlFailedIds.length} remaining videos...`)
     let oembedSuccessCount = 0
     
     for (const videoId of ytdlFailedIds) {
@@ -789,18 +790,18 @@ async function fetchVideoDetailsWithFallback(videoIds: string[]): Promise<Map<st
           oembedSuccessCount++
         }
       } catch (error: any) {
-        console.warn(`oEmbed also failed for ${videoId}:`, error.message)
+        logger.warn(`oEmbed also failed for ${videoId}:`, error.message)
       }
       
       // Small delay to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 100))
     }
     
-    console.log(`oEmbed succeeded for ${oembedSuccessCount} videos`)
+    logger.info(`oEmbed succeeded for ${oembedSuccessCount} videos`)
   }
   
   const totalSuccess = Array.from(result.values()).filter(v => v !== null).length
-  console.log(`Fallback methods fetched ${totalSuccess} out of ${videoIds.length} videos`)
+  logger.info(`Fallback methods fetched ${totalSuccess} out of ${videoIds.length} videos`)
   
   return result
 }
@@ -824,7 +825,7 @@ export async function fetchChannelDetailsFromYouTube(channelIds: string[], oauth
   const youtube = getYouTubeClient(oauthClient)
   if (!youtube) {
     const authMethod = oauthClient ? 'OAuth' : 'API key'
-    console.warn(`Cannot fetch channel details from YouTube API. ${authMethod} authentication not available.`)
+    logger.warn(`Cannot fetch channel details from YouTube API. ${authMethod} authentication not available.`)
     // Return empty map with all channels marked as null
     const result = new Map<string, {
       id: string
@@ -877,21 +878,21 @@ export async function fetchChannelDetailsFromYouTube(channelIds: string[], oauth
       })
     }
 
-    console.log(`Fetched details for ${channels.length} out of ${channelIds.length} channels`)
+    logger.info(`Fetched details for ${channels.length} out of ${channelIds.length} channels`)
     return result
   } catch (error: any) {
     // Enhanced error logging
-    console.error('Error fetching channel details from YouTube:', error)
+    logger.error('Error fetching channel details from YouTube:', error)
     
     // Log detailed error information if available
     if (error.response?.data) {
-      console.error('YouTube API Error Response:', JSON.stringify(error.response.data, null, 2))
+      logger.error('YouTube API Error Response:', JSON.stringify(error.response.data, null, 2))
     }
     if (error.code) {
-      console.error('Error Code:', error.code)
+      logger.error('Error Code:', error.code)
     }
     if (error.message) {
-      console.error('Error Message:', error.message)
+      logger.error('Error Message:', error.message)
     }
     
     // Check for specific error types and provide helpful messages
@@ -921,8 +922,8 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
     }
 
     const videoIds = videos.map(v => v.youtube_id)
-    console.log(`Processing batch of ${videoIds.length} videos`)
-    console.log(`Video IDs: ${videoIds.join(', ')}`)
+    logger.info(`Processing batch of ${videoIds.length} videos`)
+    logger.info(`Video IDs: ${videoIds.join(', ')}`)
 
     // For videos.list, API key is preferred over OAuth since it's a public read operation
     // OAuth is better for user-specific operations. Try API key first, then OAuth as fallback
@@ -934,16 +935,16 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
     if (!apiKey) {
       try {
         oauthClient = await getAuthenticatedClient()
-        console.log('Using OAuth authentication for YouTube API (API key not available)')
+        logger.info('Using OAuth authentication for YouTube API (API key not available)')
       } catch (oauthError: any) {
         if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
-          console.log('OAuth not available and API key not set. Cannot fetch video details.')
+          logger.info('OAuth not available and API key not set. Cannot fetch video details.')
         } else {
-          console.warn('Error getting OAuth client:', oauthError.message)
+          logger.warn('Error getting OAuth client:', oauthError.message)
         }
       }
     } else {
-      console.log('Using API key authentication for YouTube API (preferred for public video data)')
+      logger.info('Using API key authentication for YouTube API (preferred for public video data)')
     }
 
     // Fetch details from YouTube API (will use API key if available, otherwise OAuth)
@@ -968,7 +969,7 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
     } | null>()
 
     if (channelIds.length > 0) {
-      console.log(`Fetching details for ${channelIds.length} unique channels`)
+      logger.info(`Fetching details for ${channelIds.length} unique channels`)
       channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds, oauthClient)
     }
 
@@ -1058,10 +1059,10 @@ export async function processBatchVideoFetch(batchSize: number = 5): Promise<{ p
       }
     }
 
-    console.log(`Batch processed: ${processed} completed, ${unavailable} unavailable`)
+    logger.info(`Batch processed: ${processed} completed, ${unavailable} unavailable`)
     return { processed, unavailable }
   } catch (error) {
-    console.error('Error processing batch video fetch:', error)
+    logger.error('Error processing batch video fetch:', error)
     throw error
   }
 }
@@ -1084,8 +1085,8 @@ export async function fetchAllVideoDetails(batchSize: number = 5, delayBetweenBa
     const initialRemaining = videoQueries.countPendingFetch()
     const estimatedBatches = Math.ceil(initialRemaining / batchSize)
     
-    console.log(`Starting continuous video details fetch...`)
-    console.log(`Initial count: ${initialRemaining} videos needing fetch (estimated ${estimatedBatches} batches)`)
+    logger.info(`Starting continuous video details fetch...`)
+    logger.info(`Initial count: ${initialRemaining} videos needing fetch (estimated ${estimatedBatches} batches)`)
     
     while (batchesProcessed < maxBatches) {
       const batchResult = await processBatchVideoFetch(batchSize)
@@ -1098,7 +1099,7 @@ export async function fetchAllVideoDetails(batchSize: number = 5, delayBetweenBa
       const remaining = videoQueries.countPendingFetch()
       
       if (remaining === 0) {
-        console.log(`Video fetch completed. Total processed: ${totalProcessed}, unavailable: ${totalUnavailable}, batches: ${batchesProcessed}`)
+        logger.info(`Video fetch completed. Total processed: ${totalProcessed}, unavailable: ${totalUnavailable}, batches: ${batchesProcessed}`)
         break
       }
 
@@ -1106,8 +1107,8 @@ export async function fetchAllVideoDetails(batchSize: number = 5, delayBetweenBa
       if (remaining === previousRemaining && batchResult.processed === 0) {
         stuckCount++
         if (stuckCount >= 3) {
-          console.warn(`Detected stuck loop: remaining count hasn't changed for ${stuckCount} batches. Stopping to prevent infinite loop.`)
-          console.warn(`This might indicate videos are being processed but not properly excluded from the query.`)
+          logger.warn(`Detected stuck loop: remaining count hasn't changed for ${stuckCount} batches. Stopping to prevent infinite loop.`)
+          logger.warn(`This might indicate videos are being processed but not properly excluded from the query.`)
           break
         }
       } else {
@@ -1118,13 +1119,13 @@ export async function fetchAllVideoDetails(batchSize: number = 5, delayBetweenBa
       // Add delay between batches to avoid rate limiting (except for the last batch)
       if (remaining > 0) {
         const progressPercent = Math.round(((initialRemaining - remaining) / initialRemaining) * 100)
-        console.log(`Processed batch ${batchesProcessed}/${estimatedBatches} (${progressPercent}%). Remaining: ${remaining}. Continuing...`)
+        logger.info(`Processed batch ${batchesProcessed}/${estimatedBatches} (${progressPercent}%). Remaining: ${remaining}. Continuing...`)
         await delay(delayBetweenBatches)
       }
     }
 
     if (batchesProcessed >= maxBatches) {
-      console.warn(`Video fetch reached safety limit of ${maxBatches} batches. There may be more videos to process.`)
+      logger.warn(`Video fetch reached safety limit of ${maxBatches} batches. There may be more videos to process.`)
     }
 
     return {
@@ -1133,7 +1134,7 @@ export async function fetchAllVideoDetails(batchSize: number = 5, delayBetweenBa
       batchesProcessed,
     }
   } catch (error) {
-    console.error('Error during continuous video details fetch:', error)
+    logger.error('Error during continuous video details fetch:', error)
     // Return partial results even on error
     return {
       totalProcessed,
@@ -1153,18 +1154,18 @@ async function processBackfillBatch(batchSize: number): Promise<{ processed: num
   }
 
   const videoIds = videos.map(v => v.youtube_id)
-  console.log(`Backfilling channel IDs for ${videoIds.length} videos`)
+  logger.info(`Backfilling channel IDs for ${videoIds.length} videos`)
 
   // Try to get authenticated OAuth client first, fallback to API key
   let oauthClient: any = null
   try {
     oauthClient = await getAuthenticatedClient()
-    console.log('Using OAuth authentication for YouTube API (backfill)')
+    logger.info('Using OAuth authentication for YouTube API (backfill)')
   } catch (oauthError: any) {
     if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
-      console.log('OAuth not available, falling back to API key authentication (backfill)')
+      logger.info('OAuth not available, falling back to API key authentication (backfill)')
     } else {
-      console.warn('Error getting OAuth client, falling back to API key (backfill):', oauthError.message)
+      logger.warn('Error getting OAuth client, falling back to API key (backfill):', oauthError.message)
     }
     // Continue with API key fallback
   }
@@ -1191,7 +1192,7 @@ async function processBackfillBatch(batchSize: number): Promise<{ processed: num
   } | null>()
 
   if (channelIds.length > 0) {
-    console.log(`Fetching details for ${channelIds.length} unique channels`)
+    logger.info(`Fetching details for ${channelIds.length} unique channels`)
     channelDetailsMap = await fetchChannelDetailsFromYouTube(channelIds, oauthClient)
   }
 
@@ -1257,11 +1258,11 @@ async function processBackfillBatch(batchSize: number): Promise<{ processed: num
     } else {
       // Video not found or unavailable (private/deleted)
       unavailable++
-      console.warn(`Video ${video.youtube_id} not found or unavailable during backfill`)
+      logger.warn(`Video ${video.youtube_id} not found or unavailable during backfill`)
     }
   }
 
-  console.log(`Backfill batch processed: ${processed} completed, ${unavailable} unavailable`)
+  logger.info(`Backfill batch processed: ${processed} completed, ${unavailable} unavailable`)
   return { processed, unavailable }
 }
 
@@ -1282,7 +1283,7 @@ export async function backfillChannelIds(batchSize: number = 5, delayBetweenBatc
   const maxBatches = 1000 // Safety limit to prevent infinite loops
 
   try {
-    console.log('Starting continuous channel ID backfill...')
+    logger.info('Starting continuous channel ID backfill...')
     
     while (batchesProcessed < maxBatches) {
       const batchResult = await processBackfillBatch(batchSize)
@@ -1295,19 +1296,19 @@ export async function backfillChannelIds(batchSize: number = 5, delayBetweenBatc
       const remaining = videoQueries.countVideosNeedingChannelIdBackfill()
       
       if (remaining === 0) {
-        console.log(`Backfill completed. Total processed: ${totalProcessed}, unavailable: ${totalUnavailable}, batches: ${batchesProcessed}`)
+        logger.info(`Backfill completed. Total processed: ${totalProcessed}, unavailable: ${totalUnavailable}, batches: ${batchesProcessed}`)
         break
       }
 
       // Add delay between batches to avoid rate limiting (except for the last batch)
       if (remaining > 0) {
-        console.log(`Processed batch ${batchesProcessed}. Remaining: ${remaining}. Continuing...`)
+        logger.info(`Processed batch ${batchesProcessed}. Remaining: ${remaining}. Continuing...`)
         await delay(delayBetweenBatches)
       }
     }
 
     if (batchesProcessed >= maxBatches) {
-      console.warn(`Backfill reached safety limit of ${maxBatches} batches. There may be more videos to process.`)
+      logger.warn(`Backfill reached safety limit of ${maxBatches} batches. There may be more videos to process.`)
     }
 
     return {
@@ -1316,7 +1317,7 @@ export async function backfillChannelIds(batchSize: number = 5, delayBetweenBatc
       batchesProcessed,
     }
   } catch (error) {
-    console.error('Error during continuous channel ID backfill:', error)
+    logger.error('Error during continuous channel ID backfill:', error)
     // Return partial results even on error
     return {
       totalProcessed,
@@ -1333,12 +1334,12 @@ export async function fetchLatestVideosFromChannel(channelId: string, limit: num
     let oauthClient: any = null
     try {
       oauthClient = await getAuthenticatedClient()
-      console.log('Using OAuth authentication for fetching latest videos')
+      logger.info('Using OAuth authentication for fetching latest videos')
     } catch (oauthError: any) {
       if (oauthError.code === 'AUTHENTICATION_REQUIRED') {
-        console.log('OAuth not available, falling back to API key authentication')
+        logger.info('OAuth not available, falling back to API key authentication')
       } else {
-        console.warn('Error getting OAuth client, falling back to API key:', oauthError.message)
+        logger.warn('Error getting OAuth client, falling back to API key:', oauthError.message)
       }
     }
 
@@ -1398,10 +1399,10 @@ export async function fetchLatestVideosFromChannel(channelId: string, limit: num
 
     // Limit to requested number
     const result = videos.slice(0, limit)
-    console.log(`Fetched ${result.length} latest videos from channel ${channelId}`)
+    logger.info(`Fetched ${result.length} latest videos from channel ${channelId}`)
     return result
   } catch (error: any) {
-    console.error('Error fetching latest videos from channel:', error)
+    logger.error('Error fetching latest videos from channel:', error)
     throw error
   }
 }
@@ -1460,13 +1461,13 @@ export async function fetchSubscribedChannels(): Promise<Array<{
       nextPageToken = response.data.nextPageToken || undefined
     } while (nextPageToken)
 
-    console.log(`Fetched ${subscribedChannels.length} subscribed channels`)
+    logger.info(`Fetched ${subscribedChannels.length} subscribed channels`)
     return subscribedChannels
   } catch (error: any) {
     if (error.code === 'AUTHENTICATION_REQUIRED') {
       throw error // Re-throw to be handled by route
     }
-    console.error('Error fetching subscribed channels:', error)
+    logger.error('Error fetching subscribed channels:', error)
     throw error
   }
 }

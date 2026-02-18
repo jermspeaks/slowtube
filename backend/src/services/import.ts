@@ -11,6 +11,7 @@ import {
   searchMovies
 } from './tmdb.js'
 import { normalizeAirDate } from '../utils/date.js'
+import { logger } from '../utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -79,14 +80,14 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
   if (type === 'tmdb') {
     tmdbId = parseInt(id, 10)
     if (isNaN(tmdbId)) {
-      console.warn(`Invalid TMDB ID: ${id}`)
+      logger.warn(`Invalid TMDB ID: ${id}`)
       return { type: 'skipped' }
     }
 
     // Determine if it's a movie or TV show
     mediaType = await getMediaType(tmdbId)
     if (!mediaType) {
-      console.warn(`Could not determine media type for TMDB ID: ${tmdbId}`)
+      logger.warn(`Could not determine media type for TMDB ID: ${tmdbId}`)
       return { type: 'skipped' }
     }
   }
@@ -94,7 +95,7 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
   else if (type === 'imdb') {
     const result = await findTmdbIdByImdbId(id)
     if (!result) {
-      console.warn(`Could not find TMDB ID for IMDb ID: ${id}`)
+      logger.warn(`Could not find TMDB ID for IMDb ID: ${id}`)
       return { type: 'skipped' }
     }
 
@@ -104,7 +105,7 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
   }
   // Skip other types
   else {
-    console.warn(`Skipping entry with unsupported ID format: ${entry.id}`)
+    logger.warn(`Skipping entry with unsupported ID format: ${entry.id}`)
     return { type: 'skipped' }
   }
 
@@ -121,7 +122,7 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
         if (!existing.saved_at || new Date(savedAtISO) > new Date(existing.saved_at)) {
           tvShowQueries.update(existing.id, { saved_at: savedAtISO })
         }
-        console.log(`TV show already exists: ${existing.title} (TMDB: ${tmdbId})`)
+        logger.info(`TV show already exists: ${existing.title} (TMDB: ${tmdbId})`)
       } else {
         // Fetch TV show details
         const tvShowData = await fetchTVShowDetails(tmdbId)
@@ -132,7 +133,7 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
           saved_at: savedAtISO,
         })
 
-        console.log(`Imported TV show: ${tvShowData.title} (TMDB: ${tmdbId}, DB ID: ${tvShowId})`)
+        logger.info(`Imported TV show: ${tvShowData.title} (TMDB: ${tmdbId}, DB ID: ${tvShowId})`)
 
         // Fetch and import all episodes
         try {
@@ -157,20 +158,20 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
             } catch (epError: any) {
               // Skip duplicate episodes (already handled by ON CONFLICT in create)
               if (!epError.message?.includes('UNIQUE constraint')) {
-                console.warn(`Error importing episode S${episodeData.season_number}E${episodeData.episode_number}:`, epError.message)
+                logger.warn(`Error importing episode S${episodeData.season_number}E${episodeData.episode_number}:`, epError.message)
               }
             }
           }
 
-          console.log(`  Imported ${episodeCount} episodes for ${tvShowData.title}`)
+          logger.info(`  Imported ${episodeCount} episodes for ${tvShowData.title}`)
         } catch (episodesError: any) {
-          console.warn(`Error fetching episodes for TV show ${tmdbId}:`, episodesError.message)
+          logger.warn(`Error fetching episodes for TV show ${tmdbId}:`, episodesError.message)
         }
       }
 
       return { type: 'tv', tmdbId }
     } catch (error: any) {
-      console.error(`Error importing TV show ${tmdbId}:`, error.message)
+      logger.error(`Error importing TV show ${tmdbId}:`, error.message)
       return { type: 'skipped' }
     }
   }
@@ -185,7 +186,7 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
         if (!existing.saved_at || new Date(savedAtISO) > new Date(existing.saved_at)) {
           movieQueries.update(existing.id, { saved_at: savedAtISO })
         }
-        console.log(`Movie already exists: ${existing.title} (TMDB: ${tmdbId})`)
+        logger.info(`Movie already exists: ${existing.title} (TMDB: ${tmdbId})`)
       } else {
         // Fetch movie details
         const movieData = await fetchMovieDetails(tmdbId)
@@ -196,12 +197,12 @@ async function importEntry(entry: DataEntry, expectedType?: 'tmdb' | 'imdb'): Pr
           saved_at: savedAtISO,
         })
 
-        console.log(`Imported movie: ${movieData.title} (TMDB: ${tmdbId}, DB ID: ${movieId})`)
+        logger.info(`Imported movie: ${movieData.title} (TMDB: ${tmdbId}, DB ID: ${movieId})`)
       }
 
       return { type: 'movie', tmdbId }
     } catch (error: any) {
-      console.error(`Error importing movie ${tmdbId}:`, error.message)
+      logger.error(`Error importing movie ${tmdbId}:`, error.message)
       return { type: 'skipped' }
     }
   }
@@ -218,10 +219,10 @@ async function importFromDataFile(filePath: string, expectedType: 'tmdb' | 'imdb
   skipped: number
   errors: number
 }> {
-  console.log(`Starting import from ${filePath} (${expectedType.toUpperCase()} IDs)...`)
+  logger.info(`Starting import from ${filePath} (${expectedType.toUpperCase()} IDs)...`)
 
   const entries = parseDataJson(filePath)
-  console.log(`Found ${entries.length} entries to process`)
+  logger.info(`Found ${entries.length} entries to process`)
 
   let imported = 0
   let tvShows = 0
@@ -253,19 +254,19 @@ async function importFromDataFile(filePath: string, expectedType: 'tmdb' | 'imdb
 
       // Log progress every 10 entries
       if ((i + 1) % 10 === 0) {
-        console.log(`Progress: ${i + 1}/${entries.length} entries processed`)
+        logger.info(`Progress: ${i + 1}/${entries.length} entries processed`)
       }
     } catch (error: any) {
-      console.error(`Error processing entry ${entry.id}:`, error.message)
+      logger.error(`Error processing entry ${entry.id}:`, error.message)
       errors++
     }
   }
 
-  console.log('Import completed!')
-  console.log(`  Total: ${entries.length}`)
-  console.log(`  Imported: ${imported} (${tvShows} TV shows, ${movies} movies)`)
-  console.log(`  Skipped: ${skipped}`)
-  console.log(`  Errors: ${errors}`)
+  logger.info('Import completed!')
+  logger.info(`  Total: ${entries.length}`)
+  logger.info(`  Imported: ${imported} (${tvShows} TV shows, ${movies} movies)`)
+  logger.info(`  Skipped: ${skipped}`)
+  logger.info(`  Errors: ${errors}`)
 
   return {
     total: entries.length,
@@ -354,7 +355,7 @@ function parseLetterboxdCSV(csvContent: string): LetterboxdEntry[] {
     fields.push(currentField.trim())
 
     if (fields.length < 4) {
-      console.warn(`Skipping invalid CSV line: ${line}`)
+      logger.warn(`Skipping invalid CSV line: ${line}`)
       continue
     }
 
@@ -366,19 +367,19 @@ function parseLetterboxdCSV(csvContent: string): LetterboxdEntry[] {
       // Parse date and convert to ISO string
       const date = new Date(dateStr)
       if (isNaN(date.getTime())) {
-        console.warn(`Invalid date format: ${dateStr}, skipping entry`)
+        logger.warn(`Invalid date format: ${dateStr}, skipping entry`)
         continue
       }
       dateISO = date.toISOString()
     } catch (error) {
-      console.warn(`Error parsing date ${dateStr}:`, error)
+      logger.warn(`Error parsing date ${dateStr}:`, error)
       continue
     }
 
     // Convert year to number
     const year = parseInt(yearStr, 10)
     if (isNaN(year)) {
-      console.warn(`Invalid year: ${yearStr}, skipping entry`)
+      logger.warn(`Invalid year: ${yearStr}, skipping entry`)
       continue
     }
 
@@ -411,7 +412,7 @@ async function findMovieByTitleAndYear(title: string, year: number): Promise<num
 
     return null
   } catch (error: any) {
-    console.error(`Error searching for movie "${title}" (${year}):`, error.message)
+    logger.error(`Error searching for movie "${title}" (${year}):`, error.message)
     return null
   }
 }
@@ -425,7 +426,7 @@ export async function importFromLetterboxdCSV(csvContent: string): Promise<{
   errors: number
   notFound: string[]
 }> {
-  console.log('Starting import from Letterboxd CSV...')
+  logger.info('Starting import from Letterboxd CSV...')
 
   let entries: LetterboxdEntry[]
   try {
@@ -434,7 +435,7 @@ export async function importFromLetterboxdCSV(csvContent: string): Promise<{
     throw new Error(`Failed to parse CSV: ${error.message}`)
   }
 
-  console.log(`Found ${entries.length} entries to process`)
+  logger.info(`Found ${entries.length} entries to process`)
 
   let imported = 0
   let movies = 0
@@ -453,7 +454,7 @@ export async function importFromLetterboxdCSV(csvContent: string): Promise<{
       if (!tmdbId) {
         notFound.push(`${entry.name} (${entry.year})`)
         skipped++
-        console.log(`Movie not found in TMDB: ${entry.name} (${entry.year})`)
+        logger.info(`Movie not found in TMDB: ${entry.name} (${entry.year})`)
         continue
       }
 
@@ -463,7 +464,7 @@ export async function importFromLetterboxdCSV(csvContent: string): Promise<{
       if (existing) {
         // Skip if exists (keep existing saved_at)
         skipped++
-        console.log(`Movie already exists: ${existing.title} (TMDB: ${tmdbId})`)
+        logger.info(`Movie already exists: ${existing.title} (TMDB: ${tmdbId})`)
         continue
       }
 
@@ -479,9 +480,9 @@ export async function importFromLetterboxdCSV(csvContent: string): Promise<{
 
         imported++
         movies++
-        console.log(`Imported movie: ${movieData.title} (TMDB: ${tmdbId}, DB ID: ${movieId})`)
+        logger.info(`Imported movie: ${movieData.title} (TMDB: ${tmdbId}, DB ID: ${movieId})`)
       } catch (movieError: any) {
-        console.error(`Error importing movie ${entry.name} (TMDB: ${tmdbId}):`, movieError.message)
+        logger.error(`Error importing movie ${entry.name} (TMDB: ${tmdbId}):`, movieError.message)
         errors++
       }
 
@@ -492,20 +493,20 @@ export async function importFromLetterboxdCSV(csvContent: string): Promise<{
 
       // Log progress every 10 entries
       if ((i + 1) % 10 === 0) {
-        console.log(`Progress: ${i + 1}/${entries.length} entries processed`)
+        logger.info(`Progress: ${i + 1}/${entries.length} entries processed`)
       }
     } catch (error: any) {
-      console.error(`Error processing entry ${entry.name} (${entry.year}):`, error.message)
+      logger.error(`Error processing entry ${entry.name} (${entry.year}):`, error.message)
       errors++
     }
   }
 
-  console.log('Import completed!')
-  console.log(`  Total: ${entries.length}`)
-  console.log(`  Imported: ${imported} (${movies} movies)`)
-  console.log(`  Skipped: ${skipped}`)
-  console.log(`  Not found: ${notFound.length}`)
-  console.log(`  Errors: ${errors}`)
+  logger.info('Import completed!')
+  logger.info(`  Total: ${entries.length}`)
+  logger.info(`  Imported: ${imported} (${movies} movies)`)
+  logger.info(`  Skipped: ${skipped}`)
+  logger.info(`  Not found: ${notFound.length}`)
+  logger.info(`  Errors: ${errors}`)
 
   return {
     total: entries.length,

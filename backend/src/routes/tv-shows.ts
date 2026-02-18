@@ -6,6 +6,7 @@ import { normalizeAirDate } from '../utils/date.js'
 import { validateIdParam, validateEntityExists, validatePagination, validateSortBy, validateSortOrder, validateBooleanParam } from '../middleware/validation.js'
 import { asyncHandler, ConflictError, NotFoundError } from '../middleware/errorHandler.js'
 import { sendSuccessResponse, sendErrorResponse } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -78,14 +79,14 @@ router.post('/', asyncHandler(async (req, res) => {
       } catch (epError: any) {
         // Skip duplicate episodes (already handled by ON CONFLICT in create)
         if (!epError.message?.includes('UNIQUE constraint')) {
-          console.warn(`Error creating episode S${episodeData.season_number}E${episodeData.episode_number}:`, epError.message)
+          logger.warn(`Error creating episode S${episodeData.season_number}E${episodeData.episode_number}:`, { error: epError.message })
         }
       }
     }
 
-    console.log(`Created ${episodeCount} episodes for TV show ${tvShowData.title}`)
+    logger.info(`Created ${episodeCount} episodes for TV show ${tvShowData.title}`)
   } catch (episodesError: any) {
-    console.warn(`Error fetching episodes for TV show ${tmdbId}:`, episodesError.message)
+    logger.warn(`Error fetching episodes for TV show ${tmdbId}:`, { error: episodesError.message })
     // Continue even if episodes fail
   }
 

@@ -1,5 +1,6 @@
 import express from 'express'
 import { tvShowQueries, episodeQueries, tvShowStateQueries } from '../services/database.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -102,7 +103,7 @@ router.get('/sections', (req, res) => {
 
     res.json({ sections })
   } catch (error) {
-    console.error('Error fetching TV dashboard sections:', error)
+    logger.error('Error fetching TV dashboard sections:', error)
     res.status(500).json({ error: 'Failed to fetch TV dashboard sections' })
   }
 })

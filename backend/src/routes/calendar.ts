@@ -1,5 +1,6 @@
 import express from 'express'
 import { episodeQueries } from '../services/database.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -41,7 +42,7 @@ router.get('/episodes', (req, res) => {
       total: episodes.length,
     })
   } catch (error) {
-    console.error('Error fetching calendar episodes:', error)
+    logger.error('Error fetching calendar episodes:', error)
     res.status(500).json({ error: 'Failed to fetch calendar episodes' })
   }
 })

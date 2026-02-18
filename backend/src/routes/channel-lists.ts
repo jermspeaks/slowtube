@@ -2,6 +2,7 @@ import express from 'express'
 import { channelListQueries, channelQueries, tagQueries, commentQueries } from '../services/database.js'
 import { processLatestVideosFromChannel } from './channels.js'
 import { getAuthenticatedClient } from './auth.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -23,7 +24,7 @@ router.post('/', (req, res) => {
 
     res.status(201).json(list)
   } catch (error: any) {
-    console.error('Error creating channel group:', error)
+    logger.error('Error creating channel group:', error)
     res.status(500).json({ error: error.message || 'Failed to create channel group' })
   }
 })
@@ -36,7 +37,7 @@ router.get('/', (req, res) => {
     const lists = channelListQueries.getAll(displayOnHome)
     res.json(lists)
   } catch (error) {
-    console.error('Error fetching channel groups:', error)
+    logger.error('Error fetching channel groups:', error)
     res.status(500).json({ error: 'Failed to fetch channel groups' })
   }
 })
@@ -56,7 +57,7 @@ router.get('/:id', (req, res) => {
 
     res.json(list)
   } catch (error) {
-    console.error('Error fetching channel group:', error)
+    logger.error('Error fetching channel group:', error)
     res.status(500).json({ error: 'Failed to fetch channel group' })
   }
 })
@@ -101,7 +102,7 @@ router.patch('/:id', (req, res) => {
     const updatedList = channelListQueries.getById(id)
     res.json(updatedList)
   } catch (error: any) {
-    console.error('Error updating channel group:', error)
+    logger.error('Error updating channel group:', error)
     res.status(500).json({ error: error.message || 'Failed to update channel group' })
   }
 })
@@ -126,7 +127,7 @@ router.delete('/:id', (req, res) => {
       return res.status(500).json({ error: 'Failed to delete list' })
     }
   } catch (error) {
-    console.error('Error deleting channel group:', error)
+    logger.error('Error deleting channel group:', error)
     res.status(500).json({ error: 'Failed to delete channel group' })
   }
 })
@@ -173,7 +174,7 @@ router.post('/:id/channels', (req, res) => {
     const updatedList = channelListQueries.getById(id)
     res.json(updatedList)
   } catch (error: any) {
-    console.error('Error adding channels to group:', error)
+    logger.error('Error adding channels to group:', error)
     res.status(500).json({ error: error.message || 'Failed to add channels to group' })
   }
 })
@@ -201,7 +202,7 @@ router.delete('/:id/channels/:channelId', (req, res) => {
       return res.status(404).json({ error: 'Channel not found in list' })
     }
   } catch (error) {
-    console.error('Error removing channel from list:', error)
+    logger.error('Error removing channel from list:', error)
     res.status(500).json({ error: 'Failed to remove channel from list' })
   }
 })
@@ -297,7 +298,7 @@ router.post('/:id/refresh', async (req, res) => {
         totalNewVideos += newVideos
         totalExistingVideos += existingVideos
       } catch (error: any) {
-        console.error(`Error fetching latest videos for channel ${channel.youtube_channel_id}:`, error)
+        logger.error(`Error fetching latest videos for channel ${channel.youtube_channel_id}:`, error)
         results.push({
           channelId: channel.youtube_channel_id,
           channelTitle: channel.channel_title || 'Unknown Channel',
@@ -322,7 +323,7 @@ router.post('/:id/refresh', async (req, res) => {
       results,
     })
   } catch (error: any) {
-    console.error('Error refreshing channel list:', error)
+    logger.error('Error refreshing channel list:', error)
     if (error.code === 'AUTHENTICATION_REQUIRED') {
       return res.status(401).json({ 
         error: 'YouTube authentication required',
@@ -426,7 +427,7 @@ router.get('/:id/videos', (req, res) => {
       return res.status(400).json({ error: 'Invalid type. Must be watch_later, latest, or liked' })
     }
   } catch (error) {
-    console.error('Error fetching group videos:', error)
+    logger.error('Error fetching group videos:', error)
     res.status(500).json({ error: 'Failed to fetch group videos' })
   }
 })
@@ -469,7 +470,7 @@ router.patch('/reorder', (req, res) => {
     const updatedGroups = channelListQueries.getAll()
     res.json(updatedGroups)
   } catch (error: any) {
-    console.error('Error reordering channel groups:', error)
+    logger.error('Error reordering channel groups:', error)
     res.status(500).json({ error: error.message || 'Failed to reorder channel groups' })
   }
 })
@@ -500,7 +501,7 @@ router.patch('/:id/display-on-home', (req, res) => {
     const updatedList = channelListQueries.getById(id)
     res.json(updatedList)
   } catch (error: any) {
-    console.error('Error updating display on home:', error)
+    logger.error('Error updating display on home:', error)
     res.status(500).json({ error: error.message || 'Failed to update display on home' })
   }
 })

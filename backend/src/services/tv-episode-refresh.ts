@@ -1,6 +1,7 @@
 import { tvShowQueries, episodeQueries, tvShowStateQueries } from './database.js'
 import { fetchTVShowEpisodes } from './tmdb.js'
 import { normalizeAirDate } from '../utils/date.js'
+import { logger } from '../utils/logger.js'
 
 export interface RefreshResult {
   tvShowId: number
@@ -82,7 +83,7 @@ export async function refreshTVShowEpisodes(tvShowId: number): Promise<RefreshRe
       } catch (epError: any) {
         // Skip duplicate episodes (already handled by ON CONFLICT in create)
         if (!epError.message?.includes('UNIQUE constraint')) {
-          console.warn(`Error creating/updating episode S${episodeData.season_number}E${episodeData.episode_number} for TV show ${tvShow.title}:`, epError.message)
+          logger.warn(`Error creating/updating episode S${episodeData.season_number}E${episodeData.episode_number} for TV show ${tvShow.title}:`, epError.message)
         }
       }
     }
@@ -95,7 +96,7 @@ export async function refreshTVShowEpisodes(tvShowId: number): Promise<RefreshRe
       updatedEpisodes,
     }
   } catch (error: any) {
-    console.error(`Error refreshing episodes for TV show ${tvShow.title} (ID: ${tvShowId}):`, error.message)
+    logger.error(`Error refreshing episodes for TV show ${tvShow.title} (ID: ${tvShowId}):`, error.message)
     return {
       tvShowId,
       tvShowTitle: tvShow.title,
@@ -140,30 +141,30 @@ export async function refreshAllTVShowEpisodes(includeArchived: boolean = false)
       })
       .map(show => show.status)
       .filter((status, index, arr) => arr.indexOf(status) === index) // unique statuses
-    console.log(`Skipping ${skippedCount} show(s) (statuses: ${skippedStatuses.join(', ')})`)
+    logger.info(`Skipping ${skippedCount} show(s) (statuses: ${skippedStatuses.join(', ')})`)
   }
   
   const results: RefreshResult[] = []
   let successful = 0
   let failed = 0
 
-  console.log(`Starting refresh for ${tvShows.length} TV show(s)...`)
+  logger.info(`Starting refresh for ${tvShows.length} TV show(s)...`)
 
   // Refresh each TV show with a delay to avoid rate limiting
   for (let i = 0; i < tvShows.length; i++) {
     const tvShow = tvShows[i]
 
-    console.log(`Refreshing episodes for: ${tvShow.title} (${i + 1}/${tvShows.length})`)
+    logger.info(`Refreshing episodes for: ${tvShow.title} (${i + 1}/${tvShows.length})`)
     
     const result = await refreshTVShowEpisodes(tvShow.id)
     results.push(result)
 
     if (result.success) {
       successful++
-      console.log(`  ✓ ${tvShow.title}: ${result.newEpisodes} new, ${result.updatedEpisodes} updated`)
+      logger.info(`  ✓ ${tvShow.title}: ${result.newEpisodes} new, ${result.updatedEpisodes} updated`)
     } else {
       failed++
-      console.log(`  ✗ ${tvShow.title}: ${result.error}`)
+      logger.info(`  ✗ ${tvShow.title}: ${result.error}`)
     }
 
     // Add delay between TV shows to avoid rate limiting (except for the last one)
@@ -179,7 +180,7 @@ export async function refreshAllTVShowEpisodes(includeArchived: boolean = false)
     results,
   }
 
-  console.log(`Refresh complete: ${successful} successful, ${failed} failed out of ${tvShows.length} total`)
+  logger.info(`Refresh complete: ${successful} successful, ${failed} failed out of ${tvShows.length} total`)
   
   return summary
 }

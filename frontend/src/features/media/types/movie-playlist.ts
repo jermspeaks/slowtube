@@ -39,5 +39,6 @@ export interface SuggestedPlaylist {
 export interface AISuggestResponse {
   suggestedPlaylists: SuggestedPlaylist[]
   unassignedMovieIds: number[]
+  movies?: { id: number; title: string }[]
 }
 

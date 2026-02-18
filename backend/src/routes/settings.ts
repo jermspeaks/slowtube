@@ -1,5 +1,6 @@
 import express from 'express'
 import { settingsQueries } from '../services/database.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -15,7 +16,7 @@ router.get('/:key', (req, res) => {
     
     res.json({ key, value })
   } catch (error) {
-    console.error('Error fetching setting:', error)
+    logger.error('Error fetching setting:', error)
     res.status(500).json({ error: 'Failed to fetch setting' })
   }
 })
@@ -33,7 +34,7 @@ router.post('/', (req, res) => {
     
     res.json({ key, value, message: 'Setting updated successfully' })
   } catch (error) {
-    console.error('Error setting setting:', error)
+    logger.error('Error setting setting:', error)
     res.status(500).json({ error: 'Failed to set setting' })
   }
 })

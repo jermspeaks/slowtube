@@ -1,6 +1,7 @@
 import express from 'express'
 import multer from 'multer'
 import { importFromDataJson, importFromData2Json, importFromLetterboxdCSV } from '../services/import.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -33,7 +34,7 @@ router.post('/tmdb', async (req, res) => {
       ...result,
     })
   } catch (error: any) {
-    console.error('Error importing from data.json:', error)
+    logger.error('Error importing from data.json:', error)
     res.status(500).json({ error: error.message || 'Failed to import from data.json' })
   }
 })
@@ -47,7 +48,7 @@ router.post('/imdb', async (req, res) => {
       ...result,
     })
   } catch (error: any) {
-    console.error('Error importing from data2.json:', error)
+    logger.error('Error importing from data2.json:', error)
     res.status(500).json({ error: error.message || 'Failed to import from data2.json' })
   }
 })
@@ -77,7 +78,7 @@ router.post('/letterboxd', upload.single('file'), async (req, res) => {
       ...result,
     })
   } catch (error: any) {
-    console.error('Error importing from Letterboxd CSV:', error)
+    logger.error('Error importing from Letterboxd CSV:', error)
     res.status(500).json({ error: error.message || 'Failed to import from Letterboxd CSV' })
   }
 })

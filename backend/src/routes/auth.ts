@@ -1,6 +1,7 @@
 import express from 'express'
 import { google } from 'googleapis'
 import { oauthQueries } from '../services/database.js'
+import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
@@ -90,7 +91,7 @@ router.get('/youtube/callback', async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5200'
     res.redirect(`${frontendUrl}/dashboard?auth=success`)
   } catch (error) {
-    console.error('OAuth callback error:', error)
+    logger.error('OAuth callback error:', { error: error instanceof Error ? error.message : String(error) })
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5200'
     res.redirect(`${frontendUrl}/login?error=oauth_failed`)
   }
@@ -137,7 +138,7 @@ router.get('/session', async (req, res) => {
               user_id: session.user_id,
             })
           } catch (refreshError) {
-            console.error('Token refresh error:', refreshError)
+            logger.error('Token refresh error:', { error: refreshError instanceof Error ? refreshError.message : String(refreshError) })
             return res.json({ authenticated: false })
           }
         } else {
@@ -151,7 +152,7 @@ router.get('/session', async (req, res) => {
       user_id: session.user_id,
     })
   } catch (error) {
-    console.error('Session check error:', error)
+    logger.error('Session check error:', { error: error instanceof Error ? error.message : String(error) })
     res.status(500).json({ error: 'Failed to check session' })
   }
 })
@@ -175,7 +176,7 @@ export async function getAuthenticatedClient() {
     
     // Refresh if expired or expiring within 5 minutes
     if (expiresAt <= fiveMinutesFromNow && session.refresh_token) {
-      console.log('OAuth token expired or expiring soon, refreshing...')
+      logger.info('OAuth token expired or expiring soon, refreshing...')
       // Refresh token
       const client = getOAuth2Client()
       client.setCredentials({
@@ -197,10 +198,10 @@ export async function getAuthenticatedClient() {
         })
 
         client.setCredentials(credentials)
-        console.log('OAuth token refreshed successfully')
+        logger.info('OAuth token refreshed successfully')
         return client
       } catch (refreshError: any) {
-        console.error('Failed to refresh OAuth token:', refreshError)
+        logger.error('Failed to refresh OAuth token:', { error: refreshError instanceof Error ? refreshError.message : String(refreshError) })
         // If refresh fails, try to use existing token anyway
         // (it might still work if we're within a grace period)
       }
