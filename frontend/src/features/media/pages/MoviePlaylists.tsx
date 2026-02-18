@@ -22,7 +22,7 @@ import {
 } from '@/shared/components/ui/dropdown-menu'
 import { Button } from '@/shared/components/ui/button'
 import { toast } from 'sonner'
-import { Plus, MoreVertical, Edit, Trash2, Sparkles } from 'lucide-react'
+import { Plus, MoreVertical, Edit, Trash2, Sparkles, LayoutGrid, FolderSearch, ArrowLeft } from 'lucide-react'
 
 function MoviePlaylists() {
   const navigate = useNavigate()
@@ -37,6 +37,9 @@ function MoviePlaylists() {
   const [aiSuggestMovies, setAiSuggestMovies] = useState<{ id: number; title: string }[]>([])
   const [isAISuggestModalOpen, setIsAISuggestModalOpen] = useState(false)
   const [isAISuggestLoading, setIsAISuggestLoading] = useState(false)
+  const [isOrganizeChoiceDialogOpen, setIsOrganizeChoiceDialogOpen] = useState(false)
+  const [organizeChoiceStep, setOrganizeChoiceStep] = useState<'choice' | 'category'>('choice')
+  const [categoryInput, setCategoryInput] = useState('')
 
   useEffect(() => {
     loadPlaylists()
@@ -122,7 +125,9 @@ function MoviePlaylists() {
       }
       const data = await moviePlaylistsAPI.suggestWithAI()
       setAiSuggestData(data)
-      setAiSuggestMovies(movies.map((m: { id: number; title: string }) => ({ id: m.id, title: m.title })))
+      setAiSuggestMovies(
+        data.movies ?? movies.map((m: { id: number; title: string }) => ({ id: m.id, title: m.title }))
+      )
       setIsAISuggestModalOpen(true)
     } catch (error: any) {
       console.error('Error getting AI suggestions:', error)
@@ -130,6 +135,50 @@ function MoviePlaylists() {
     } finally {
       setIsAISuggestLoading(false)
     }
+  }
+
+  const handleOrganizeChoice = (action: 'organize' | 'category') => {
+    if (action === 'organize') {
+      setIsOrganizeChoiceDialogOpen(false)
+      setOrganizeChoiceStep('choice')
+      handleOrganizeWithAI()
+    } else {
+      setOrganizeChoiceStep('category')
+    }
+  }
+
+  const handleFindByCategory = async () => {
+    const category = categoryInput.trim()
+    if (!category) return
+    try {
+      setIsAISuggestLoading(true)
+      const response = await moviesAPI.getAll()
+      const movies = response.movies || response.data || []
+      if (!Array.isArray(movies) || movies.length === 0) {
+        toast.error('No movies in library to search')
+        return
+      }
+      const data = await moviePlaylistsAPI.suggestByCategory(category)
+      setAiSuggestData(data)
+      setAiSuggestMovies(
+        data.movies ?? movies.map((m: { id: number; title: string }) => ({ id: m.id, title: m.title }))
+      )
+      setIsOrganizeChoiceDialogOpen(false)
+      setOrganizeChoiceStep('choice')
+      setCategoryInput('')
+      setIsAISuggestModalOpen(true)
+    } catch (error: any) {
+      console.error('Error finding movies by category:', error)
+      toast.error(error.response?.data?.error || 'Failed to find movies by category')
+    } finally {
+      setIsAISuggestLoading(false)
+    }
+  }
+
+  const closeOrganizeChoiceDialog = () => {
+    setIsOrganizeChoiceDialogOpen(false)
+    setOrganizeChoiceStep('choice')
+    setCategoryInput('')
   }
 
   return (
@@ -140,7 +189,7 @@ function MoviePlaylists() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={handleOrganizeWithAI}
+              onClick={() => setIsOrganizeChoiceDialogOpen(true)}
               disabled={isAISuggestLoading}
               className="gap-2"
             >
@@ -340,6 +389,90 @@ function MoviePlaylists() {
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Organize with AI – choice dialog */}
+      <Dialog open={isOrganizeChoiceDialogOpen} onOpenChange={(open) => !open && closeOrganizeChoiceDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {organizeChoiceStep === 'category' ? (
+                <button
+                  type="button"
+                  onClick={() => setOrganizeChoiceStep('choice')}
+                  className="flex items-center gap-2 text-left hover:opacity-80"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  What would you like to do?
+                </button>
+              ) : (
+                'What would you like to do?'
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {organizeChoiceStep === 'choice'
+                ? 'Choose how you want to use AI to organize your movie library.'
+                : 'Describe a category (e.g. Sci-Fi from the 80s, Christmas movies). AI will find all matching movies and suggest one playlist.'}
+            </DialogDescription>
+          </DialogHeader>
+          {organizeChoiceStep === 'choice' ? (
+            <div className="grid gap-3 py-2">
+              <Button
+                variant="outline"
+                className="h-auto flex flex-col items-start gap-1 p-4 text-left"
+                onClick={() => handleOrganizeChoice('organize')}
+                disabled={isAISuggestLoading}
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <LayoutGrid className="h-4 w-4" />
+                  Organize my library
+                </span>
+                <span className="text-sm text-muted-foreground font-normal">
+                  AI suggests multiple playlists from your whole library (by genre, theme, decade, etc.).
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex flex-col items-start gap-1 p-4 text-left"
+                onClick={() => handleOrganizeChoice('category')}
+                disabled={isAISuggestLoading}
+              >
+                <span className="flex items-center gap-2 font-medium">
+                  <FolderSearch className="h-4 w-4" />
+                  Create a category and find movies
+                </span>
+                <span className="text-sm text-muted-foreground font-normal">
+                  Describe a category; AI finds all matching movies and you get one playlist.
+                </span>
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium mb-1">
+                  Category
+                </label>
+                <input
+                  id="category"
+                  type="text"
+                  value={categoryInput}
+                  onChange={(e) => setCategoryInput(e.target.value)}
+                  placeholder="e.g. Sci-Fi from the 80s, Christmas movies"
+                  className="w-full px-3 py-2 border border-border rounded bg-background text-foreground"
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOrganizeChoiceStep('choice')}>
+                  Back
+                </Button>
+                <Button onClick={handleFindByCategory} disabled={!categoryInput.trim() || isAISuggestLoading}>
+                  {isAISuggestLoading ? 'Finding…' : 'Find movies'}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

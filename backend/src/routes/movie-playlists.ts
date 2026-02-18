@@ -1,6 +1,6 @@
 import express from 'express'
 import { moviePlaylistQueries, movieQueries } from '../services/database.js'
-import { suggestPlaylistsFromMovies } from '../services/gemini.js'
+import { suggestPlaylistsFromMovies, findMoviesByCategory } from '../services/gemini.js'
 import { logger } from '../utils/logger.js'
 
 const router = express.Router()
@@ -106,6 +106,36 @@ router.post('/ai-suggest', async (req, res) => {
     }
     logger.error('AI suggest playlists failed', { error: error.message, stack: error.stack })
     res.status(500).json({ error: error.message || 'Failed to get AI playlist suggestions' })
+  }
+})
+
+// AI-suggest one playlist by category (must be before /:id)
+router.post('/ai-suggest-by-category', async (req, res) => {
+  try {
+    const { category } = req.body as { category?: unknown }
+    if (typeof category !== 'string' || category.trim().length === 0) {
+      return res.status(400).json({ error: 'category is required and must be a non-empty string' })
+    }
+
+    const all = movieQueries.getAll()
+    if (all.length === 0) {
+      return res.status(400).json({ error: 'No movies in library to organize' })
+    }
+    const movies = all.map((m) => ({
+      id: m.id,
+      title: m.title,
+      overview: m.overview,
+      release_date: m.release_date,
+    }))
+
+    const result = await findMoviesByCategory(movies, category.trim())
+    res.json(result)
+  } catch (error: any) {
+    if (error.message === 'GEMINI_API_KEY is not set') {
+      return res.status(503).json({ error: 'AI suggestions are not configured (missing GEMINI_API_KEY)' })
+    }
+    logger.error('AI suggest by category failed', { error: error.message, stack: error.stack })
+    res.status(500).json({ error: error.message || 'Failed to find movies by category' })
   }
 })
 

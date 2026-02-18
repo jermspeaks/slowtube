@@ -234,6 +234,10 @@ export const moviePlaylistsAPI = {
     const response = await api.post('/api/movie-playlists/ai-suggest', movieIds != null ? { movieIds } : {})
     return response.data
   },
+  suggestByCategory: async (category: string) => {
+    const response = await api.post('/api/movie-playlists/ai-suggest-by-category', { category })
+    return response.data
+  },
 }
 
 // Calendar API
