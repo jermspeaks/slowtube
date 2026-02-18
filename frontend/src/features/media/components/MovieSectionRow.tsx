@@ -45,8 +45,8 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
     if (!scrollContainerRef.current) return
     
     const container = scrollContainerRef.current
-    const cardWidth = 300 // Approximate card width with gap
-    const scrollAmount = cardWidth * 2 // Scroll 2 cards at a time
+    const scrollCardWidth = onlyFeed ? 140 : 300 // Approximate card width with gap
+    const scrollAmount = scrollCardWidth * 2 // Scroll 2 cards at a time
     
     const newScrollLeft = direction === 'left' 
       ? container.scrollLeft - scrollAmount
@@ -61,6 +61,9 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
   if (movies.length === 0) {
     return null
   }
+
+  const cardWidthClass = onlyFeed ? 'w-[120px] md:w-[140px]' : 'w-[280px] md:w-[300px]'
+  const gapClass = onlyFeed ? 'gap-2 md:gap-3' : 'gap-4 md:gap-6'
 
   const feedBlock = (
     <div className="relative">
@@ -80,7 +83,7 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
         {/* Scrollable Container */}
         <div
           ref={scrollContainerRef}
-          className="flex gap-4 md:gap-6 overflow-x-auto scroll-smooth pb-4"
+          className={`flex ${gapClass} overflow-x-auto scroll-smooth pb-4`}
           style={{
             scrollSnapType: 'x mandatory',
             WebkitOverflowScrolling: 'touch',
@@ -91,7 +94,7 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
           {movies.map((movie) => (
             <div
               key={movie.id}
-              className="shrink-0 w-[280px] md:w-[300px]"
+              className={`shrink-0 ${cardWidthClass}`}
               style={{ scrollSnapAlign: 'start' }}
             >
               <MovieCard
