@@ -79,6 +79,7 @@ ${JSON_SCHEMA_INSTRUCTIONS}`
     config: {
       responseMimeType: 'application/json',
       temperature: 0.4,
+      maxOutputTokens: 16384,
     },
   })
 
@@ -92,8 +93,30 @@ ${JSON_SCHEMA_INSTRUCTIONS}`
   let parsed: unknown
   try {
     parsed = JSON.parse(jsonStr)
-  } catch {
-    throw new Error('Gemini response was not valid JSON')
+  } catch (parseErr: unknown) {
+    const errMsg = parseErr instanceof Error ? parseErr.message : String(parseErr)
+    const isTruncation =
+      errMsg === 'Unexpected end of JSON input' || /Expected ',' or '\]' after array element.*position \d+/.test(errMsg)
+    if (isTruncation) {
+      let repaired = jsonStr.replace(/,(\s*)$/, '$1')
+      const stack: string[] = []
+      for (const c of repaired) {
+        if (c === '[') stack.push(']')
+        else if (c === '{') stack.push('}')
+        else if (c === ']' || c === '}') stack.pop()
+      }
+      repaired = repaired + stack.reverse().join('')
+      try {
+        parsed = JSON.parse(repaired)
+        const obj = parsed as Record<string, unknown>
+        if (!Array.isArray(obj.unassignedMovieIds)) obj.unassignedMovieIds = []
+        if (!Array.isArray(obj.suggestedPlaylists)) obj.suggestedPlaylists = []
+      } catch {
+        throw new Error('Gemini response was not valid JSON')
+      }
+    } else {
+      throw new Error('Gemini response was not valid JSON')
+    }
   }
 
   if (!parsed || typeof parsed !== 'object' || !('suggestedPlaylists' in parsed) || !('unassignedMovieIds' in parsed)) {
