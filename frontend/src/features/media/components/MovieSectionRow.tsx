@@ -13,12 +13,16 @@ interface MovieSectionRowProps {
   viewAllLink?: string
   /** When true, render only the horizontal feed (no header). Caller provides header. */
   onlyFeed?: boolean
+  /** Card size: 'default' (large) or 'small'. Small matches MoviePlaylists feed. */
+  cardSize?: 'default' | 'small'
 }
 
-function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink, onlyFeed }: MovieSectionRowProps) {
+function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink, onlyFeed, cardSize }: MovieSectionRowProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
+
+  const useSmallCards = onlyFeed || cardSize === 'small'
 
   const checkScrollability = () => {
     if (!scrollContainerRef.current) return
@@ -45,7 +49,7 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
     if (!scrollContainerRef.current) return
     
     const container = scrollContainerRef.current
-    const scrollCardWidth = onlyFeed ? 140 : 300 // Approximate card width with gap
+    const scrollCardWidth = useSmallCards ? 140 : 300 // Approximate card width with gap
     const scrollAmount = scrollCardWidth * 2 // Scroll 2 cards at a time
     
     const newScrollLeft = direction === 'left' 
@@ -62,8 +66,8 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
     return null
   }
 
-  const cardWidthClass = onlyFeed ? 'w-[120px] md:w-[140px]' : 'w-[280px] md:w-[300px]'
-  const gapClass = onlyFeed ? 'gap-2 md:gap-3' : 'gap-4 md:gap-6'
+  const cardWidthClass = useSmallCards ? 'w-[120px] md:w-[140px]' : 'w-[280px] md:w-[300px]'
+  const gapClass = useSmallCards ? 'gap-2 md:gap-3' : 'gap-4 md:gap-6'
 
   const feedBlock = (
     <div className="relative">

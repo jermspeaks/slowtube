@@ -95,6 +95,7 @@ function MoviesDashboard() {
                   movies={section.movies}
                   onMovieClick={handleMovieClick}
                   viewAllLink={getViewAllLink(section.type, section.playlistId)}
+                  cardSize="small"
                 />
               )
             }
