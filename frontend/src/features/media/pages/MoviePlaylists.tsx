@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router'
 import { format } from 'date-fns'
 import { moviePlaylistsAPI, moviesAPI } from '../services/api'
 import { MoviePlaylistWithMovies, AISuggestResponse } from '../types/movie-playlist'
+import type { DiscoveryMovie } from '../types/dashboard'
+import type { Movie } from '../types/movie'
 import MoviePlaylistForm from '../components/MoviePlaylistForm'
 import MovieSectionRow from '../components/MovieSectionRow'
 import AISuggestReviewModal from '../components/AISuggestReviewModal'
@@ -95,8 +97,8 @@ function MoviePlaylists() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleMovieClick = (movie: { id: number }) => {
-    navigate(`/media/movies/${movie.id}`)
+  const handleMovieClick = (item: Movie | DiscoveryMovie) => {
+    if ('id' in item) navigate(`/media/movies/${item.id}`)
   }
 
   const handleDeleteConfirm = async () => {

@@ -3,13 +3,14 @@ import { Link } from 'react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Movie } from '../types/movie'
+import type { DiscoveryMovie } from '../types/dashboard'
 import MovieCard from './MovieCard'
 
 interface MovieSectionRowProps {
   title: string
   description: string
-  movies: Movie[]
-  onMovieClick?: (movie: Movie) => void
+  movies: (Movie | DiscoveryMovie)[]
+  onMovieClick?: (item: Movie | DiscoveryMovie) => void
   viewAllLink?: string
   /** When true, render only the horizontal feed (no header). Caller provides header. */
   onlyFeed?: boolean
@@ -97,7 +98,7 @@ function MovieSectionRow({ title, description, movies, onMovieClick, viewAllLink
         >
           {movies.map((movie) => (
             <div
-              key={movie.id}
+              key={'id' in movie ? movie.id : movie.tmdb_id}
               className={`shrink-0 ${cardWidthClass}`}
               style={{ scrollSnapAlign: 'start' }}
             >

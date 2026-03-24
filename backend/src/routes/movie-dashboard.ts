@@ -1,15 +1,16 @@
 import express from 'express'
 import { movieQueries, moviePlaylistQueries } from '../services/database.js'
+import { getUpcomingMovies, getNowPlayingMovies } from '../services/tmdb.js'
 import { logger } from '../utils/logger.js'
 
 const router = express.Router()
 
 // Get Movie dashboard sections
-router.get('/sections', (req, res) => {
+router.get('/sections', async (req, res) => {
   try {
     const sections: Array<{
       id: string
-      type: 'all_movies' | 'upcoming_movies' | 'starred_movies' | 'movie_playlist'
+      type: 'all_movies' | 'tmdb_upcoming' | 'tmdb_now_playing' | 'upcoming_movies' | 'starred_movies' | 'movie_playlist'
       title: string
       description: string
       movies?: any[]
@@ -46,7 +47,49 @@ router.get('/sections', (req, res) => {
       movies: sortedMovies,
     })
 
-    // Section 2: Starred Movies
+    // Section 2: TMDB Upcoming (movies releasing soon)
+    try {
+      const upcomingResults = await getUpcomingMovies()
+      sections.push({
+        id: 'tmdb_upcoming',
+        type: 'tmdb_upcoming',
+        title: 'Upcoming',
+        description: 'Movies releasing soon',
+        movies: upcomingResults,
+      })
+    } catch (tmdbError: any) {
+      logger.warn('Failed to fetch TMDB upcoming movies:', tmdbError?.message)
+      sections.push({
+        id: 'tmdb_upcoming',
+        type: 'tmdb_upcoming',
+        title: 'Upcoming',
+        description: 'Movies releasing soon',
+        movies: [],
+      })
+    }
+
+    // Section 3: TMDB Now Playing (in theaters)
+    try {
+      const nowPlayingResults = await getNowPlayingMovies()
+      sections.push({
+        id: 'tmdb_now_playing',
+        type: 'tmdb_now_playing',
+        title: 'In Theaters',
+        description: 'Movies currently in theaters',
+        movies: nowPlayingResults,
+      })
+    } catch (tmdbError: any) {
+      logger.warn('Failed to fetch TMDB now playing movies:', tmdbError?.message)
+      sections.push({
+        id: 'tmdb_now_playing',
+        type: 'tmdb_now_playing',
+        title: 'In Theaters',
+        description: 'Movies currently in theaters',
+        movies: [],
+      })
+    }
+
+    // Section 4: Starred Movies
     const starredMovies = movieQueries.getAll(
       undefined, // search
       'created_at', // sortBy
@@ -67,7 +110,7 @@ router.get('/sections', (req, res) => {
       movies: starredMovies,
     })
 
-    // Section 3: Upcoming Movies
+    // Section 5: Upcoming Movies (user's saved with future release date)
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Set to midnight for date comparison
 
@@ -100,7 +143,7 @@ router.get('/sections', (req, res) => {
       movies: upcomingMovies,
     })
 
-    // Section 4+: Movie Playlists with display_on_home = 1
+    // Section 6+: Movie Playlists with display_on_home = 1
     const playlists = moviePlaylistQueries.getAll(true) // displayOnHome = true
 
     for (const playlist of playlists) {

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router'
 import { Settings } from 'lucide-react'
 import { Button } from '@/shared/components/ui/button'
 import { Movie } from '../types/movie'
-import { movieDashboardAPI } from '../services/api'
+import type { DiscoveryMovie } from '../types/dashboard'
+import { movieDashboardAPI, moviesAPI } from '../services/api'
 import { MovieDashboardSection } from '../types/dashboard'
 import MovieSectionRow from '../components/MovieSectionRow'
 import ConfigureMovieDashboardModal from '../components/ConfigureMovieDashboardModal'
@@ -32,8 +33,26 @@ function MoviesDashboard() {
     }
   }
 
-  const handleMovieClick = (movie: Movie) => {
-    navigate(`/media/movies/${movie.id}`)
+  const handleItemClick = async (item: Movie | DiscoveryMovie) => {
+    if ('id' in item) {
+      navigate(`/media/movies/${item.id}`)
+      return
+    }
+    try {
+      await moviesAPI.create(item.tmdb_id)
+      toast.success('Added to your movies')
+      await loadSections()
+    } catch (err: unknown) {
+      const status = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { status?: number } }).response?.status
+        : undefined
+      if (status === 409) {
+        toast.info('Already in your collection')
+        await loadSections()
+      } else {
+        toast.error('Failed to add movie')
+      }
+    }
   }
 
   const handleConfigureSave = () => {
@@ -41,7 +60,7 @@ function MoviesDashboard() {
     loadSections()
   }
 
-  const getViewAllLink = (sectionType: string, playlistId?: number) => {
+  const getViewAllLink = (sectionType: string, playlistId?: number): string | undefined => {
     if (sectionType === 'all_movies') {
       return '/media/movies/all'
     } else if (sectionType === 'starred_movies') {
@@ -51,7 +70,8 @@ function MoviesDashboard() {
     } else if (sectionType === 'movie_playlist' && playlistId) {
       return `/media/playlists/${playlistId}`
     }
-    return '#'
+    // No "View All" for tmdb_upcoming / tmdb_now_playing
+    return undefined
   }
 
   return (
@@ -93,7 +113,7 @@ function MoviesDashboard() {
                   title={section.title}
                   description={section.description}
                   movies={section.movies}
-                  onMovieClick={handleMovieClick}
+                  onMovieClick={handleItemClick}
                   viewAllLink={getViewAllLink(section.type, section.playlistId)}
                   cardSize="small"
                 />

@@ -371,3 +371,61 @@ export async function getOnTheAirTV(): Promise<DiscoveryTVShowItem[]> {
   return (data.results ?? []).map(mapTVResultToDiscovery)
 }
 
+// Shared DTO shape for discovery movie lists
+export type DiscoveryMovieItem = {
+  tmdb_id: number
+  title: string
+  overview: string | null
+  poster_path: string | null
+  backdrop_path: string | null
+  release_date: string | null
+}
+
+function mapMovieResultToDiscovery(item: {
+  id: number
+  title?: string
+  overview?: string | null
+  poster_path?: string | null
+  backdrop_path?: string | null
+  release_date?: string | null
+}): DiscoveryMovieItem {
+  return {
+    tmdb_id: item.id,
+    title: item.title ?? '',
+    overview: item.overview ?? null,
+    poster_path: item.poster_path ?? null,
+    backdrop_path: item.backdrop_path ?? null,
+    release_date: item.release_date ?? null,
+  }
+}
+
+// Upcoming movies (releasing soon)
+export async function getUpcomingMovies(): Promise<DiscoveryMovieItem[]> {
+  const data = await tmdbRequest('/movie/upcoming', { page: 1 }) as {
+    results: Array<{
+      id: number
+      title?: string
+      overview?: string | null
+      poster_path?: string | null
+      backdrop_path?: string | null
+      release_date?: string | null
+    }>
+  }
+  return (data.results ?? []).slice(0, 20).map(mapMovieResultToDiscovery)
+}
+
+// Movies now playing in theaters
+export async function getNowPlayingMovies(): Promise<DiscoveryMovieItem[]> {
+  const data = await tmdbRequest('/movie/now_playing', { page: 1 }) as {
+    results: Array<{
+      id: number
+      title?: string
+      overview?: string | null
+      poster_path?: string | null
+      backdrop_path?: string | null
+      release_date?: string | null
+    }>
+  }
+  return (data.results ?? []).slice(0, 20).map(mapMovieResultToDiscovery)
+}
+

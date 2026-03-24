@@ -1,10 +1,11 @@
 import { Movie } from '../types/movie'
+import type { DiscoveryMovie } from '../types/dashboard'
 import { format } from 'date-fns'
 
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
 interface MovieCardProps {
-  movie: Movie
+  movie: Movie | DiscoveryMovie
   onClick?: () => void
 }
 
@@ -15,6 +16,7 @@ function MovieCard({ movie, onClick }: MovieCardProps) {
   }
 
   const posterUrl = getImageUrl(movie.poster_path)
+  const isSaved = 'saved_at' in movie && movie.saved_at
 
   return (
     <div 
@@ -49,10 +51,13 @@ function MovieCard({ movie, onClick }: MovieCardProps) {
               Released: {format(new Date(movie.release_date), 'MMM d, yyyy')}
             </div>
           )}
-          {movie.saved_at && (
+          {isSaved && 'saved_at' in movie && movie.saved_at && (
             <div>
               Saved: {format(new Date(movie.saved_at), 'MMM d, yyyy')}
             </div>
+          )}
+          {!isSaved && (
+            <div className="text-primary font-medium">Add to my movies</div>
           )}
         </div>
       </div>
