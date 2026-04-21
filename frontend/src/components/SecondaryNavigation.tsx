@@ -14,6 +14,7 @@ import {
   Archive,
   Heart,
   Compass,
+  Newspaper,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -92,6 +93,11 @@ export function SecondaryNavigation() {
           label: 'Archive',
           icon: Archive,
           path: '/youtube/archive',
+        },
+        {
+          label: 'Digest',
+          icon: Newspaper,
+          path: '/youtube/digest',
         },
       ],
     },

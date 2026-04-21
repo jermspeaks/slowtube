@@ -1,0 +1,19 @@
+[Unit]
+Description=Slowtube Express API (SQLite + YouTube/TMDB)
+After=network.target
+
+[Service]
+Type=simple
+User=slowtube
+Group=slowtube
+WorkingDirectory=/opt/slowtube/backend
+Environment=NODE_ENV=production
+EnvironmentFile=-/opt/slowtube/backend/.env
+ExecStart=/usr/bin/node dist/server.js
+Restart=on-failure
+RestartSec=5
+# Hardening (adjust if the app needs outbound-only network — it does for APIs)
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

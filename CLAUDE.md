@@ -10,7 +10,7 @@ Slowtube is a personal media consumption organizer for YouTube videos, movies, a
 
 Monorepo with two packages:
 - `frontend/` — React 19 + Vite 7 SPA, runs on port 5200
-- `backend/` — Express 5 + Node.js API server, runs on port 3001
+- `backend/` — Express 5 + Node.js API server, runs on port 6001
 
 Frontend proxies `/api/*` requests to the backend via Vite config.
 
@@ -67,6 +67,10 @@ Migrations run automatically on server start via `src/config/migrations.ts`.
 Copy `backend/.env.example` to `backend/.env`. Required for full functionality:
 - `YOUTUBE_API_KEY` — YouTube Data API v3
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — YouTube OAuth
+- `GOOGLE_REDIRECT_URI` — Must match the mounted callback (default includes `/api/auth/youtube/callback`)
 - `TMDB_API_KEY` — Movies and TV shows
-- `PORT` (default: 3001), `FRONTEND_URL` (default: http://localhost:3000)
+- `PORT` (default: 6001), `FRONTEND_URL` (OAuth redirect target; dev default in code: http://localhost:5200)
+- `HOST_BIND` (default: `0.0.0.0`) — Set to `127.0.0.1` when the API sits behind nginx on the same host
 - `TV_EPISODE_REFRESH_ENABLED`, `TV_EPISODE_REFRESH_TIME` — cron schedule
+
+Production deploy steps: see `deploy/README.md`.

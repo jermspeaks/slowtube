@@ -6,7 +6,8 @@ import { logger } from '../utils/logger.js'
 const router = express.Router()
 
 // Get redirect URI from environment or use default
-const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3001/auth/youtube/callback'
+const REDIRECT_URI =
+  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:6001/api/auth/youtube/callback'
 
 // Lazy initialization of OAuth2 client - only create when needed (after env vars are loaded)
 let oauth2Client: ReturnType<typeof google.auth.OAuth2> | null = null

@@ -1472,3 +1472,88 @@ export async function fetchSubscribedChannels(): Promise<Array<{
   }
 }
 
+// Resolve a YouTube channel URL or @handle to channel metadata
+export async function resolveChannelFromUrl(input: string): Promise<{
+  id: string
+  title: string | null
+  thumbnailUrl: string | null
+  description: string | null
+} | null> {
+  try {
+    let oauthClient: any = null
+    try {
+      oauthClient = await getAuthenticatedClient()
+    } catch {
+      // Fall through to API key
+    }
+
+    const youtube = getYouTubeClient(oauthClient)
+    if (!youtube) {
+      throw new Error('YouTube API authentication not available. Please configure API key or OAuth.')
+    }
+
+    // Try to extract channel ID or handle from various URL formats:
+    // https://www.youtube.com/channel/UCxxxxxx
+    // https://www.youtube.com/@handle
+    // https://www.youtube.com/c/customname
+    // @handle (bare)
+    // UCxxxxxx (bare channel ID)
+
+    let channelId: string | null = null
+    let handle: string | null = null
+
+    const channelIdMatch = input.match(/\/channel\/(UC[a-zA-Z0-9_-]+)/)
+    if (channelIdMatch) {
+      channelId = channelIdMatch[1]
+    } else {
+      const handleMatch = input.match(/(?:\/|^)@([a-zA-Z0-9_.-]+)/)
+      if (handleMatch) {
+        handle = handleMatch[1]
+      } else if (/^UC[a-zA-Z0-9_-]{22}$/.test(input.trim())) {
+        channelId = input.trim()
+      } else {
+        // Try stripping trailing slash and using as handle
+        const stripped = input.replace(/^https?:\/\/(?:www\.)?youtube\.com\//, '').replace(/\/$/, '')
+        if (stripped.startsWith('c/') || stripped.startsWith('@')) {
+          handle = stripped.replace(/^c\//, '').replace(/^@/, '')
+        } else if (stripped.startsWith('UC')) {
+          channelId = stripped
+        } else {
+          handle = stripped
+        }
+      }
+    }
+
+    let channelResponse: any = null
+
+    if (channelId) {
+      channelResponse = await youtube.channels.list({
+        part: ['snippet'],
+        id: [channelId],
+      })
+    } else if (handle) {
+      channelResponse = await youtube.channels.list({
+        part: ['snippet'],
+        forHandle: handle,
+      })
+    }
+
+    const channel = channelResponse?.data?.items?.[0]
+    if (!channel?.id) {
+      return null
+    }
+
+    return {
+      id: channel.id,
+      title: channel.snippet?.title || null,
+      thumbnailUrl: channel.snippet?.thumbnails?.medium?.url
+        || channel.snippet?.thumbnails?.default?.url
+        || null,
+      description: channel.snippet?.description || null,
+    }
+  } catch (error: any) {
+    logger.error('Error resolving channel from URL:', error)
+    throw error
+  }
+}
+

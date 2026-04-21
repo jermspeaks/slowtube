@@ -358,3 +358,42 @@ export const channelGroupsAPI = {
     return response.data
   },
 }
+
+// Digest API
+export const digestAPI = {
+  // Channels
+  getChannels: async () => {
+    const response = await api.get('/api/digest/channels')
+    return response.data
+  },
+  addChannels: async (youtubeChannelIds: string[], addedFrom: 'subscribed' | 'watch_later' | 'liked' | 'manual') => {
+    const response = await api.post('/api/digest/channels', { youtubeChannelIds, addedFrom })
+    return response.data
+  },
+  removeChannel: async (youtubeChannelId: string) => {
+    const response = await api.delete(`/api/digest/channels/${youtubeChannelId}`)
+    return response.data
+  },
+  resolveChannelUrl: async (url: string) => {
+    const response = await api.post('/api/digest/channels/resolve', { url })
+    return response.data
+  },
+  // Feed
+  getFeed: async (params?: { channelId?: string; page?: number; limit?: number }) => {
+    const queryParams = buildQueryParams(params || {})
+    const response = await api.get('/api/digest/feed', { params: queryParams })
+    return response.data
+  },
+  refresh: async () => {
+    const response = await api.post('/api/digest/feed/refresh')
+    return response.data
+  },
+  dismiss: async (videoId: string) => {
+    const response = await api.post(`/api/digest/feed/${videoId}/dismiss`)
+    return response.data
+  },
+  addToWatchLater: async (videoId: string) => {
+    const response = await api.post(`/api/digest/feed/${videoId}/add-to-watch-later`)
+    return response.data
+  },
+}

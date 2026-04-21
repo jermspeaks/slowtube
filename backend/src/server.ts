@@ -18,6 +18,7 @@ import importRoutes from './routes/import.js'
 import settingsRoutes from './routes/settings.js'
 import authRoutes from './routes/auth.js'
 import { refreshAllTVShowEpisodes } from './services/tv-episode-refresh.js'
+import digestRoutes, { refreshDigestFeed } from './routes/digest.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { requestLogger } from './middleware/requestLogger.js'
 import { logger } from './utils/logger.js'
@@ -28,7 +29,7 @@ if (!process.env.TMDB_API_KEY && !process.env.TMDB_READ_ACCESS_TOKEN) {
 }
 
 const app = express()
-const PORT = Number(process.env.PORT) || 3001
+const PORT = Number(process.env.PORT) || 6001
 
 // CORS configuration - allow localhost and local network IPs
 const defaultOrigins = [
@@ -86,6 +87,7 @@ app.use('/api/calendar', calendarRoutes)
 app.use('/api/import', importRoutes)
 app.use('/api/settings', settingsRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/digest', digestRoutes)
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' })
@@ -94,9 +96,10 @@ app.get('/health', (req, res) => {
 // Error handler middleware (must be last)
 app.use(errorHandler)
 
-app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`Server running on port ${PORT}`)
-  logger.info(`Accessible at http://0.0.0.0:${PORT}`)
+const HOST_BIND = process.env.HOST_BIND || '0.0.0.0'
+
+app.listen(PORT, HOST_BIND, () => {
+  logger.info(`Server running on ${HOST_BIND}:${PORT}`)
 })
 
 // Setup daily TV episode refresh job
@@ -127,5 +130,33 @@ if (refreshEnabled) {
   }
 } else {
   logger.info('TV episode refresh is disabled (TV_EPISODE_REFRESH_ENABLED=false)')
+}
+
+// Setup daily digest refresh job
+const digestRefreshEnabled = process.env.DIGEST_REFRESH_ENABLED !== 'false' // Default to true
+const digestRefreshSchedule = process.env.DIGEST_REFRESH_TIME || '0 6 * * *' // Default: 6am daily
+
+if (digestRefreshEnabled) {
+  if (cron.validate(digestRefreshSchedule)) {
+    logger.info(`Digest refresh scheduled: ${digestRefreshSchedule}`)
+
+    cron.schedule(digestRefreshSchedule, async () => {
+      logger.info('Starting scheduled digest refresh...')
+      try {
+        const result = await refreshDigestFeed()
+        logger.info('Digest refresh completed', {
+          fetched: result.fetched,
+          channels: result.channels,
+          pruned: result.pruned,
+        })
+      } catch (error: any) {
+        logger.error('Digest refresh failed', { error: error.message, stack: error.stack })
+      }
+    })
+  } else {
+    logger.warn(`Invalid DIGEST_REFRESH_TIME cron schedule: ${digestRefreshSchedule}. Digest refresh disabled.`)
+  }
+} else {
+  logger.info('Digest refresh is disabled (DIGEST_REFRESH_ENABLED=false)')
 }
 

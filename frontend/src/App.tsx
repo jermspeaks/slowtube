@@ -9,6 +9,7 @@ import ChannelsList from './features/youtube/pages/ChannelsList'
 import ChannelWatchLater from './features/youtube/pages/ChannelWatchLater'
 import ChannelLatest from './features/youtube/pages/ChannelLatest'
 import ChannelLiked from './features/youtube/pages/ChannelLiked'
+import Digest from './features/youtube/pages/Digest'
 import ChannelGroups from './features/youtube/pages/ChannelLists'
 import ChannelGroupDetail from './features/youtube/pages/ChannelListDetail'
 import YouTubeWatchNext from './features/youtube/pages/WatchNext'
@@ -84,6 +85,7 @@ function AppRoutes() {
         <Route path="/youtube/channels/:channelId/latest" element={<ChannelLatest />} />
         <Route path="/youtube/channels/:channelId/liked" element={<ChannelLiked />} />
         <Route path="/youtube/channels/:channelId" element={<Navigate to="watch-later" replace />} />
+        <Route path="/youtube/digest" element={<Digest />} />
         <Route path="/youtube/channel-lists" element={<ChannelGroups />} />
         <Route path="/youtube/channel-lists/:id/inbox" element={<ChannelGroupDetail />} />
         <Route path="/youtube/channel-lists/:id/feed" element={<ChannelGroupDetail />} />

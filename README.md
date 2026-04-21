@@ -133,7 +133,7 @@ npm run dev
 
 The application will be available at:
 - Frontend: http://localhost:5200
-- Backend: http://localhost:3001
+- Backend: http://localhost:6001
 
 ## Backend Configuration
 
@@ -196,7 +196,9 @@ If you want to use YouTube OAuth:
 2. Create a new project or select an existing one
 3. Enable YouTube Data API v3
 4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:3001/auth/youtube/callback`
+5. Add authorized redirect URI: `http://localhost:6001/api/auth/youtube/callback` (must match `GOOGLE_REDIRECT_URI` in `backend/.env`; for production, use your public URL, e.g. `https://your.domain/api/auth/youtube/callback`)
+
+See [deploy/README.md](deploy/README.md) for nginx, systemd, and firewall.
 6. Copy Client ID and Client Secret to `.env` file
 
 **Note**: Without YouTube OAuth, you can still:
@@ -438,7 +440,7 @@ The system automatically includes failed videos (`unavailable` or `failed` statu
 To explicitly retry only failed videos, you can use the API endpoint:
 
 ```bash
-curl -X POST http://localhost:3001/api/videos/retry-failed
+curl -X POST http://localhost:6001/api/videos/retry-failed
 ```
 
 This endpoint will:
